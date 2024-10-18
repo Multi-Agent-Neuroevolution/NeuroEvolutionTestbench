@@ -2,6 +2,7 @@ use iced::border::width;
 use iced::widget::canvas::{Canvas, Fill, Frame, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
+mod neural_net;
 #[derive(Default, Clone, Copy)]
 struct View {
     counter: i32,
