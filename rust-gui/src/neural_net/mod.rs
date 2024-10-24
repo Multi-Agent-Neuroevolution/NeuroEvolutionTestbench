@@ -24,7 +24,18 @@ impl NeuralNet {
         let node_radius = &self.get_Node_radius(height, layerCount as f32, percentPad);
         let horizontal_positions = &self.get_Layer_positions(width, 10.0);
 
-        for i in 0..self.layers.len() {
+        for it in self.layers.iter().zip(horizontal_positions.iter()) {
+            let (layer, x_pos) = it;
+            let LayerGeometery = layer.draw(
+                *x_pos,
+                height,
+                renderer,
+                *node_radius,
+                node_radius * percentPad,
+            );
+            NeuralNetGeometry.extend(LayerGeometery);
+        }
+        /*for i in 0..self.layers.len() {
             let currentlayer = self.layers.get(i).expect("No Layer found");
             let current_x_pos = horizontal_positions.get(i).expect("No position found");
 
@@ -36,7 +47,7 @@ impl NeuralNet {
                 node_radius * percentPad,
             );
             NeuralNetGeometry.extend(LayerGeometery);
-        }
+        }*/
 
         NeuralNetGeometry
     }
