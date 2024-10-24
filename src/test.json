@@ -1,0 +1,17 @@
+{
+    "Agent": {
+        "ID": "12345",
+        "Generation": "2",
+        "location": {
+            "x": "40.2",
+            "y": "13.8"
+        },
+        "fitness": [ 
+            {
+                "Score": "500",
+                "Test deletion": "25",
+                "available": false
+            }
+        ]
+    }
+}
