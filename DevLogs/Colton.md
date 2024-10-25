@@ -1,0 +1,9 @@
+# Sprint 2 Start: October 1
+- Oct 4. Finally began working on the Json parsing file for our code. This entailed created a  json with sample data that could mimic how our actual data might look. I went ahead and began coding how to take data from the json and read it
+- Oct 8. Hurricane
+- Oct 10. Hurricane
+# Sprint 3 Start: October 15
+- Started the presentation slides in our group, worked on just basic info for what we wanted to cover in our slides 
+- Oct 16. I finished up the code for parsing json files by doing a few different things. For one I made it so that I could edit the data inside the json "dictionaries" and "lists". I did this so that I could understand in what ways editing the information inside the json would look like. Next I made sure that I could dump the edited data into a new json file without touching the old one just incase any information was messed up or still needed from the previous one. Lastly I  made sure to include an indent = 4 for the writing to a new file so that our jsons would be more standardized when reading them in person and not through code.
+- Oct 17. Completed the presentation slides that were due the 18th. I added more context to the slides and helped make the formatting look a little bit nicer.
+- Oct 23. Finished section 2.1 for Product Perspective on the System Requirements Specification document that shows more information about our product but I'll need to go back and edit it because of information that should be added. I also finished section 2.2 for Product Perspective which gave a more high level view which should be understood by the customer but needs a use case diagram to be added.
