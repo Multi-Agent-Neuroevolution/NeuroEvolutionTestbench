@@ -24,5 +24,5 @@ Kai Sniadach Dev Log
     Planning for the backend layout of generating new agents and passing weights and nodes of the network to the NN(neural network) view
 
     ### 10/24/2024
-    
+    Worked on a python file that will take in data from a neural network and convert it to a JSON in order to send data to our rust GUI. Also discussed with other members some possible methods for passing the JSON via websocket to the simulation display.
 
