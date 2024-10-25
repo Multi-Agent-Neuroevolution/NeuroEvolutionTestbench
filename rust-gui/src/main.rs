@@ -5,6 +5,9 @@ use iced::border::width;
 use iced::widget::canvas::{Canvas, Fill, Frame, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
+use serde::{Deserialize, Serialize};
+use serde_json;
+mod neural_net;
 #[derive(Default, Clone, Copy)]
 struct View {
     counter: i32,
@@ -29,6 +32,59 @@ struct NNView {
 enum Message {
     IncrementPressed,
     DecrementPressed,
+}
+
+#[derive(Deserialize)]
+struct Agent {
+    id: usize,
+    x: f64,
+    y: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+enum Shape {
+    Circle {
+        x: f64,
+        y: f64,
+        radius: f64,
+        color: String,
+    },
+    Rectangle {
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        color: String,
+    },
+    Triangle {
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        x3: f64,
+        y3: f64,
+        color: String,
+    },
+    Line {
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        color: String,
+    },
+}
+
+#[derive(Deserialize)]
+struct NeuralNetState {
+    layers: Vec<Vec<f64>>,
+}
+
+#[derive(Deserialize)]
+struct SimulationData {
+    agents: Vec<Agent>,
+    shapes: Vec<Shape>,
+    neural_net_state: NeuralNetState,
 }
 
 fn main() {
