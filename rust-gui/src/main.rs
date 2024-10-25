@@ -5,9 +5,10 @@ use iced::border::width;
 use iced::widget::canvas::{Canvas, Fill, Frame, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
+mod neural_net;
+use neural_net::{NeuralNet, NeuralNetState};
 use serde::{Deserialize, Serialize};
 use serde_json;
-mod neural_net;
 #[derive(Default, Clone, Copy)]
 struct View {
     counter: i32,
@@ -76,15 +77,10 @@ enum Shape {
 }
 
 #[derive(Deserialize)]
-struct NeuralNetState {
-    layers: Vec<Vec<f64>>,
-}
-
-#[derive(Deserialize)]
 struct SimulationData {
     agents: Vec<Agent>,
     shapes: Vec<Shape>,
-    neural_net_state: NeuralNetState,
+    neural_state: NeuralNetState,
 }
 
 fn main() {
@@ -184,11 +180,19 @@ impl NNView {
         }
     }
     fn view(&self) -> Column<Message> {
-        let nn_view = canvas(NNView {
-            color: Color::from_rgb(0.0, 0.0, 1.0),
-        })
-        .width(Length::Fill)
-        .height(Length::Fill);
+        let json_data = r#"
+        {
+            "neuralnet_state": {
+                "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+            }
+        }
+        "#;
+        let json_data: SimulationData =
+            serde_json::from_str(json_data).expect("Failed to parse JSON");
+        let neural_net = NeuralNet::from_data(&json_data.neural_state);
+        let nn_view = Canvas::new(neural_net.clone())
+            .width(Length::Fill)
+            .height(Length::Fill);
         let container = column![nn_view];
         container
     }

@@ -1,17 +1,23 @@
 use iced::{color, widget::canvas, Point, Renderer, Size};
-
+use serde::Deserialize;
 /*
  * Contains and id and vec of layers for multiple neural nets
  */
+#[derive(Default, Clone)]
 pub struct NeuralNet {
     id: u32,
     layers: Vec<Layer>,
+}
+
+#[derive(Deserialize)]
+pub struct NeuralNetState {
+    layers: Vec<Vec<f64>>,
 }
 impl NeuralNet {
     pub fn new(id: u32, layers: Vec<Layer>) -> Self {
         Self { id, layers }
     }
-    fn draw(&self, width: f32, height: f32, renderer: &Renderer) -> Vec<canvas::Geometry> {
+    pub fn draw(&self, width: f32, height: f32, renderer: &Renderer) -> Vec<canvas::Geometry> {
         let mut NeuralNetGeometry = Vec::new();
 
         let percentPad = 0.05;
@@ -54,7 +60,23 @@ impl NeuralNet {
         }
         x_positions
     }
+    pub fn from_data(data: &NeuralNetState) -> Self {
+        let layers: Vec<Layer> = data
+            .layers
+            .iter()
+            .map(|layer| {
+                let nodes: Vec<Node> = layer
+                    .iter()
+                    .map(|&value| Node::new(value)) // Create a node for each activation value
+                    .collect();
+                Layer::new(nodes) // Create a layer from the nodes
+            })
+            .collect();
+
+        NeuralNet::new(1, layers) // Example with id = 1
+    }
 }
+#[derive(Default, Clone)]
 pub struct Layer {
     nodes: Vec<Node>,
 }
@@ -88,18 +110,19 @@ impl Layer {
         layerGeometry
     }
 }
+#[derive(Default, Clone)]
 pub struct Node {
     value: f64,
-    weights: Option<Vec<f64>>,
     coordinates: Point,
+    weights: Option<Vec<f64>>,
 }
 
 impl Node {
-    fn new(weights: Vec<f64>) -> Self {
+    fn new(value: f64) -> Self {
         Self {
             coordinates: Point::new(0.0, 0.0),
-            value: 0.0,
-            weights: Some(weights),
+            value,
+            weights: None,
         }
     }
     /**
@@ -113,6 +136,7 @@ impl Node {
         frame.into_geometry()
     }
 }
+
 impl NullConstructor for Node {
     fn new() -> Self {
         Self {
