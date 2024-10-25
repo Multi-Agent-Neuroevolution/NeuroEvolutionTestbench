@@ -1,5 +1,7 @@
+use iced::Color;
 use iced::{color, widget::canvas, Point, Renderer, Size};
-use serde::Deserialize;
+use serde::Deserialize; // Make sure this is imported
+
 /*
  * Contains and id and vec of layers for multiple neural nets
  */
@@ -132,7 +134,7 @@ impl Node {
     fn draw(&self, x: f32, y: f32, renderer: &Renderer, radius: f32) -> canvas::Geometry {
         let mut frame = canvas::Frame::new(renderer, Size::new(radius * 2.0, radius * 2.0));
         let circle = canvas::Path::circle(Point::new(x, y), radius);
-        frame.fill(&circle, color!(5));
+        frame.fill(&circle, Color::WHITE);
         frame.into_geometry()
     }
 }

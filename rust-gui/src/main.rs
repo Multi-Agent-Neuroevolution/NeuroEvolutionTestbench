@@ -2,14 +2,14 @@
 // It is built using the iced crate.
 
 use iced::border::width;
-use iced::widget::canvas::{Canvas, Fill, Frame, Path};
+use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
 mod neural_net;
 use neural_net::{NeuralNet, NeuralNetState};
 use serde::{Deserialize, Serialize};
 use serde_json;
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 struct View {
     counter: i32,
     agent_view: AgentView,
@@ -24,9 +24,10 @@ struct SimulationView {
 struct AgentView {
     color: Color,
 }
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 struct NNView {
     color: Color,
+    neural_net: NeuralNet,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -175,11 +176,7 @@ impl AgentView {
 
 impl NNView {
     pub fn new() -> Self {
-        Self {
-            color: Color::from_rgb(0.0, 0.0, 1.0),
-        }
-    }
-    fn view(&self) -> Column<Message> {
+        // Parse your JSON and create neural network
         let json_data = r#"
         {
             "neuralnet_state": {
@@ -190,11 +187,17 @@ impl NNView {
         let json_data: SimulationData =
             serde_json::from_str(json_data).expect("Failed to parse JSON");
         let neural_net = NeuralNet::from_data(&json_data.neural_state);
-        let nn_view = Canvas::new(neural_net.clone())
-            .width(Length::Fill)
-            .height(Length::Fill);
-        let container = column![nn_view];
-        container
+
+        Self {
+            color: Color::from_rgb(0.0, 0.0, 1.0),
+            neural_net,
+        }
+    }
+
+    fn view(&self) -> Column<Message> {
+        let nn_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
+
+        Column::new().push(nn_view)
     }
 }
 
@@ -253,17 +256,35 @@ impl<Message> canvas::Program<Message> for AgentView {
 
 impl<Message> canvas::Program<Message> for NNView {
     type State = ();
+
     fn draw(
         &self,
         _state: &(),
-        renderer: &Renderer,
+        renderer: &Renderer, // We'll use this renderer directly
         _theme: &Theme,
         bounds: Rectangle,
         _cursor: mouse::Cursor,
-    ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let rect = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
-        frame.fill(&rect, self.color);
-        vec![frame.into_geometry()]
+    ) -> Vec<Geometry> {
+        let mut frame = Frame::new(renderer, bounds.size());
+
+        // Call your neural network draw function with the provided renderer
+        let geometries = self.neural_net.draw(
+            bounds.width,
+            bounds.height,
+            renderer, // Use the renderer parameter directly
+        );
+
+        // Combine the neural network geometries with any background/additional drawing
+        let mut all_geometries = Vec::new();
+
+        // Add background if desired
+        let background = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
+        frame.fill(&background, self.color);
+        all_geometries.push(frame.into_geometry());
+
+        // Add neural network geometries
+        all_geometries.extend(geometries);
+
+        all_geometries
     }
 }
