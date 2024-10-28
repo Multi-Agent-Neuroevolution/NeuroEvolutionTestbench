@@ -1,117 +1,117 @@
 use iced::Color;
 use iced::{color, widget::canvas, Point, Renderer, Size};
-use serde::Deserialize; // Make sure this is imported
+use serde::Deserialize;
 
-/*
- * Contains and id and vec of layers for multiple neural nets
- */
 #[derive(Default, Clone)]
 pub struct NeuralNet {
     id: u32,
     layers: Vec<Layer>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Default)]
 pub struct NeuralNetState {
-    layers: Vec<Vec<f64>>,
+    pub layers: Vec<Vec<f64>>,
 }
+
 impl NeuralNet {
     pub fn new(id: u32, layers: Vec<Layer>) -> Self {
         Self { id, layers }
     }
+
     pub fn draw(&self, width: f32, height: f32, renderer: &Renderer) -> Vec<canvas::Geometry> {
-        let mut NeuralNetGeometry = Vec::new();
+        let mut neural_net_geometry = Vec::new();
 
-        let percentPad = 0.05;
-        let tallestLayer = self.layers.iter().map(|f| f.nodes.len()).max();
+        // Get the size of the largest layer for scaling
+        let tallest_layer = self.layers.iter().map(|f| f.nodes.len()).max().unwrap_or(1);
 
-        let mut layerCount = 0;
-        if let Some(layerSize) = tallestLayer {
-            layerCount = layerSize;
-        }
-        let node_radius = &self.get_Node_radius(height, layerCount as f32, percentPad);
-        let horizontal_positions = &self.get_Layer_positions(width, 10.0);
+        let percent_pad = 0.0;
+        let node_radius = self.get_node_radius(height, tallest_layer as f32, percent_pad);
+        let horizontal_positions = self.get_layer_positions(width, node_radius * 2.0);
 
-        for i in 0..self.layers.len() {
-            let currentlayer = self.layers.get(i).expect("No Layer found");
-            let current_x_pos = horizontal_positions.get(i).expect("No position found");
+        // Draw connections between layers first (if you want to add this feature)
+        // TODO: Add connection drawing logic here
 
-            let LayerGeometery = currentlayer.draw(
-                *current_x_pos,
+        // Draw each layer
+        for (i, layer) in self.layers.iter().enumerate() {
+            let x_pos = horizontal_positions[i];
+            let layer_geometry = layer.draw(
+                x_pos,
                 height,
                 renderer,
-                *node_radius,
-                node_radius * percentPad,
+                node_radius,
+                node_radius * percent_pad,
             );
-            NeuralNetGeometry.extend(LayerGeometery);
+            neural_net_geometry.extend(layer_geometry);
         }
 
-        NeuralNetGeometry
+        neural_net_geometry
     }
-    fn get_Node_radius(&self, size: f32, sections: f32, percentPad: f32) -> f32 {
-        let node_Size: f32 = (size / sections) * (1.0 - percentPad);
-        node_Size
+
+    fn get_node_radius(&self, height: f32, sections: f32, percent_pad: f32) -> f32 {
+        (height / (sections * 1.0)) * (1.0 - percent_pad)
     }
-    fn get_Layer_positions(&self, width: f32, padding: f32) -> Vec<f32> {
-        let distance = (width - (2.0 * padding)) / (self.layers.len() as f32);
-        let mut x_positions = Vec::new();
-        let mut x_position = padding;
-        for _i in 0..self.layers.len() {
-            x_positions.push(x_position);
-            x_position = x_position + distance;
-        }
-        x_positions
+
+    fn get_layer_positions(&self, width: f32, node_diameter: f32) -> Vec<f32> {
+        let padding = node_diameter;
+        let available_width = width - (2.0 * padding);
+        let distance = available_width / (self.layers.len().max(1) as f32 - 1.0);
+
+        (0..self.layers.len())
+            .map(|i| padding + (distance * i as f32))
+            .collect()
     }
+
     pub fn from_data(data: &NeuralNetState) -> Self {
         let layers: Vec<Layer> = data
             .layers
             .iter()
             .map(|layer| {
-                let nodes: Vec<Node> = layer
-                    .iter()
-                    .map(|&value| Node::new(value)) // Create a node for each activation value
-                    .collect();
-                Layer::new(nodes) // Create a layer from the nodes
+                let nodes: Vec<Node> = layer.iter().map(|&value| Node::new(value)).collect();
+                Layer::new(nodes)
             })
             .collect();
 
-        NeuralNet::new(1, layers) // Example with id = 1
+        NeuralNet::new(1, layers)
     }
 }
+
 #[derive(Default, Clone)]
 pub struct Layer {
     nodes: Vec<Node>,
 }
+
 impl Layer {
     pub fn new(nodes: Vec<Node>) -> Self {
         Self { nodes }
     }
-    /*
-     * draw a layer calculate the even amount of nodes to have them centered node size will be calculated in neural net struct to make sure the nodes stay in the window
-     */
+
     fn draw(
         &self,
         x: f32,
-        height: f32,
+        canvas_height: f32,
         renderer: &Renderer,
-        nodeSize: f32,
+        node_radius: f32,
         padding: f32,
     ) -> Vec<canvas::Geometry> {
-        let mut y = height;
-        let mut layerGeometry = Vec::new();
+        let mut layer_geometry = Vec::new();
 
-        let layer_height = ((self.nodes.len() as f32) * nodeSize * 2.0)
-            + (((self.nodes.len() - 1) as f32) * padding);
-        let space_remaining = height - layer_height;
-        let mut offset = layer_height + space_remaining / 2.0;
+        // Calculate total height needed for nodes + padding
+        let total_node_height = (self.nodes.len() as f32) * (node_radius * 2.0);
+        let total_padding = ((self.nodes.len() - 1) as f32) * padding;
+        let layer_height = total_node_height + total_padding;
 
-        for node in &self.nodes {
-            layerGeometry.push(node.draw(x, offset, renderer, nodeSize));
-            offset = offset - (nodeSize * 2.0 + padding); //node size is radius and circle drawer sets x and y on center so need to be nodeSize*2
+        // Calculate starting y position to center the layer
+        let start_y = (canvas_height - layer_height) / 2.0 + node_radius;
+
+        for (i, node) in self.nodes.iter().enumerate() {
+            let y = start_y + i as f32 * (node_radius * 2.0 + padding);
+            layer_geometry.push(node.draw(x, y, renderer, node_radius));
         }
-        layerGeometry
+
+        layer_geometry
     }
 }
+
 #[derive(Default, Clone)]
 pub struct Node {
     value: f64,
@@ -127,14 +127,27 @@ impl Node {
             weights: None,
         }
     }
-    /**
-     * draw a node at x and with with a radius called by layer struct @TODO make configurable color
-     *
-     */
+
     fn draw(&self, x: f32, y: f32, renderer: &Renderer, radius: f32) -> canvas::Geometry {
-        let mut frame = canvas::Frame::new(renderer, Size::new(radius * 2.0, radius * 2.0));
+        let frame_size = Size::new(radius * 2.0, radius * 2.0);
+        let mut frame = canvas::Frame::new(renderer, frame_size);
+
+        // Create circle path centered at the given coordinates
         let circle = canvas::Path::circle(Point::new(x, y), radius);
-        frame.fill(&circle, Color::WHITE);
+
+        // Calculate color based on node value
+        let intensity = (self.value.tanh() + 1.0) / 2.0;
+        let color = Color::from_rgb(intensity as f32, 0.0, 0.0);
+
+        // Fill and stroke the circle
+        frame.fill(&circle, color);
+        frame.stroke(
+            &circle,
+            canvas::Stroke::default()
+                .with_color(Color::BLACK)
+                .with_width(1.0),
+        );
+
         frame.into_geometry()
     }
 }

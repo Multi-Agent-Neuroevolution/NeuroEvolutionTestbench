@@ -4,17 +4,20 @@
 use iced::border::width;
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
-use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
+use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
 mod neural_net;
+use iced::time;
 use neural_net::{NeuralNet, NeuralNetState};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::time::Duration;
 #[derive(Default, Clone)]
 struct View {
-    counter: i32,
+    speed: i32,
     agent_view: AgentView,
     sim_view: SimulationView,
     nn_view: NNView,
+    simulation_data: SimulationData,
 }
 #[derive(Default, Clone, Copy)]
 struct SimulationView {
@@ -33,17 +36,20 @@ struct NNView {
 #[derive(Debug, Clone, Copy)]
 enum Message {
     IncrementPressed,
+    IncrementPressedx10,
     DecrementPressed,
+    DecrementPressedx10,
+    Tick,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Default)]
 struct Agent {
     id: usize,
     x: f64,
     y: f64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(tag = "type")]
 enum Shape {
     Circle {
@@ -77,42 +83,32 @@ enum Shape {
     },
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Default)]
 struct SimulationData {
     agents: Vec<Agent>,
     shapes: Vec<Shape>,
     neural_state: NeuralNetState,
 }
 
-fn main() {
-    let _ = iced::run(
-        "Multi-agent Neuroevolution Simulator",
-        View::update,
-        View::view,
-    );
+pub fn main() -> iced::Result {
+    iced::application("Game of Life - Iced", View::update, View::view)
+        .subscription(View::subscription)
+        .theme(|_| Theme::Dark)
+        .antialiasing(true)
+        .centered()
+        .run()
 }
-
 impl View {
     fn new() -> Self {
         Self {
-            counter: 0,
+            speed: 1,
             agent_view: AgentView::new(),
             sim_view: SimulationView::new(),
             nn_view: NNView::new(),
+            simulation_data: SimulationData::default(),
         }
     }
     fn view(&self) -> Column<Message> {
-        //Top Controls
-        let top_controls = row![
-            button("File"),
-            button("Edit"),
-            button("View"),
-            button("<"),
-            text("0x"),
-            button(">")
-        ]
-        .spacing(10);
-
         //SimulationView
         let sim_view = self
             .sim_view
@@ -121,9 +117,8 @@ impl View {
             .height(Length::Fill);
         //AgentView
         let agent_view = self.agent_view.view();
-        //NNView
-        let nn_view = self.nn_view.view();
-
+        //NNViews
+        let nn_view = self.nn_view.draw();
         let agent_nn_col = column!(agent_view, nn_view)
             .width(Length::FillPortion(35))
             .height(Length::Fill);
@@ -132,17 +127,92 @@ impl View {
             .width(Length::Fill)
             .height(Length::Fill);
 
-        let container = column![top_controls, content];
+        let container = column![self.controls(), content];
         container
     }
+    fn controls(&self) -> Row<Message> {
+        //Top Controls
+        let top_controls = row![
+            button("File"),
+            button("Edit"),
+            button("View"),
+            button("<<").on_press(Message::DecrementPressedx10),
+            button("<").on_press(Message::DecrementPressed),
+            text(format!("x{}", self.speed)),
+            button(">").on_press(Message::IncrementPressed),
+            button(">>").on_press(Message::IncrementPressedx10)
+        ]
+        .spacing(10);
+        top_controls
+    }
     fn update(&mut self, message: Message) {
-        // match message {
-        //     Message::IncrementPressed => self.counter += 1,
-        //     Message::DecrementPressed => self.counter -= 1,
-        // }
-        //This function will handle updating the simulation, agents, and neural network
-        //It is going to have to use some type of timer so it still updates even if the user is not interacting with the app
-        //It will also need to interface with a websocket to get the data from the simulation, so it is going to need to be async or something
+        match message {
+            Message::IncrementPressed => self.speed += 1,
+            //prevent speed from going negative
+            Message::DecrementPressed => self.speed = self.speed.saturating_sub(1),
+            Message::IncrementPressedx10 => self.speed += 10,
+            Message::DecrementPressedx10 => self.speed = self.speed.saturating_sub(10),
+            Message::Tick => {
+                let simulation_data = self.get_simulation_data();
+                self.update_simulation_data(simulation_data);
+            }
+        }
+        if self.speed < 1 {
+            self.speed = 1;
+        }
+        // let simulation_data = self.get_simulation_data();
+        // self.update_simulation_data(simulation_data);
+    }
+    fn get_simulation_data(&mut self) -> SimulationData {
+        //In the future this will be replaced with a function that gets the data from the simulation over a web socket
+        let json_data = r#"
+        {
+            "agents": [
+                {
+                    "id": 1,
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                {
+                    "id": 2,
+                    "x": 1.0,
+                    "y": 1.0
+                }
+            ],
+            "shapes": [
+                {
+                    "type": "Circle",
+                    "x": 0.0,
+                    "y": 0.0,
+                    "radius": 1.0,
+                    "color": "red"
+                },
+                {
+                    "type": "Rectangle",
+                    "x": 1.0,
+                    "y": 1.0,
+                    "width": 1.0,
+                    "height": 1.0,
+                    "color": "blue"
+                }
+            ],
+            "neural_state": {
+                "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+            }
+        }
+        "#;
+        let json_data: SimulationData =
+            serde_json::from_str(json_data).expect("Failed to parse JSON");
+        json_data
+    }
+    fn update_simulation_data(&mut self, simulation_data: SimulationData) {
+        self.simulation_data = simulation_data;
+        self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
+        self.nn_view
+            .update_network(&self.simulation_data.neural_state);
+    }
+    fn subscription(&self) -> Subscription<Message> {
+        time::every(Duration::from_millis(16)).map(|_| Message::Tick)
     }
 }
 
@@ -163,12 +233,9 @@ impl AgentView {
     }
     fn controlls(&self) -> Row<Message> {
         let controls = row![
-            button("Add Agent"),
-            button("Remove Agent"),
-            button("Pause"),
-            button("Play"),
-            button("Step"),
-            button("Reset")
+            button("Pause").width(Length::FillPortion(1)),
+            button("Play").width(Length::FillPortion(1)),
+            button("Step").width(Length::FillPortion(1))
         ];
         controls
     }
@@ -176,28 +243,18 @@ impl AgentView {
 
 impl NNView {
     pub fn new() -> Self {
-        // Parse your JSON and create neural network
-        let json_data = r#"
-        {
-            "neuralnet_state": {
-                "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-            }
-        }
-        "#;
-        let json_data: SimulationData =
-            serde_json::from_str(json_data).expect("Failed to parse JSON");
-        let neural_net = NeuralNet::from_data(&json_data.neural_state);
-
         Self {
             color: Color::from_rgb(0.0, 0.0, 1.0),
-            neural_net,
+            neural_net: NeuralNet::default(),
         }
     }
-
-    fn view(&self) -> Column<Message> {
+    pub fn update_network(&mut self, neural_state: &NeuralNetState) {
+        self.neural_net = NeuralNet::from_data(neural_state)
+    }
+    pub fn draw(&self) -> Column<Message> {
         let nn_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
-
-        Column::new().push(nn_view)
+        let container = column![nn_view];
+        container
     }
 }
 
@@ -254,37 +311,16 @@ impl<Message> canvas::Program<Message> for AgentView {
     }
 }
 
-impl<Message> canvas::Program<Message> for NNView {
+impl canvas::Program<Message> for NNView {
     type State = ();
-
     fn draw(
         &self,
         _state: &(),
-        renderer: &Renderer, // We'll use this renderer directly
+        renderer: &Renderer,
         _theme: &Theme,
         bounds: Rectangle,
         _cursor: mouse::Cursor,
-    ) -> Vec<Geometry> {
-        let mut frame = Frame::new(renderer, bounds.size());
-
-        // Call your neural network draw function with the provided renderer
-        let geometries = self.neural_net.draw(
-            bounds.width,
-            bounds.height,
-            renderer, // Use the renderer parameter directly
-        );
-
-        // Combine the neural network geometries with any background/additional drawing
-        let mut all_geometries = Vec::new();
-
-        // Add background if desired
-        let background = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
-        frame.fill(&background, self.color);
-        all_geometries.push(frame.into_geometry());
-
-        // Add neural network geometries
-        all_geometries.extend(geometries);
-
-        all_geometries
+    ) -> Vec<canvas::Geometry> {
+        self.neural_net.draw(bounds.width, bounds.height, renderer)
     }
 }

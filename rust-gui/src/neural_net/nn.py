@@ -26,9 +26,9 @@ class NeuralNetwork:
 
 if __name__ == "__main__":
     nodes = [
-        {'id': 1, 'type': 'input'},
-        {'id': 2, 'type': 'hidden'},
-        {'id': 3, 'type': 'output'}
+        {'id': 1, 'value': 0.1},
+        {'id': 2, 'value': 0.3},
+        {'id': 3, 'value': 0.5}
     ]
     weights = [
         {'from': 1, 'to': 2, 'weight': 0.5},
