@@ -321,6 +321,6 @@ impl canvas::Program<Message> for NNView {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        self.neural_net.draw(bounds.width, bounds.height, renderer)
+        self.neural_net.draw(bounds, renderer)
     }
 }
