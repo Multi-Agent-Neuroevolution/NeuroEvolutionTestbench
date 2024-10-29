@@ -1,5 +1,5 @@
-use iced::Color;
 use iced::{color, widget::canvas, Point, Renderer, Size};
+use iced::{Color, Rectangle};
 use serde::Deserialize;
 
 #[derive(Default, Clone)]
@@ -18,8 +18,10 @@ impl NeuralNet {
         Self { id, layers }
     }
 
-    pub fn draw(&self, width: f32, height: f32, renderer: &Renderer) -> Vec<canvas::Geometry> {
+    pub fn draw(&self, bounds: Rectangle, renderer: &Renderer) -> Vec<canvas::Geometry> {
         let mut neural_net_geometry = Vec::new();
+        let height = bounds.height;
+        let width = bounds.width;
 
         // Get the size of the largest layer for scaling
         let tallest_layer = self.layers.iter().map(|f| f.nodes.len()).max().unwrap_or(1);
@@ -40,6 +42,7 @@ impl NeuralNet {
                 renderer,
                 node_radius,
                 node_radius * percent_pad,
+                bounds,
             );
             neural_net_geometry.extend(layer_geometry);
         }
@@ -92,6 +95,7 @@ impl Layer {
         renderer: &Renderer,
         node_radius: f32,
         padding: f32,
+        bounds: Rectangle,
     ) -> Vec<canvas::Geometry> {
         let mut layer_geometry = Vec::new();
 
@@ -105,7 +109,7 @@ impl Layer {
 
         for (i, node) in self.nodes.iter().enumerate() {
             let y = start_y + i as f32 * (node_radius * 2.0 + padding);
-            layer_geometry.push(node.draw(x, y, renderer, node_radius));
+            layer_geometry.push(node.draw(x, y, renderer, node_radius, bounds));
         }
 
         layer_geometry
@@ -128,9 +132,15 @@ impl Node {
         }
     }
 
-    fn draw(&self, x: f32, y: f32, renderer: &Renderer, radius: f32) -> canvas::Geometry {
-        let frame_size = Size::new(radius * 2.0, radius * 2.0);
-        let mut frame = canvas::Frame::new(renderer, frame_size);
+    fn draw(
+        &self,
+        x: f32,
+        y: f32,
+        renderer: &Renderer,
+        radius: f32,
+        bounds: Rectangle,
+    ) -> canvas::Geometry {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
 
         // Create circle path centered at the given coordinates
         let circle = canvas::Path::circle(Point::new(x, y), radius);
