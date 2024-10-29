@@ -51,7 +51,7 @@ impl NeuralNet {
     }
 
     fn get_node_radius(&self, height: f32, sections: f32, percent_pad: f32) -> f32 {
-        (height / (sections * 1.0)) * (1.0 - percent_pad)
+        (height / (sections * 1.0)) * (1.0 - (percent_pad / 100.0))
     }
 
     fn get_layer_positions(&self, width: f32, node_diameter: f32) -> Vec<f32> {
