@@ -155,16 +155,43 @@ impl View {
                     "x": 350.0,
                     "y": 450.0,
                     "radius": 50.0,
-                    "color": "red"
+                    "color": "purple"
                 },
                 {
                     "type": "Rectangle",
-                    "x": 500.0,
-                    "y": 250.0,
+                    "x": 0.0,
+                    "y": 0.0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "color": "white"
+                },
+                {
+                    "type": "Rectangle",
+                    "x": 100.0,
+                    "y": 100.0,
                     "width": 50.0,
                     "height": 50.0,
+                    "color": "red"
+                },
+                {
+                    "type": "Triangle",
+                    "x1": 50.0,
+                    "y1": 50.0,
+                    "x2": 100.0,
+                    "y2": 85.0,
+                    "x3": 50.0,
+                    "y3": 120.0,
                     "color": "blue"
-                }
+                },
+                {
+                    "type": "Line",
+                    "x1": 450.0,
+                    "y1": 250.0,
+                    "x2": 200.0,
+                    "y2": 100.0,
+                    "color": "green"
+
+                }    
             ],
             "neural_state": {
                 "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
@@ -279,7 +306,7 @@ impl<Message> canvas::Program<Message> for AgentView {
     }
 }
 
-impl canvas::Program<Message> for NNView {
+impl<Message> canvas::Program<Message> for NNView {
     type State = ();
     fn draw(
         &self,

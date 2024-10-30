@@ -68,12 +68,6 @@ impl Simulation {
                     let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&circle, color);
-                    frame.stroke(
-                        &circle,
-                        canvas::Stroke::default()
-                            .with_color(Color::BLACK)
-                            .with_width(1.0),
-                    );
                     geometries.push(frame.into_geometry());
                 }
                 Shape::Rectangle {
@@ -84,16 +78,10 @@ impl Simulation {
                     color,
                 } => {
                     let rectangle =
-                        canvas::Path::rectangle(Point::new(*x, *y), Size::new(*width, *height));
+                        canvas::Path::rectangle(Point::new(*x, *y), Size::new(*height, *width));
                     let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&rectangle, color);
-                    frame.stroke(
-                        &rectangle,
-                        canvas::Stroke::default()
-                            .with_color(Color::BLACK)
-                            .with_width(1.0),
-                    );
                     geometries.push(frame.into_geometry());
                 }
                 Shape::Triangle {
@@ -114,12 +102,6 @@ impl Simulation {
                     let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&triangle, color);
-                    frame.stroke(
-                        &triangle,
-                        canvas::Stroke::default()
-                            .with_color(Color::BLACK)
-                            .with_width(1.0),
-                    );
                     geometries.push(frame.into_geometry());
                 }
                 Shape::Line {
@@ -132,11 +114,11 @@ impl Simulation {
                     let line = canvas::Path::line(Point::new(*x1, *y1), Point::new(*x2, *y2));
                     let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
+                    frame.fill(&line, color);
                     frame.stroke(
+                        //Makes the line visible
                         &line,
-                        canvas::Stroke::default()
-                            .with_color(Color::BLACK)
-                            .with_width(1.0),
+                        canvas::Stroke::default().with_color(color).with_width(1.0),
                     );
                     geometries.push(frame.into_geometry());
                 }
