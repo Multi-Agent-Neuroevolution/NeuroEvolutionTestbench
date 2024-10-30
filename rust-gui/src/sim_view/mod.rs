@@ -64,7 +64,8 @@ impl Simulation {
                     color,
                 } => {
                     let circle = canvas::Path::circle(Point::new(*x, *y), *radius);
-                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+
+                    let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&circle, color);
                     frame.stroke(
@@ -84,7 +85,7 @@ impl Simulation {
                 } => {
                     let rectangle =
                         canvas::Path::rectangle(Point::new(*x, *y), Size::new(*width, *height));
-                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&rectangle, color);
                     frame.stroke(
@@ -110,7 +111,7 @@ impl Simulation {
                         p.line_to(Point::new(*x3, *y3));
                         p.close();
                     });
-                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.fill(&triangle, color);
                     frame.stroke(
@@ -129,7 +130,7 @@ impl Simulation {
                     color,
                 } => {
                     let line = canvas::Path::line(Point::new(*x1, *y1), Point::new(*x2, *y2));
-                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let color = get_color(color.to_string());
                     let mut frame = canvas::Frame::new(renderer, bounds.size());
                     frame.stroke(
                         &line,
@@ -142,5 +143,18 @@ impl Simulation {
             }
         }
         geometries
+    }
+}
+
+fn get_color(str: String) -> Color {
+    let color = str.as_str();
+    match color {
+        "red" => Color::from_rgb(1.0, 0.0, 0.0),
+        "green" => Color::from_rgb(0.0, 1.0, 0.0),
+        "blue" => Color::from_rgb(0.0, 0.0, 1.0),
+        "black" => Color::from_rgb(0.0, 0.0, 0.0),
+        "white" => Color::from_rgb(1.0, 1.0, 1.0),
+        "purple" => Color::from_rgb(0.5, 0.0, 0.5),
+        _ => Color::from_rgb(0.0, 0.0, 0.0),
     }
 }

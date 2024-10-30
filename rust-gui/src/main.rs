@@ -155,7 +155,7 @@ impl View {
                     "x": 350.0,
                     "y": 450.0,
                     "radius": 50.0,
-                    "color": "RED"
+                    "color": "red"
                 },
                 {
                     "type": "Rectangle",
@@ -163,7 +163,7 @@ impl View {
                     "y": 250.0,
                     "width": 50.0,
                     "height": 50.0,
-                    "color": "BLUE"
+                    "color": "blue"
                 }
             ],
             "neural_state": {
