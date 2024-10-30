@@ -6,10 +6,12 @@ use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
 mod neural_net;
+mod sim_view;
 use iced::time;
 use neural_net::{NeuralNet, NeuralNetState};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use sim_view::{Shape, Simulation};
 use std::time::Duration;
 #[derive(Default, Clone)]
 struct View {
@@ -19,9 +21,11 @@ struct View {
     nn_view: NNView,
     simulation_data: SimulationData,
 }
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 struct SimulationView {
+    //This is going to be deprecated or deleteds
     color: Color,
+    simulation: Simulation,
 }
 #[derive(Default, Clone, Copy)]
 struct AgentView {
@@ -47,40 +51,6 @@ struct Agent {
     id: usize,
     x: f64,
     y: f64,
-}
-
-#[derive(Deserialize, Clone)]
-#[serde(tag = "type")]
-enum Shape {
-    Circle {
-        x: f64,
-        y: f64,
-        radius: f64,
-        color: String,
-    },
-    Rectangle {
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-        color: String,
-    },
-    Triangle {
-        x1: f64,
-        y1: f64,
-        x2: f64,
-        y2: f64,
-        x3: f64,
-        y3: f64,
-        color: String,
-    },
-    Line {
-        x1: f64,
-        y1: f64,
-        x2: f64,
-        y2: f64,
-        color: String,
-    },
 }
 
 #[derive(Deserialize, Clone, Default)]
@@ -112,7 +82,7 @@ impl View {
         //SimulationView
         let sim_view = self
             .sim_view
-            .view()
+            .draw()
             .width(Length::FillPortion(65))
             .height(Length::Fill);
         //AgentView
@@ -182,18 +152,18 @@ impl View {
             "shapes": [
                 {
                     "type": "Circle",
-                    "x": 0.0,
-                    "y": 0.0,
-                    "radius": 1.0,
-                    "color": "red"
+                    "x": 350.0,
+                    "y": 450.0,
+                    "radius": 50.0,
+                    "color": "RED"
                 },
                 {
                     "type": "Rectangle",
-                    "x": 1.0,
-                    "y": 1.0,
-                    "width": 1.0,
-                    "height": 1.0,
-                    "color": "blue"
+                    "x": 500.0,
+                    "y": 250.0,
+                    "width": 50.0,
+                    "height": 50.0,
+                    "color": "BLUE"
                 }
             ],
             "neural_state": {
@@ -210,6 +180,7 @@ impl View {
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
         self.nn_view
             .update_network(&self.simulation_data.neural_state);
+        self.sim_view.update_sim(&self.simulation_data.shapes);
     }
     fn subscription(&self) -> Subscription<Message> {
         time::every(Duration::from_millis(16)).map(|_| Message::Tick)
@@ -262,14 +233,14 @@ impl SimulationView {
     pub fn new() -> Self {
         Self {
             color: Color::from_rgb(1.0, 0.0, 0.0),
+            simulation: Simulation::new(),
         }
     }
-    fn view(&self) -> Column<Message> {
-        let sim_view = canvas(SimulationView {
-            color: Color::from_rgb(1.0, 0.0, 0.0),
-        })
-        .width(Length::Fill)
-        .height(Length::Fill);
+    pub fn update_sim(&mut self, shapes: &Vec<Shape>) {
+        self.simulation.add_shapes(shapes);
+    }
+    pub fn draw(&self) -> Column<Message> {
+        let sim_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
         let container = column![sim_view];
         container
     }
@@ -277,7 +248,7 @@ impl SimulationView {
 
 impl<Message> canvas::Program<Message> for SimulationView {
     //This will be in charge of drawing the simulation
-    //The actual simulation will be handled somewhere else. Proabably
+    //The actual simulation will be handled somewhere else.
     type State = ();
     fn draw(
         &self,
@@ -287,10 +258,7 @@ impl<Message> canvas::Program<Message> for SimulationView {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let rect = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
-        frame.fill(&rect, self.color);
-        vec![frame.into_geometry()]
+        self.simulation.draw(renderer, bounds)
     }
 }
 

@@ -1,0 +1,146 @@
+use std::vec;
+
+//This file wil handle the simulation view, it will be responsible for rendering the simulation and handling user input
+use iced::{
+    widget::canvas::{self, Fill, Frame, Geometry, Path},
+    Color, Point, Rectangle, Renderer, Size,
+};
+use serde::Deserialize;
+#[derive(Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum Shape {
+    Circle {
+        x: f32,
+        y: f32,
+        radius: f32,
+        color: String,
+    },
+    Rectangle {
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        color: String,
+    },
+    Triangle {
+        x1: f32,
+        y1: f32,
+        x2: f32,
+        y2: f32,
+        x3: f32,
+        y3: f32,
+        color: String,
+    },
+    Line {
+        x1: f32,
+        y1: f32,
+        x2: f32,
+        y2: f32,
+        color: String,
+    },
+}
+#[derive(Default, Clone)]
+pub struct Simulation {
+    shapes: Vec<Shape>,
+}
+
+impl Simulation {
+    pub fn new() -> Self {
+        Self { shapes: Vec::new() }
+    }
+
+    pub fn add_shapes(&mut self, vec: &Vec<Shape>) {
+        self.shapes = vec.to_vec();
+    }
+
+    pub fn draw(&self, renderer: &Renderer, bounds: Rectangle) -> Vec<canvas::Geometry> {
+        let mut geometries = Vec::new();
+        for shape in self.shapes.iter() {
+            match shape {
+                Shape::Circle {
+                    x,
+                    y,
+                    radius,
+                    color,
+                } => {
+                    let circle = canvas::Path::circle(Point::new(*x, *y), *radius);
+                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let mut frame = canvas::Frame::new(renderer, bounds.size());
+                    frame.fill(&circle, color);
+                    frame.stroke(
+                        &circle,
+                        canvas::Stroke::default()
+                            .with_color(Color::BLACK)
+                            .with_width(1.0),
+                    );
+                    geometries.push(frame.into_geometry());
+                }
+                Shape::Rectangle {
+                    x,
+                    y,
+                    width,
+                    height,
+                    color,
+                } => {
+                    let rectangle =
+                        canvas::Path::rectangle(Point::new(*x, *y), Size::new(*width, *height));
+                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let mut frame = canvas::Frame::new(renderer, bounds.size());
+                    frame.fill(&rectangle, color);
+                    frame.stroke(
+                        &rectangle,
+                        canvas::Stroke::default()
+                            .with_color(Color::BLACK)
+                            .with_width(1.0),
+                    );
+                    geometries.push(frame.into_geometry());
+                }
+                Shape::Triangle {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x3,
+                    y3,
+                    color,
+                } => {
+                    let triangle = canvas::Path::new(|p| {
+                        p.move_to(Point::new(*x1, *y1));
+                        p.line_to(Point::new(*x2, *y2));
+                        p.line_to(Point::new(*x3, *y3));
+                        p.close();
+                    });
+                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let mut frame = canvas::Frame::new(renderer, bounds.size());
+                    frame.fill(&triangle, color);
+                    frame.stroke(
+                        &triangle,
+                        canvas::Stroke::default()
+                            .with_color(Color::BLACK)
+                            .with_width(1.0),
+                    );
+                    geometries.push(frame.into_geometry());
+                }
+                Shape::Line {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    color,
+                } => {
+                    let line = canvas::Path::line(Point::new(*x1, *y1), Point::new(*x2, *y2));
+                    let color = Color::from_rgb(0.0, 0.0, 0.0);
+                    let mut frame = canvas::Frame::new(renderer, bounds.size());
+                    frame.stroke(
+                        &line,
+                        canvas::Stroke::default()
+                            .with_color(Color::BLACK)
+                            .with_width(1.0),
+                    );
+                    geometries.push(frame.into_geometry());
+                }
+            }
+        }
+        geometries
+    }
+}
