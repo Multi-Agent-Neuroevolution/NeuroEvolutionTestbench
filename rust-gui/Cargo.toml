@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-iced = {version = "0.13.1", features = ["canvas"] }
+iced = {version = "0.13.1", features = ["canvas", "tokio"] }
+serde_json = "1.0.132"
+serde = { version = "1.0", features = ["derive"] }
+tokio = {version = "1.41.0", features = ["sync"]}

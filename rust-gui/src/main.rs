@@ -2,75 +2,93 @@
 // It is built using the iced crate.
 
 use iced::border::width;
-use iced::widget::canvas::{Canvas, Fill, Frame, Path};
+use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
-use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Theme};
-#[derive(Default, Clone, Copy)]
+use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
+mod neural_net;
+mod sim_view;
+use iced::time;
+use neural_net::{NeuralNet, NeuralNetState};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use sim_view::{Shape, Simulation};
+use std::time::Duration;
+#[derive(Default, Clone)]
 struct View {
-    counter: i32,
+    speed: i32,
     agent_view: AgentView,
     sim_view: SimulationView,
     nn_view: NNView,
+    simulation_data: SimulationData,
 }
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 struct SimulationView {
+    //This is going to be deprecated or deleteds
     color: Color,
+    simulation: Simulation,
 }
 #[derive(Default, Clone, Copy)]
 struct AgentView {
     color: Color,
 }
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 struct NNView {
     color: Color,
+    neural_net: NeuralNet,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
     IncrementPressed,
+    IncrementPressedx10,
     DecrementPressed,
+    DecrementPressedx10,
+    Tick,
 }
 
-fn main() {
-    let _ = iced::run(
-        "Multi-agent Neuroevolution Simulator",
-        View::update,
-        View::view,
-    );
+#[derive(Deserialize, Clone, Default)]
+struct Agent {
+    id: usize,
+    x: f64,
+    y: f64,
 }
 
+#[derive(Deserialize, Clone, Default)]
+struct SimulationData {
+    agents: Vec<Agent>,
+    shapes: Vec<Shape>,
+    neural_state: NeuralNetState,
+}
+
+pub fn main() -> iced::Result {
+    iced::application("Game of Life - Iced", View::update, View::view)
+        .subscription(View::subscription)
+        .theme(|_| Theme::Dark)
+        .antialiasing(true)
+        .centered()
+        .run()
+}
 impl View {
     fn new() -> Self {
         Self {
-            counter: 0,
+            speed: 1,
             agent_view: AgentView::new(),
             sim_view: SimulationView::new(),
             nn_view: NNView::new(),
+            simulation_data: SimulationData::default(),
         }
     }
     fn view(&self) -> Column<Message> {
-        //Top Controls
-        let top_controls = row![
-            button("File"),
-            button("Edit"),
-            button("View"),
-            button("<"),
-            text("0x"),
-            button(">")
-        ]
-        .spacing(10);
-
         //SimulationView
         let sim_view = self
             .sim_view
-            .view()
+            .draw()
             .width(Length::FillPortion(65))
             .height(Length::Fill);
         //AgentView
         let agent_view = self.agent_view.view();
-        //NNView
-        let nn_view = self.nn_view.view();
-
+        //NNViews
+        let nn_view = self.nn_view.draw();
         let agent_nn_col = column!(agent_view, nn_view)
             .width(Length::FillPortion(35))
             .height(Length::Fill);
@@ -79,17 +97,120 @@ impl View {
             .width(Length::Fill)
             .height(Length::Fill);
 
-        let container = column![top_controls, content];
+        let container = column![self.controls(), content];
         container
     }
+    fn controls(&self) -> Row<Message> {
+        //Top Controls
+        let top_controls = row![
+            button("File"),
+            button("Edit"),
+            button("View"),
+            button("<<").on_press(Message::DecrementPressedx10),
+            button("<").on_press(Message::DecrementPressed),
+            text(format!("x{}", self.speed)),
+            button(">").on_press(Message::IncrementPressed),
+            button(">>").on_press(Message::IncrementPressedx10)
+        ]
+        .spacing(10);
+        top_controls
+    }
     fn update(&mut self, message: Message) {
-        // match message {
-        //     Message::IncrementPressed => self.counter += 1,
-        //     Message::DecrementPressed => self.counter -= 1,
-        // }
-        //This function will handle updating the simulation, agents, and neural network
-        //It is going to have to use some type of timer so it still updates even if the user is not interacting with the app
-        //It will also need to interface with a websocket to get the data from the simulation, so it is going to need to be async or something
+        match message {
+            Message::IncrementPressed => self.speed += 1,
+            //prevent speed from going negative
+            Message::DecrementPressed => self.speed = self.speed.saturating_sub(1),
+            Message::IncrementPressedx10 => self.speed += 10,
+            Message::DecrementPressedx10 => self.speed = self.speed.saturating_sub(10),
+            Message::Tick => {
+                let simulation_data = self.get_simulation_data();
+                self.update_simulation_data(simulation_data);
+            }
+        }
+        if self.speed < 1 {
+            self.speed = 1;
+        }
+        // let simulation_data = self.get_simulation_data();
+        // self.update_simulation_data(simulation_data);
+    }
+    fn get_simulation_data(&mut self) -> SimulationData {
+        //In the future this will be replaced with a function that gets the data from the simulation over a web socket
+        let json_data = r#"
+        {
+            "agents": [
+                {
+                    "id": 1,
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                {
+                    "id": 2,
+                    "x": 1.0,
+                    "y": 1.0
+                }
+            ],
+            "shapes": [
+                {
+                    "type": "Circle",
+                    "x": 350.0,
+                    "y": 450.0,
+                    "radius": 50.0,
+                    "color": "purple"
+                },
+                {
+                    "type": "Rectangle",
+                    "x": 0.0,
+                    "y": 0.0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "color": "white"
+                },
+                {
+                    "type": "Rectangle",
+                    "x": 100.0,
+                    "y": 100.0,
+                    "width": 50.0,
+                    "height": 50.0,
+                    "color": "red"
+                },
+                {
+                    "type": "Triangle",
+                    "x1": 50.0,
+                    "y1": 50.0,
+                    "x2": 100.0,
+                    "y2": 85.0,
+                    "x3": 50.0,
+                    "y3": 120.0,
+                    "color": "blue"
+                },
+                {
+                    "type": "Line",
+                    "x1": 450.0,
+                    "y1": 250.0,
+                    "x2": 200.0,
+                    "y2": 100.0,
+                    "color": "green"
+
+                }    
+            ],
+            "neural_state": {
+                "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+            }
+        }
+        "#;
+        let json_data: SimulationData =
+            serde_json::from_str(json_data).expect("Failed to parse JSON");
+        json_data
+    }
+    fn update_simulation_data(&mut self, simulation_data: SimulationData) {
+        self.simulation_data = simulation_data;
+        self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
+        self.nn_view
+            .update_network(&self.simulation_data.neural_state);
+        self.sim_view.update_sim(&self.simulation_data.shapes);
+    }
+    fn subscription(&self) -> Subscription<Message> {
+        time::every(Duration::from_millis(16)).map(|_| Message::Tick)
     }
 }
 
@@ -110,12 +231,9 @@ impl AgentView {
     }
     fn controlls(&self) -> Row<Message> {
         let controls = row![
-            button("Add Agent"),
-            button("Remove Agent"),
-            button("Pause"),
-            button("Play"),
-            button("Step"),
-            button("Reset")
+            button("Pause").width(Length::FillPortion(1)),
+            button("Play").width(Length::FillPortion(1)),
+            button("Step").width(Length::FillPortion(1))
         ];
         controls
     }
@@ -125,14 +243,14 @@ impl NNView {
     pub fn new() -> Self {
         Self {
             color: Color::from_rgb(0.0, 0.0, 1.0),
+            neural_net: NeuralNet::default(),
         }
     }
-    fn view(&self) -> Column<Message> {
-        let nn_view = canvas(NNView {
-            color: Color::from_rgb(0.0, 0.0, 1.0),
-        })
-        .width(Length::Fill)
-        .height(Length::Fill);
+    pub fn update_network(&mut self, neural_state: &NeuralNetState) {
+        self.neural_net = NeuralNet::from_data(neural_state)
+    }
+    pub fn draw(&self) -> Column<Message> {
+        let nn_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
         let container = column![nn_view];
         container
     }
@@ -142,14 +260,14 @@ impl SimulationView {
     pub fn new() -> Self {
         Self {
             color: Color::from_rgb(1.0, 0.0, 0.0),
+            simulation: Simulation::new(),
         }
     }
-    fn view(&self) -> Column<Message> {
-        let sim_view = canvas(SimulationView {
-            color: Color::from_rgb(1.0, 0.0, 0.0),
-        })
-        .width(Length::Fill)
-        .height(Length::Fill);
+    pub fn update_sim(&mut self, shapes: &Vec<Shape>) {
+        self.simulation.add_shapes(shapes);
+    }
+    pub fn draw(&self) -> Column<Message> {
+        let sim_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
         let container = column![sim_view];
         container
     }
@@ -157,7 +275,7 @@ impl SimulationView {
 
 impl<Message> canvas::Program<Message> for SimulationView {
     //This will be in charge of drawing the simulation
-    //The actual simulation will be handled somewhere else. Proabably
+    //The actual simulation will be handled somewhere else.
     type State = ();
     fn draw(
         &self,
@@ -167,10 +285,7 @@ impl<Message> canvas::Program<Message> for SimulationView {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let rect = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
-        frame.fill(&rect, self.color);
-        vec![frame.into_geometry()]
+        self.simulation.draw(renderer, bounds)
     }
 }
 
@@ -201,9 +316,6 @@ impl<Message> canvas::Program<Message> for NNView {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let rect = canvas::Path::rectangle(Point::new(0.0, 0.0), frame.size());
-        frame.fill(&rect, self.color);
-        vec![frame.into_geometry()]
+        self.neural_net.draw(bounds, renderer)
     }
 }

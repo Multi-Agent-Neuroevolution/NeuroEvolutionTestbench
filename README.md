@@ -5,3 +5,6 @@ The simulations are displayed as 2D environments where either competitive or col
 
 ### References:
 Gautier, Hamon & Nisioti, Eleni & Moulin-Frier, Clément. (2023). Eco-evolutionary Dynamics of Non-episodic Neuroevolution in Large Multi-agent Environments. 10.48550/arXiv.2302.09334. 
+
+### Purpose
+Collaborate with Akbas to leverage artificial intelligence capabilities and develop an intuitive AI simulation platform that enhances user engagement and drives innovation across diverse applications.
