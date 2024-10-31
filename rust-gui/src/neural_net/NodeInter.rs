@@ -1,29 +1,26 @@
 use crate::neural_net::Node;
-use iced::{color,widget::canvas,Point,Renderer,Size,Color,Rectangle};
+use iced::{color, widget::canvas, Color, Point, Rectangle, Renderer, Size};
 impl Node {
     pub fn new(value: f64) -> Self {
         Self {
-            coordinates: Point::new(0.0, 0.0),
             value,
             weights: None,
         }
     }
 
     pub fn draw(
-        &mut self,
+        &self,
         x: f32,
         y: f32,
         renderer: &Renderer,
         radius: f32,
         bounds: Rectangle,
     ) -> canvas::Geometry {
-
-        let coordinates = Point::new(x,y);
+        let coordinates = Point::new(x, y);
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
         // Create circle path centered at the given coordinates
         let circle = canvas::Path::circle(coordinates, radius);
-        self.setCoordinates(coordinates);
 
         // Calculate color based on node value
         let intensity = (self.value.tanh() + 1.0) / 2.0;
@@ -40,39 +37,28 @@ impl Node {
 
         frame.into_geometry()
     }
-
-    fn setCoordinates(&mut self, point:Point){
-        self.coordinates = point;
-    }
-    fn getCoordinates(&self)->Point{
-        self.coordinates
-    }
 }
 
 impl NullConstructor for Node {
     fn new() -> Self {
         Self {
-            coordinates: Point::new(0.0, 0.0),
             value: 0.0,
             weights: None,
         }
     }
 }
 impl weightedConstructor for Node {
-    fn new(value:f64,weights:Vec<f64>)->Self{
-        Node{
-            coordinates: Point::new(0.0, 0.0),
+    fn new(value: f64, weights: Vec<f64>) -> Self {
+        Node {
             value,
             weights: Some(weights),
         }
-
     }
-
 }
 
 trait NullConstructor {
     fn new() -> Self;
 }
 trait weightedConstructor {
-    fn new(value:f64,weights:Vec<f64>)->Self;
+    fn new(value: f64, weights: Vec<f64>) -> Self;
 }

@@ -1,6 +1,6 @@
 use crate::neural_net::Layer;
 use crate::neural_net::Node;
-use iced::{Renderer,widget::canvas,Rectangle};
+use iced::{widget::canvas, Rectangle, Renderer};
 
 impl Layer {
     pub fn new(nodes: Vec<Node>) -> Self {
@@ -8,7 +8,7 @@ impl Layer {
     }
 
     pub fn draw(
-        &mut self,
+        &self,
         x: f32,
         canvas_height: f32,
         renderer: &Renderer,
@@ -26,7 +26,7 @@ impl Layer {
         // Calculate starting y position to center the layer
         let start_y = (canvas_height - layer_height) / 2.0 + node_radius;
 
-        for (i,node) in self.nodes_mut().iter_mut().enumerate(){
+        for (i, node) in self.nodes().iter().enumerate() {
             let y = start_y + i as f32 * (node_radius * 2.0 + padding);
             layer_geometry.push(node.draw(x, y, renderer, node_radius, bounds));
         }
@@ -37,12 +37,10 @@ impl Layer {
 
         layer_geometry
     }
-    fn nodes(&self)->&Vec<Node>{
+    fn nodes(&self) -> &Vec<Node> {
         &self.nodes
-
     }
-    fn nodes_mut(&mut self)->&mut Vec<Node>{
+    fn nodes_mut(&mut self) -> &mut Vec<Node> {
         &mut self.nodes
-
     }
 }

@@ -1,16 +1,16 @@
-use iced::{ widget::canvas, Renderer};
-use iced:: Rectangle;
 use crate::neural_net::Layer;
+use crate::neural_net::NeuralNet;
 use crate::neural_net::NeuralNetState;
 use crate::neural_net::Node;
-use crate::neural_net::NeuralNet;
+use iced::Rectangle;
+use iced::{widget::canvas, Renderer};
 
 impl NeuralNet {
     pub fn new(id: u32, layers: Vec<Layer>) -> Self {
         Self { id, layers }
     }
 
-    pub fn draw(&mut self, bounds: Rectangle, renderer: &Renderer) -> Vec<canvas::Geometry> {
+    pub fn draw(&self, bounds: Rectangle, renderer: &Renderer) -> Vec<canvas::Geometry> {
         let mut neural_net_geometry = Vec::new();
         let height = bounds.height;
         let width = bounds.width;
@@ -26,7 +26,7 @@ impl NeuralNet {
         // TODO: Add connection drawing logic here
 
         // Draw each layer
-        for (i, layer) in self.layers.iter_mut().enumerate() {
+        for (i, layer) in self.layers.iter().enumerate() {
             let x_pos = horizontal_positions[i];
             let layer_geometry = layer.draw(
                 x_pos,
