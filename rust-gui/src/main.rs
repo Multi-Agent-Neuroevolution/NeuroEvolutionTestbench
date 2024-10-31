@@ -194,7 +194,12 @@ impl View {
                 }    
             ],
             "neural_state": {
-                "layers": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+                Layers: [
+                    [Node:{
+                        value:69,
+                        weights:[]
+                    }],
+                ]
             }
         }
         "#;

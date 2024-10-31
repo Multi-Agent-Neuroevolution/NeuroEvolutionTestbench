@@ -15,7 +15,7 @@ impl Node {
         renderer: &Renderer,
         radius: f32,
         bounds: Rectangle,
-    ) -> canvas::Geometry {
+    ) -> (canvas::Geometry, Point) {
         let coordinates = Point::new(x, y);
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
@@ -35,7 +35,7 @@ impl Node {
                 .with_width(1.0),
         );
 
-        frame.into_geometry()
+        (frame.into_geometry(), coordinates)
     }
 }
 
