@@ -1,6 +1,5 @@
 use crate::neural_net::Layer;
 use crate::neural_net::NeuralNet;
-use crate::neural_net::NeuralNetState;
 use crate::neural_net::Node;
 use iced::Color;
 use iced::Point;
@@ -64,17 +63,11 @@ impl NeuralNet {
                             if weight != 0.0 {
                                 let edge = canvas::Path::line(*coordinate_start, *coordinate_end);
                                 let intensity = (weight.tanh() + 1.0) / 2.0;
-                                let color = Color::from_rgb(
-                                    intensity as f32,
-                                    intensity as f32,
-                                    intensity as f32,
-                                );
+                                let color = Color::from_rgb(intensity as f32, 0.0, 0.0);
                                 frame.fill(&edge, color);
                                 frame.stroke(
                                     &edge,
-                                    canvas::Stroke::default()
-                                        .with_color(Color::BLACK)
-                                        .with_width(1.0),
+                                    canvas::Stroke::default().with_color(color).with_width(1.0),
                                 );
                             }
                         }
@@ -96,7 +89,7 @@ impl NeuralNet {
             .weights
             .clone();
         match weights_option {
-            Some(weights) => return *weights.get(k).unwrap(),
+            Some(weights) => return *weights.get(k).unwrap_or(&0.0), //if None value at k, return 0.0 for index k
             None => return 0.0,
         }
     }
@@ -115,19 +108,7 @@ impl NeuralNet {
             .collect()
     }
 
-    /*
-     * @TODO need to update this function to fit weights
-     */
-    pub fn from_data(data: &NeuralNetState) -> Self {
-        let layers: Vec<Layer> = data
-            .layers
-            .iter()
-            .map(|layer| {
-                let nodes: Vec<Node> = layer.iter().map(|&value| Node::new(value)).collect();
-                Layer::new(nodes)
-            })
-            .collect();
-
-        NeuralNet::new(1, layers)
+    pub fn from_data(data: &Vec<Layer>) -> Self {
+        NeuralNet::new(1, data.clone()) //Supports ID so in the future we could have more than one network.
     }
 }

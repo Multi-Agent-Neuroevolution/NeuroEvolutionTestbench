@@ -1,14 +1,13 @@
 // This is the main file for the GUI, it will be responsible for creating the GUI and handling user input
 // It is built using the iced crate.
 
-use iced::border::width;
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
-use iced::widget::{button, canvas, column, pane_grid, row, text, Column, PaneGrid, Row, Text};
+use iced::widget::{button, canvas, column, row, text, Column, Row};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
 mod neural_net;
 mod sim_view;
 use iced::time;
-use neural_net::{NeuralNet, NeuralNetState};
+use neural_net::{Layer, NeuralNet};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use sim_view::{Shape, Simulation};
@@ -57,13 +56,13 @@ struct Agent {
 struct SimulationData {
     agents: Vec<Agent>,
     shapes: Vec<Shape>,
-    neural_state: NeuralNetState,
+    layers: Vec<Layer>,
 }
 
 pub fn main() -> iced::Result {
-    iced::application("Game of Life - Iced", View::update, View::view)
+    iced::application("Multi Agent Neural Evolution", View::update, View::view)
         .subscription(View::subscription)
-        .theme(|_| Theme::Dark)
+        .theme(|_| Theme::GruvboxDark)
         .antialiasing(true)
         .centered()
         .run()
@@ -193,11 +192,42 @@ impl View {
 
                 }    
             ],
-"neural_state": {
-        "id":7,
         "layers": [
+        {
+                "nodes": [
+                        {
+                                "value": 3.4,
+                                "weights": [0.74, 3.34, 9.50, 0.1]
+                        },
+                        {
+                                "value": 0.004,
+                                "weights": [0.074, 5.34, 1.50, 4.1]
+                        }
+                        
+                    ]
+            },
             {
-                    "nodes": [
+                "nodes": [
+                        {
+                                "value": 3.4,
+                                "weights": [0.74, 3.34, 9.50, 0.1]
+                        },
+                        {
+                                "value": 47.2,
+                                "weights": [0.89, 0.16, 6.7, 0.01]
+                        },
+                        {
+                                "value": 33.9,
+                                "weights": [6.9, 5.26, 2.91, 1.43]
+                        },
+                        {
+                                "value": 2.9,
+                                "weights": [69, 1.1, 3.11, 200]
+                        }
+                    ]
+            },
+            {
+                "nodes": [
                         {
                                 "value": 3.4,
                                 "weights": [0.74, 3.34, 9.50]
@@ -209,6 +239,10 @@ impl View {
                         {
                                 "value": 33.9,
                                 "weights": [6.9, 5.26, 2.91]
+                        },
+                        {
+                                "value": 2.9,
+                                "weights": [69, 1.1, 3.11]
                         }
                     ]
             },
@@ -226,7 +260,6 @@ impl View {
                     ]
             }
         ]
-    }
         }
         "#;
         let json_data: SimulationData =
@@ -236,8 +269,7 @@ impl View {
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
         self.simulation_data = simulation_data;
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
-        self.nn_view
-            .update_network(&self.simulation_data.neural_state);
+        self.nn_view.update_network(&self.simulation_data.layers);
         self.sim_view.update_sim(&self.simulation_data.shapes);
     }
     fn subscription(&self) -> Subscription<Message> {
@@ -277,7 +309,7 @@ impl NNView {
             neural_net: NeuralNet::default(),
         }
     }
-    pub fn update_network(&mut self, neural_state: &NeuralNetState) {
+    pub fn update_network(&mut self, neural_state: &Vec<Layer>) {
         self.neural_net = NeuralNet::from_data(neural_state)
     }
     pub fn draw(&self) -> Column<Message> {
