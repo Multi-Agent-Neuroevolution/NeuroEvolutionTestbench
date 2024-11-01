@@ -6,7 +6,7 @@ mod LayerInter;
 mod NeuralNetInter;
 mod NodeInter;
 
-#[derive(Default, Clone)]
+#[derive(Deserialize, Clone,Default)]
 pub struct NeuralNet {
     id: u32,
     layers: Vec<Layer>,
@@ -17,12 +17,12 @@ pub struct NeuralNetState {
     pub layers: Vec<Vec<f64>>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Deserialize,Default, Clone)]
 pub struct Layer {
     nodes: Vec<Node>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Deserialize,Default, Clone)]
 pub struct Node {
     value: f64,
     weights: Option<Vec<f64>>,

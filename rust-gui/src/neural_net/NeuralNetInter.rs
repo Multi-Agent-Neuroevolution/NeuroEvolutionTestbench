@@ -27,9 +27,6 @@ impl NeuralNet {
         let node_radius = self.get_node_radius(height, tallest_layer as f32, percent_pad);
         let horizontal_positions = self.get_layer_positions(width, node_radius * 2.0);
 
-        // Draw connections between layers first (if you want to add this feature)
-        // TODO: Add connection drawing logic here
-
         // Draw each layer
         for (i, layer) in self.layers.iter().enumerate() {
             let x_pos = horizontal_positions[i];
