@@ -193,35 +193,40 @@ impl View {
 
                 }    
             ],
-            "neural_state": {
-                "Layers": [
-                    "Layer":[
-                        "Node":{
-                            "value":3.4,
-                            "weights":[0.74,3.34,9.50],
+"neural_state": {
+        "id":7,
+        "layers": [
+            {
+                    "nodes": [
+                        {
+                                "value": 3.4,
+                                "weights": [0.74, 3.34, 9.50]
                         },
-                        Node:{
-                            value:47.2,
-                            weights:[0.89,0.16,6.7],
+                        {
+                                "value": 47.2,
+                                "weights": [0.89, 0.16, 6.7]
                         },
-                        Node:{
-                            value:33,9,
-                            weights:[6.9,5.26,2.91],
-                        },
-                    ],
-                    "Layer":[
-                        Node:{
-                            value:22.1,
-                        },
-                        Node:{
-                            value:6.4,
-                        },
-                        Node:{
-                            value:1.1,
-                        },
+                        {
+                                "value": 33.9,
+                                "weights": [6.9, 5.26, 2.91]
+                        }
                     ]
-                ]
+            },
+            {
+                    "nodes": [
+                        {
+                                "value": 22.1
+                        },
+                        {
+                                "value": 6.4
+                        },
+                        {
+                                "value": 1.1
+                        }
+                    ]
             }
+        ]
+    }
         }
         "#;
         let json_data: SimulationData =
