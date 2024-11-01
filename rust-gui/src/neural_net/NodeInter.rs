@@ -1,11 +1,8 @@
 use crate::neural_net::Node;
-use iced::{color, widget::canvas, Color, Point, Rectangle, Renderer, Size};
+use iced::{color, font::Weight, widget::canvas, Color, Point, Rectangle, Renderer, Size};
 impl Node {
-    pub fn new(value: f64) -> Self {
-        Self {
-            value,
-            weights: None,
-        }
+    pub fn new(value: f64, weights: Option<Vec<f64>>) -> Self {
+        Self { value, weights }
     }
 
     pub fn draw(
@@ -15,7 +12,7 @@ impl Node {
         renderer: &Renderer,
         radius: f32,
         bounds: Rectangle,
-    ) -> canvas::Geometry {
+    ) -> (canvas::Geometry, Point) {
         let coordinates = Point::new(x, y);
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
@@ -26,7 +23,7 @@ impl Node {
         let intensity = (self.value.tanh() + 1.0) / 2.0;
         let color = Color::from_rgb(intensity as f32, intensity as f32, intensity as f32);
 
-        // Fill and stroke the circle
+        // Fill and stroke(nice) the circle
         frame.fill(&circle, color);
         frame.stroke(
             &circle,
@@ -35,7 +32,7 @@ impl Node {
                 .with_width(1.0),
         );
 
-        frame.into_geometry()
+        (frame.into_geometry(), coordinates)
     }
 }
 

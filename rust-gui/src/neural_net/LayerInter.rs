@@ -1,6 +1,6 @@
 use crate::neural_net::Layer;
 use crate::neural_net::Node;
-use iced::{widget::canvas, Rectangle, Renderer};
+use iced::{widget::canvas, Point, Rectangle, Renderer};
 
 impl Layer {
     pub fn new(nodes: Vec<Node>) -> Self {
@@ -15,8 +15,9 @@ impl Layer {
         node_radius: f32,
         padding: f32,
         bounds: Rectangle,
-    ) -> Vec<canvas::Geometry> {
+    ) -> (Vec<canvas::Geometry>, Vec<Point>) {
         let mut layer_geometry = Vec::new();
+        let mut node_coordinates = Vec::new();
 
         // Calculate total height needed for nodes + padding
         let total_node_height = (self.nodes.len() as f32) * (node_radius * 2.0);
@@ -28,14 +29,16 @@ impl Layer {
 
         for (i, node) in self.nodes().iter().enumerate() {
             let y = start_y + i as f32 * (node_radius * 2.0 + padding);
-            layer_geometry.push(node.draw(x, y, renderer, node_radius, bounds));
+            let (geometry, coordinate) = node.draw(x, y, renderer, node_radius, bounds);
+            layer_geometry.push(geometry);
+            node_coordinates.push(coordinate);
         }
         /*for (i, node) in self.nodes.iter().enumerate() {
             let y = start_y + i as f32 * (node_radius * 2.0 + padding);
             layer_geometry.push(node.draw(x, y, renderer, node_radius, bounds));
         }*/
 
-        layer_geometry
+        (layer_geometry, node_coordinates)
     }
     fn nodes(&self) -> &Vec<Node> {
         &self.nodes
