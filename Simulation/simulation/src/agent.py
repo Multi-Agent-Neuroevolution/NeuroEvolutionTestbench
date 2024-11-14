@@ -42,24 +42,23 @@ class Metrics:
 
 # Used to determine the state of the agent, and what is happening around it. Updated every tick
 class State:
-    def __init__(self, obs, vel):
-        self.obs = obs  # observation
+    def __init__(self):
         self.vel = vel
-        # list of obstacles in the environment. Each object may or may not have collision.
-        self.env = []
+        # list of obstacles/agents around the agent. Each object may or may not have collision.
+        self.objs = []
         self.collisions = []
-        self.otherAgents = []  # other agents around this agent
         self.fitness = 0
 
 
-class Agent:
-    def __init__(self, id, algorithm_name, relationship_name, pos):
+class Agent(shape):
+    def __init__(self, id, algorithm_name, relationship_name, pos,):
+        super().__init__("agent", 10, 0, 0, pos)
         self.id = id
         self.age = 0
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
-        self.pos = np.array(pos)
         self.metrics = Metrics()
+        self.state = State()
 
     def init_algorithm(self, algorithm_name):
         try:
