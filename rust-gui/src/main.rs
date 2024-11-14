@@ -140,12 +140,15 @@ impl View {
                 {
                     "id": 1,
                     "x": 0.0,
-                    "y": 0.0
+                    "y": 0.0,
+                    "color": "white"
+
                 },
                 {
                     "id": 2,
                     "x": 1.0,
-                    "y": 1.0
+                    "y": 1.0,
+                    "color": "blue"
                 }
             ],
             "shapes": [
