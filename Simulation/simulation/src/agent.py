@@ -114,3 +114,16 @@ class Agent(shape):
         empty for now
         """
         pass
+
+    def get_collisions(self):
+        for obj in self.state.objs:
+            if obj.hasCollision:
+                if np.linalg.norm(self.pos - obj.pos) <= self.radius:
+                    self.state.collisions.append(obj)
+                    obj.interact(self)
+        return self.state.collisions
+
+    def solve_collision(self):
+        for collision in self.state.collisions:
+            # resolve collision
+            pass

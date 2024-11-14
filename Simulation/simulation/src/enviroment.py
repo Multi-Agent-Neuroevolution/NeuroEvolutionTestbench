@@ -25,7 +25,7 @@ class Environment:
     def __init__(self):
         self.agents = []
         self.bounds = (-100, 100, -100, 100)
-        self.obstacles = []
+        self.obstacles = []  # list of obstacles in the environment
         # used to determine the type of environment, such as predator-prey, goal-reaching, etc.
         self.type = ""
 
@@ -34,10 +34,18 @@ class Environment:
 
     def update_surroundings(self, agent):
         # add any objects and agents around the agent in a radius of 10 units
-        pass
+        for obj in self.obstacles:
+            if np.linalg.norm(agent.pos - obj.pos) < 10:
+                agent.state.objs.append(obj)
+        for other_agent in self.agents:
+            if np.linalg.norm(agent.pos - other_agent.pos) < 10:
+                agent.state.objs.append(other_agent)
 
     def run(self):
         self.state = self.movement_handler.create_state(self.agents)
         while True:
-            actions = self.generate_random_actions()
-            self.update(agent)
+            for agent in self.agents:
+                update_surroundings(agent)
+                agent.update_action()
+                agent.get_collisions()
+                agent.solve_collisions()
