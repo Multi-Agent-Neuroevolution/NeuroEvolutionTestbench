@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-
+from utils import shape
 # This class works in conjunction with the Agent class, used to store all metrics calculated from agent performance
 # Some metric ideas...
 # fitness -> score "physical" capability somehow? or see how fitness is historically calculated
@@ -43,7 +43,7 @@ class Metrics:
 # Used to determine the state of the agent, and what is happening around it. Updated every tick
 class State:
     def __init__(self):
-        self.vel = vel
+        self.vel = 0
         # list of obstacles/agents around the agent. Each object may or may not have collision.
         self.objs = []
         self.collisions = []
@@ -52,7 +52,7 @@ class State:
 
 class Agent(shape):
     def __init__(self, id, algorithm_name, relationship_name, pos,):
-        super().__init__("agent", 10, 0, 0, pos)
+        super().__init__("agent", 2, 0, 0, pos)
         self.id = id
         self.age = 0
         self.selected_algorithm = self.init_algorithm(algorithm_name)
@@ -88,13 +88,12 @@ class Agent(shape):
         pass
 
     # Determine what action the agent should take based on its current state
-    def update_action(self, state):
-        """
-        empty for now
-        """
-        pass
+    def update_action(self):
+        step_size = 10.0  # Adjust this value to control movement speed
+        self.pos += (np.random.rand(2) * 2 - 1) * step_size
 
     # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
+
     def update_metrics(self):
         """
         empty for now
@@ -117,13 +116,18 @@ class Agent(shape):
 
     def get_collisions(self):
         for obj in self.state.objs:
-            if obj.hasCollision:
-                if np.linalg.norm(self.pos - obj.pos) <= self.radius:
-                    self.state.collisions.append(obj)
-                    obj.interact(self)
+            try:  # will throw an error if obj does not have a hasCollision attribute, so it skips other agents
+                if obj.hasCollision:
+                    if np.linalg.norm(self.pos - obj.pos) <= self.radius:
+                        self.state.collisions.append(obj)
+            except:
+                pass
         return self.state.collisions
 
     def solve_collision(self):
         for collision in self.state.collisions:
-            # resolve collision
-            pass
+            # resolve collisions
+            move = self.pos - collision.pos
+            move = move / np.linalg.norm(move)  # normalize the vector
+            self.pos += move
+            self.state.collisions.remove(collision)
