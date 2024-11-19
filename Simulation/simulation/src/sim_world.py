@@ -10,7 +10,7 @@ from enviroment import Obstacle
 
 def main():
     # Create the environment
-    env = Environment()
+    env = Environment("PRED_PREY")
     # Create the agents
     agents = []
     objects = []

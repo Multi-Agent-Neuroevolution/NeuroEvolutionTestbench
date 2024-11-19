@@ -46,13 +46,15 @@ class State:
         self.vel = 0
         # list of obstacles/agents around the agent. Each object may or may not have collision.
         self.objs = []
+        # list of objects close enought for the agent to interact with
+        self.interactables = []
         self.collisions = []
         self.fitness = 0
 
 
 class Agent(shape):
     def __init__(self, id, algorithm_name, relationship_name, pos,):
-        super().__init__("agent", 2, 0, 0, pos)
+        super().__init__("agent", 0.5, 0, 0, pos)
         self.id = id
         self.age = 0
         self.selected_algorithm = self.init_algorithm(algorithm_name)
@@ -80,6 +82,10 @@ class Agent(shape):
             print(
                 f"Invalid relationship specified! {relationship_name} is not implemented.")
 
+    def interact(self, obj):
+        if obj in self.state.interactables:
+            obj.interact(self)
+
     # Update the position of the agent every tick (could be handled differently? Again skeletal basic idea)
     def update_pos(self):
         """
@@ -87,10 +93,19 @@ class Agent(shape):
         """
         pass
 
+    # Update the list of interactables around the agent
+    def update_interatibles(self):
+        for obj in self.state.objs:
+            if np.linalg.norm(self.pos - obj.pos) <= 3:
+                self.state.interactables.append(obj)
+        self.state.interactables = [
+            obj for obj in self.state.interactables if np.linalg.norm(self.pos - obj.pos) <= 3]
+
     # Determine what action the agent should take based on its current state
     def update_action(self):
-        step_size = 10.0  # Adjust this value to control movement speed
-        self.pos += (np.random.rand(2) * 2 - 1) * step_size
+        move = np.array([np.random.rand() * 2 - 1,
+                        np.random.rand() * 2 - 1])
+        self.pos += move
 
     # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
 
