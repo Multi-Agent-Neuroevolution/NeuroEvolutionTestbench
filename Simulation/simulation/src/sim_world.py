@@ -22,7 +22,7 @@ def main():
         True,  # interactible
         False,  # isGoal
         "circle",  # shape
-        5,     # radius
+        1,     # radius
         0,     # width (0 for circle)
         0      # height (0 for circle)
     ))
@@ -35,7 +35,7 @@ def main():
         False,  # isGoal
         "rectangle",
         0,     # radius (0 for rectangle)
-        10,    # width
+        2,    # width
         10     # height
     ))
 

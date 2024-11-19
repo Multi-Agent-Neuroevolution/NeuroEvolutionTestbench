@@ -103,11 +103,31 @@ class Agent(shape):
 
     # Determine what action the agent should take based on its current state
     def update_action(self):
-        move = np.array([np.random.rand() * 2 - 1,
-                        np.random.rand() * 2 - 1])
-        self.pos += move
+        # move towards the closest object or move randomly
+        if len(self.state.objs) > 0:
+            # Find the closest object
+            closest_obj = min(
+                self.state.objs,
+                key=lambda x: np.linalg.norm(self.pos - x.pos)
+            )
 
-    # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
+            # Calculate movement vector
+            move = closest_obj.pos - self.pos
+
+            # Scale movement to a reasonable step size (e.g., 1 unit)
+            move_norm = np.linalg.norm(move)
+            if move_norm > 0:
+                # Move a fixed distance towards the object
+                step_size = min(1, move_norm)  # Don't overshoot
+                move_direction = move / move_norm
+                self.pos += move_direction * step_size
+            else:
+                # If already at the closest object, move randomly
+                self.pos += np.random.uniform(-1, 1, size=2)
+        else:
+            # If no objects, move randomly
+            self.pos += np.random.uniform(-1, 1, size=2)
+# Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
 
     def update_metrics(self):
         """
@@ -132,7 +152,7 @@ class Agent(shape):
     def get_collisions(self):
         for obj in self.state.objs:
             try:  # will throw an error if obj does not have a hasCollision attribute, so it skips other agents
-                if obj.hasCollision:
+                if obj.hasCollision:  # ToDO improve this so it checks for the shape of the object
                     if np.linalg.norm(self.pos - obj.pos) <= self.radius:
                         self.state.collisions.append(obj)
             except:

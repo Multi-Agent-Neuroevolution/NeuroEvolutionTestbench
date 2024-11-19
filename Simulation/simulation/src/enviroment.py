@@ -52,13 +52,13 @@ class Environment:
     def check_bounds(self, agent):
         # check if the agent is within the bounds of the environment
         if agent.pos[0] < self.bounds[0]:
-            agent.pos[0] = self.bounds[0]
+            agent.pos[0] = self.bounds[0]+1
         if agent.pos[0] > self.bounds[1]:
-            agent.pos[0] = self.bounds[1]
+            agent.pos[0] = self.bounds[1]-1
         if agent.pos[1] < self.bounds[2]:
-            agent.pos[1] = self.bounds[2]
+            agent.pos[1] = self.bounds[2]+1
         if agent.pos[1] > self.bounds[3]:
-            agent.pos[1] = self.bounds[3]
+            agent.pos[1] = self.bounds[3]-1
 
     def view(self, real_time=False):
         # Close any existing figures to prevent memory buildup
@@ -70,16 +70,17 @@ class Environment:
         ax.set_ylim(self.bounds[2], self.bounds[3])
         ax.set_facecolor('darkgray')  # Set background color to dark gray
 
-        for obj in self.obstacles:
-            if obj.shape == "circle":
-                ax.add_artist(plt.Circle(obj.pos, obj.radius, color="green"))
-            elif obj.shape == "rectangle":
+        for obstacle in self.obstacles:
+            if obstacle.shape == "circle":
+                ax.add_artist(plt.Circle(
+                    obstacle.pos, obstacle.radius, color="green"))
+            elif obstacle.shape == "rectangle":
                 # Adjust rectangle drawing to use center point
                 ax.add_artist(plt.Rectangle(
-                    (obj.pos[0] - obj.width/2, obj.pos[1] -
-                     obj.height/2),  # Bottom-left corner
-                    obj.width,
-                    obj.height,
+                    (obstacle.pos[0] - obstacle.width/2, obstacle.pos[1] -
+                     obstacle.height/2),  # Bottom-left corner
+                    obstacle.width,
+                    obstacle.height,
                     color="red"
                 ))
 
@@ -88,11 +89,12 @@ class Environment:
                 agent.pos, agent.radius, color="blue"))
             # draw transparent circle around agent to show radius of objects it can see
             ax.add_artist(plt.Circle(
-                agent.pos, 10, color="blue", alpha=0.1))
+                agent.pos, 10, color="green", alpha=0.1))
             # draw line from agent to anything within its obj list
-            for obj in agent.state.objs:
-                ax.plot([agent.pos[0], obj.pos[0]], [
-                        agent.pos[1], obj.pos[1]], color="black")
+            # if agent.state.objs:
+            #     for obj in agent.state.objs:
+            #         ax.plot([agent.pos[0], obj.pos[0]], [
+            #                 agent.pos[1], obj.pos[1]], color="black")
 
         if real_time:
             plt.ion()  # Turn on interactive mode
@@ -104,6 +106,9 @@ class Environment:
             plt.show()
 
     def run(self):
+       # print the shape of each obstacle
+        for obj in self.obstacles:
+            print(obj.shape)
         while True:
             for agent in self.agents:
                 self.update_surroundings(agent)
