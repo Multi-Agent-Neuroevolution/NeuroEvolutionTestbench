@@ -54,7 +54,7 @@ class State:
 
 class Agent(shape):
     def __init__(self, id, algorithm_name, relationship_name, pos,):
-        super().__init__("agent", 0.5, 0, 0, pos)
+        super().__init__("agent", 1, 0, 0, pos)
         self.id = id
         self.age = 0
         self.selected_algorithm = self.init_algorithm(algorithm_name)
@@ -103,32 +103,19 @@ class Agent(shape):
 
     # Determine what action the agent should take based on its current state
     def update_action(self):
-        # move towards the closest object or move randomly
-        if len(self.state.objs) > 0:
-            # Find the closest object
-            closest_obj = min(
-                self.state.objs,
-                key=lambda x: np.linalg.norm(self.pos - x.pos)
-            )
-
-            # Calculate movement vector
-            move = closest_obj.pos - self.pos
-
-            # Scale movement to a reasonable step size (e.g., 1 unit)
-            move_norm = np.linalg.norm(move)
-            if move_norm > 0:
-                # Move a fixed distance towards the object
-                step_size = min(1, move_norm)  # Don't overshoot
-                move_direction = move / move_norm
-                self.pos += move_direction * step_size
-            else:
-                # If already at the closest object, move randomly
-                self.pos += np.random.uniform(-1, 1, size=2)
+        # move randomly
+        pass
+        if self.state.interactables:
+            closest_obj = min(self.state.interactables,
+                              key=lambda obj: np.linalg.norm(self.pos - obj.pos))
+            distance = np.linalg.norm(self.pos - closest_obj.pos)
+            if distance > 0:
+                direction = (closest_obj.pos - self.pos) / distance
+            self.pos += direction
         else:
-            # If no objects, move randomly
-            self.pos += np.random.uniform(-1, 1, size=2)
-# Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
+            self.pos += np.random.uniform(-1, 1, size=self.pos.shape)
 
+# Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
     def update_metrics(self):
         """
         empty for now
@@ -151,12 +138,10 @@ class Agent(shape):
 
     def get_collisions(self):
         for obj in self.state.objs:
-            try:  # will throw an error if obj does not have a hasCollision attribute, so it skips other agents
-                if obj.hasCollision:  # ToDO improve this so it checks for the shape of the object
+            if obj.shape != "agent":
+                if obj.hasCollision == True:  # ToDO improve this so it checks for the shape of the object
                     if np.linalg.norm(self.pos - obj.pos) <= self.radius:
                         self.state.collisions.append(obj)
-            except:
-                pass
         return self.state.collisions
 
     def solve_collision(self):

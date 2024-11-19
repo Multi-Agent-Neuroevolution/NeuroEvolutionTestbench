@@ -39,7 +39,7 @@ def main():
         10     # height
     ))
 
-    for i in range(10):
+    for i in range(50):
         # positon is a numpy array of 2 elements
         pos = np.array([np.random.rand() * 100, np.random.rand() * 100])
         agents.append(Agent(i, "NEAT", "PRED_PREY", pos))
