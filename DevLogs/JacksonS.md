@@ -4,14 +4,14 @@ Jackson Salyards Dev Log
 
 ### 2024-09-26
 
-Initial commit, and began research
-Looked into the different types of AI and how they can be used in our simulation
+  - Initial commit, and began research
+  - Looked into the different types of AI and how they can be used in our simulation
 
 ### 2024-10-03
 
-Found a github that had a similar project, and a good looking UI
-We are using that GUI for inspiration
-Here is the link
+  - Found a github that had a similar project, and a good looking UI
+  - We are using that GUI for inspiration
+  - Here is the link
 
 # Sprint 2
 
@@ -41,11 +41,11 @@ Here is the link
   - worked with baker to get gui to minimum viable state
   - running into issues reading from json and drawing neurons
 
-###2024-11-3
+### 2024-11-3
   - began to work on backend code, and presentation
   - worked with group members to design layout of simulation
 
-###2024-11-6
+### 2024-11-6
   - worked with kai to complete more documentation
 
 # Spint 4
