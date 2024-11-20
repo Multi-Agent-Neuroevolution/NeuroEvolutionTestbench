@@ -1,6 +1,6 @@
 Jackson Salyards Dev Log
 
-#Sprint 1
+# Sprint 1
 
 ### 2024-09-26
 
@@ -13,7 +13,7 @@ Found a github that had a similar project, and a good looking UI
 We are using that GUI for inspiration
 Here is the link
 
-#Sprint 2
+# Sprint 2
 
 ### 2024-10-4
 
@@ -28,7 +28,7 @@ Here is the link
   - worked on JIRA documentation
   - worked on project presentation
 
-#Sprint 3
+# Sprint 3
 
   - created a new feature branch based on the current rust gui branch. This brannch is for the agent controlls feature.
   - Worked with jackson baker to define how data will be sent from GUI to the simulation
@@ -48,7 +48,7 @@ Here is the link
 ###2024-11-6
   - worked with kai to complete more documentation
 
-#Spint 4
+# Spint 4
 ### 2024-11-12  
   - Worked on the backend simulation and encountered an issue where simulation steps progressively took longer to execute.  
   - Refactored older code to improve its efficiency and maintainability.  
