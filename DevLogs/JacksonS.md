@@ -35,3 +35,33 @@ Worked with jackson baker to define how data will be sent from GUI to the simula
 worked on project proposal
 finished project presentation
 worked with baker on creating code to view neural network in real time
+
+
+# 2024-11-1
+worked with baker to get gui to minimum viable state
+running into issues reading from json and drawing neurons
+
+#2024-11-3
+began to work on backend code, and presentation
+worked with group members to design layout of simulation
+
+#2024-11-6
+worked with kai to complete more documentation
+
+**Spint 4**
+### 2024-11-12  
+- Worked on the backend simulation and encountered an issue where simulation steps progressively took longer to execute.  
+- Refactored older code to improve its efficiency and maintainability.  
+- Collaborated with Colton to create a Flask API for communication between the frontend and backend.  
+
+### 2024-11-14  
+- Made progress in addressing the backend's slowness issues, but the simulation was still performing below acceptable speed.  
+- Developed a debugging viewer function to better analyze and identify potential bottlenecks in the simulation process.  
+
+### 2024-11-16  
+- Expanded the functionality of individual agents by adding collision detection and response.  
+- Refactored the object system to streamline interactions and improve modularity in the simulation codebase.  
+
+### 2024-11-19  
+- Resolved the issue with agents that was causing backend slowness, significantly improving performance. Simulation steps now execute in approximately 10ms.  
+- Focused on updating documentation and planning the next steps for further improvements and features.  
