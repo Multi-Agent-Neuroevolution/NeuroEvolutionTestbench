@@ -50,6 +50,9 @@ class State:
         self.interactables = []
         self.collisions = []
         self.fitness = 0
+        #These are pre-allocated for performance reasons
+        self.pos_array = np.zeros(2)
+        self.direction = np.zeros(2)
 
 
 class Agent(shape):
@@ -61,6 +64,7 @@ class Agent(shape):
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
         self.state = State()
+        self.random_movement = np.zeros(2)
 
     def init_algorithm(self, algorithm_name):
         try:
@@ -95,25 +99,30 @@ class Agent(shape):
 
     # Update the list of interactables around the agent
     def update_interatibles(self):
-        for obj in self.state.objs:
-            if np.linalg.norm(self.pos - obj.pos) <= 3:
-                self.state.interactables.append(obj)
         self.state.interactables = [
-            obj for obj in self.state.interactables if np.linalg.norm(self.pos - obj.pos) <= 3]
+            obj for obj in self.state.objs 
+            if np.linalg.norm(self.pos - obj.pos) <= 3
+        ]
 
     # Determine what action the agent should take based on its current state
     def update_action(self):
         # move randomly
-        pass
-        if self.state.interactables:
-            closest_obj = min(self.state.interactables,
-                              key=lambda obj: np.linalg.norm(self.pos - obj.pos))
-            distance = np.linalg.norm(self.pos - closest_obj.pos)
+         if self.state.interactables:
+            # Vectorized!!
+            distances = np.array([np.linalg.norm(self.pos - obj.pos) for obj in self.state.interactables])
+            closest_idx = np.argmin(distances)
+            closest_obj = self.state.interactables[closest_idx]             
+            distance = distances[closest_idx]
+            
             if distance > 0:
-                direction = (closest_obj.pos - self.pos) / distance
-            self.pos += direction
-        else:
-            self.pos += np.random.uniform(-1, 1, size=self.pos.shape)
+                # Reuse pre-allocated array
+                np.subtract(closest_obj.pos, self.pos, out=self.state.direction)
+                self.state.direction /= distance
+                self.pos += self.state.direction
+            else:
+                # Reuse pre-allocated array 
+                np.random.uniform(-1, 1, size=2, out=self.random_movement)
+                self.pos += self.random_movement
 
 # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
     def update_metrics(self):
@@ -137,17 +146,19 @@ class Agent(shape):
         pass
 
     def get_collisions(self):
+        self.state.collisions.clear()  # Clear the list of collisions
         for obj in self.state.objs:
-            if obj.shape != "agent":
-                if obj.hasCollision == True:  # ToDO improve this so it checks for the shape of the object
-                    if np.linalg.norm(self.pos - obj.pos) <= self.radius:
-                        self.state.collisions.append(obj)
+            if obj.shape != "agent" and obj.hasCollision:   # Only check for collisions with obstacles
+                if np.linalg.norm(self.pos - obj.pos) <= self.radius:
+                    self.state.collisions.append(obj)
         return self.state.collisions
 
     def solve_collision(self):
-        for collision in self.state.collisions:
-            # resolve collisions
-            move = self.pos - collision.pos
-            move = move / np.linalg.norm(move)  # normalize the vector
-            self.pos += move
+        for collision in self.state.collisions[:]:  # Create copy of list for iteration. This is necessary because we are modifying the list. But it is kinda slow
+            # Reuse pre-allocated arrays FAST!!
+            np.subtract(self.pos, collision.pos, out=self.state.direction)
+            norm = np.linalg.norm(self.state.direction)
+            if norm > 0: 
+                self.state.direction /= norm
+                self.pos += self.state.direction
             self.state.collisions.remove(collision)

@@ -67,7 +67,7 @@ class SpatialGrid:
 class Environment:
     def __init__(self, type):
         self.agents = []
-        self.bounds = (-100, 100, -100, 100)
+        self.bounds = (-200, 200, -200, 200)
         self.obstacles = []
         self.type = type
         self.spatial_grid = SpatialGrid(self.bounds)
@@ -92,7 +92,7 @@ class Environment:
     def update_agent(self, agent):
         with self.agent_locks[agent]:
             # Get nearby objects using spatial partitioning
-            nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
+            nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10) # 10 is the radius of the circle around the agent
             agent.state.objs = [obj for obj in nearby if obj is not agent]
             
             # Update agent state and position
@@ -100,48 +100,125 @@ class Environment:
             agent.get_collisions()
             agent.solve_collision()
             self.check_bounds(agent)
-    def view(self, real_time=False):
-        # Close any existing figures to prevent memory buildup
-        plt.close('all')
 
-        # Render the environment using matplotlib
-        fig, ax = plt.subplots()
+    def view(self, real_time=False):
+        """
+        Enhanced visualization function for debugging purposes.
+        Includes agent IDs, velocities, and better color coding.
+        """
+        #plt.close('all')  # Close any existing figures
+        
+        # Create figure and axes with a larger size for better visibility
+        fig, ax = plt.subplots(figsize=(12, 12))
         ax.set_xlim(self.bounds[0], self.bounds[1])
         ax.set_ylim(self.bounds[2], self.bounds[3])
-        ax.set_facecolor('darkgray')  # Set background color to dark gray
-
-        for obstacle in self.obstacles:
+        
+        # Add grid for better spatial reference
+        ax.grid(True, linestyle='--', alpha=0.3)
+        ax.set_facecolor('#f0f0f0')  # Light gray background
+        
+        # Draw obstacles
+        for i, obstacle in enumerate(self.obstacles):
             if obstacle.shape == "circle":
-                ax.add_artist(plt.Circle(
-                    obstacle.pos, obstacle.radius, color="green"))
+                circle = plt.Circle(
+                    obstacle.pos, 
+                    obstacle.radius, 
+                    color=obstacle.color if hasattr(obstacle, 'color') else 'red',
+                    alpha=0.7,
+                    label=f'Obstacle {i}: {obstacle.type}' if hasattr(obstacle, 'type') else f'Obstacle {i}'
+                )
+                ax.add_artist(circle)
             elif obstacle.shape == "rectangle":
-                # Adjust rectangle drawing to use center point
-                ax.add_artist(plt.Rectangle(
-                    (obstacle.pos[0] - obstacle.width/2, obstacle.pos[1] -
-                     obstacle.height/2),  # Bottom-left corner
+                rect = plt.Rectangle(
+                    (obstacle.pos[0] - obstacle.width/2, obstacle.pos[1] - obstacle.height/2),
                     obstacle.width,
                     obstacle.height,
-                    color="red"
-                ))
-
-        for agent in self.agents:
-            ax.add_artist(plt.Circle(
-                agent.pos, agent.radius, color="blue"))
-            # draw transparent circle around agent to show radius of objects it can see
-            ax.add_artist(plt.Circle(
-                agent.pos, 10, color="green", alpha=0.1))
-            # draw line from agent to anything within its obj list
-            if agent.state.objs:
+                    color=obstacle.color if hasattr(obstacle, 'color') else 'red',
+                    alpha=0.7,
+                    label=f'Obstacle {i}: {obstacle.type}' if hasattr(obstacle, 'type') else f'Obstacle {i}'
+                )
+                ax.add_artist(rect)
+                
+        # Draw agents and their properties
+        for i, agent in enumerate(self.agents):
+            # Draw vision radius
+            vision_circle = plt.Circle(
+                agent.pos,
+                10,  # vision radius
+                color='green',
+                alpha=0.1,
+                fill=True
+            )
+            ax.add_artist(vision_circle)
+            
+            # Draw agent
+            agent_circle = plt.Circle(
+                agent.pos,
+                agent.radius,
+                color='blue',
+                alpha=0.7
+            )
+            ax.add_artist(agent_circle)
+            
+            # Add agent ID
+            ax.annotate(f'A{i}', 
+                       xy=(agent.pos[0], agent.pos[1]),
+                       xytext=(5, 5),
+                       textcoords='offset points',
+                       fontsize=8,
+                       bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
+            
+            # Draw connections to visible objects
+            if hasattr(agent, 'state') and hasattr(agent.state, 'objs'):
                 for obj in agent.state.objs:
-                    ax.plot([agent.pos[0], obj.pos[0]], [
-                            agent.pos[1], obj.pos[1]], color="black")
-
+                    # Calculate distance
+                    distance = np.linalg.norm(agent.pos - obj.pos)
+                    
+                    # Draw line with distance label
+                    line = ax.plot([agent.pos[0], obj.pos[0]], 
+                                 [agent.pos[1], obj.pos[1]], 
+                                 'k--', 
+                                 alpha=0.3,
+                                 linewidth=0.5)[0]
+                    
+                    # Add distance label at midpoint
+                    midpoint = (agent.pos + obj.pos) / 2
+                    ax.annotate(f'{distance:.1f}', 
+                              xy=(midpoint[0], midpoint[1]),
+                              fontsize=6,
+                              bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
+            
+            # Draw velocity vector if available
+            if hasattr(agent, 'velocity'):
+                velocity_magnitude = np.linalg.norm(agent.velocity)
+                if velocity_magnitude > 0:
+                    ax.arrow(agent.pos[0], 
+                            agent.pos[1],
+                            agent.velocity[0], 
+                            agent.velocity[1],
+                            head_width=0.5,
+                            head_length=1,
+                            fc='red',
+                            ec='red',
+                            alpha=0.5)
+        
+        # Add title with simulation info
+        ax.set_title(f'Environment Type: {self.type}\n'
+                    f'Agents: {len(self.agents)} | '
+                    f'Obstacles: {len(self.obstacles)}')
+        
+        # Add legend
+        if self.obstacles:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        # Adjust layout to prevent cutting off elements
+        plt.tight_layout()
+        
         if real_time:
-            plt.ion()  # Turn on interactive mode
+            plt.ion()
             plt.draw()
-            plt.pause(0.1)  # Short pause to update
-            plt.close(fig)  # Explicitly close the figure
-            plt.close('all')  # Close any additional figures
+            plt.pause(0.1)
+            plt.close(fig)
         else:
             plt.show()
 
@@ -170,4 +247,5 @@ class Environment:
                 
                 end_time = time.time()
                 print(f"Time taken: {(end_time - start_time)*1000}ms")
+                self.view(real_time=False)
             

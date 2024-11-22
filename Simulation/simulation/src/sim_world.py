@@ -5,7 +5,6 @@ from enviroment import Environment, Obstacle
 import multiprocessing
 
 def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
-    """Create and configure the simulation environment"""
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
     env = Environment(simulation_type)
@@ -44,7 +43,7 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
     
     # Create agents with random positions
     for i in range(num_agents):
-        pos = np.array([np.random.rand() * 100, np.random.rand() * 100])
+        pos = np.array([np.random.uniform(-200, 200), np.random.uniform(-200, 200)])
         agents.append(Agent(i, "NEAT", "PRED_PREY", pos))
     
     # Add agents and obstacles to environment
@@ -56,13 +55,13 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
 def main():
     try:
         # Configuration
-        NUM_AGENTS = 5000  # Increased number of agents to demonstrate optimization
+        NUM_AGENTS = 5000  
         SIMULATION_TYPE = "PRED_PREY"
         
-        # Create and run simulation
+        # Create simulation
         env = create_simulation(num_agents=NUM_AGENTS, simulation_type=SIMULATION_TYPE)
         print(f"Starting simulation with {NUM_AGENTS} agents...")
-        print(f"Using {env.max_workers} CPU cores for parallel processing")
+        print(f"Using {env.max_workers} Logical CPU cores for parallel processing")
         
         # Run the simulation
         env.run()
