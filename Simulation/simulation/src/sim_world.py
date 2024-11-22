@@ -1,19 +1,21 @@
-# This file is going to be the main file in the simulation
-# It will contain the main loop for the simulation
-# it will also handle the creation of the agents and the environment
 import numpy as np
 import matplotlib.pyplot as plt
 from agent import Agent
-from enviroment import Environment
-from enviroment import Obstacle
+from enviroment import Environment, Obstacle
+import multiprocessing
 
-
-def main():
-    # Create the environment
-    env = Environment("PRED_PREY")
+def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
+    """Create and configure the simulation environment"""
+    # Create the environment with optimal number of workers
+    num_cores = multiprocessing.cpu_count()
+    env = Environment(simulation_type)
+    env.max_workers = max(1, num_cores - 1)  # Leave one core for system processes
+    
     # Create the agents
     agents = []
     objects = []
+    
+    # Add obstacles
     objects.append(Obstacle(
         np.array([50, 50]),  # Center of the circle/rectangle
         "food",
@@ -26,6 +28,7 @@ def main():
         0,     # width (0 for circle)
         0      # height (0 for circle)
     ))
+    
     objects.append(Obstacle(
         np.array([20, 20]),  # Center of the rectangle
         "door",
@@ -38,19 +41,37 @@ def main():
         2,    # width
         10     # height
     ))
-
-    for i in range(50):
-        # positon is a numpy array of 2 elements
+    
+    # Create agents with random positions
+    for i in range(num_agents):
         pos = np.array([np.random.rand() * 100, np.random.rand() * 100])
         agents.append(Agent(i, "NEAT", "PRED_PREY", pos))
-
-    # Add the agents to the environment
+    
+    # Add agents and obstacles to environment
     env.add_agents(agents)
-    # Add the obstacles to the environment
     env.add_obstacles(objects)
-    # Run the simulation
-    env.run()
+    
+    return env
 
+def main():
+    try:
+        # Configuration
+        NUM_AGENTS = 5000  # Increased number of agents to demonstrate optimization
+        SIMULATION_TYPE = "PRED_PREY"
+        
+        # Create and run simulation
+        env = create_simulation(num_agents=NUM_AGENTS, simulation_type=SIMULATION_TYPE)
+        print(f"Starting simulation with {NUM_AGENTS} agents...")
+        print(f"Using {env.max_workers} CPU cores for parallel processing")
+        
+        # Run the simulation
+        env.run()
+        
+    except KeyboardInterrupt:
+        print("\nSimulation terminated by user")
+    except Exception as e:
+        print(f"Error during simulation: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     main()

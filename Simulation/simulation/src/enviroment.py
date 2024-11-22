@@ -25,43 +25,81 @@ class Obstacle(shape):
                 self.hasCollision = not self.hasCollision
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+from collections import defaultdict
+
+class SpatialGrid:
+    def __init__(self, bounds, cell_size=10):
+        self.cell_size = cell_size
+        self.bounds = bounds
+        self.width = int((bounds[1] - bounds[0]) / cell_size)
+        self.height = int((bounds[3] - bounds[2]) / cell_size)
+        self.grid = defaultdict(list)
+        
+    def get_cell_coords(self, pos):
+        x = int((pos[0] - self.bounds[0]) / self.cell_size)
+        y = int((pos[1] - self.bounds[2]) / self.cell_size)
+        return x, y
+    
+    def insert(self, obj):
+        cell_x, cell_y = self.get_cell_coords(obj.pos)
+        self.grid[(cell_x, cell_y)].append(obj)
+    
+    def get_nearby_objects(self, pos, radius):
+        cell_x, cell_y = self.get_cell_coords(pos)
+        cells_to_check = []
+        radius_cells = int(radius / self.cell_size) + 1
+        
+        for dx in range(-radius_cells, radius_cells + 1):
+            for dy in range(-radius_cells, radius_cells + 1):
+                cells_to_check.append((cell_x + dx, cell_y + dy))
+        
+        nearby = []
+        for cell in cells_to_check:
+            nearby.extend(self.grid[cell])
+        
+        return [obj for obj in nearby if np.linalg.norm(obj.pos - pos) < radius]
+
 class Environment:
     def __init__(self, type):
         self.agents = []
         self.bounds = (-100, 100, -100, 100)
-        self.obstacles = []  # list of obstacles in the environment
-        # used to determine the type of environment, such as predator-prey, goal-reaching, etc.
+        self.obstacles = []
         self.type = type
-
+        self.spatial_grid = SpatialGrid(self.bounds)
+        self.agent_locks = {}
+        self.max_workers = 8  # Adjust based on your CPU cores
+        
     def add_agents(self, agents):
         self.agents = agents
-
+        for agent in agents:
+            self.agent_locks[agent] = Lock()
+            
     def add_obstacles(self, obstacles):
         self.obstacles = obstacles
-
-    def update_surroundings(self, agent):
-        # Clear the current list of objects the agent can see
-        agent.state.objs.clear()
-
-        # Add any objects and agents around the agent within a radius of 10 units
-        for obj in self.obstacles:
-            if np.linalg.norm(agent.pos - obj.pos) < 10:
-                agent.state.objs.append(obj)
-        for other_agent in self.agents:
-            if other_agent is not agent and np.linalg.norm(agent.pos - other_agent.pos) < 10:
-                agent.state.objs.append(other_agent)
-
-    def check_bounds(self, agent):
-        # check if the agent is within the bounds of the environment
-        if agent.pos[0] < self.bounds[0]:
-            agent.pos[0] = self.bounds[0]+1
-        if agent.pos[0] > self.bounds[1]:
-            agent.pos[0] = self.bounds[1]-1
-        if agent.pos[1] < self.bounds[2]:
-            agent.pos[1] = self.bounds[2]+1
-        if agent.pos[1] > self.bounds[3]:
-            agent.pos[1] = self.bounds[3]-1
-
+    
+    def update_spatial_grid(self):
+        self.spatial_grid = SpatialGrid(self.bounds)
+        for agent in self.agents:
+            self.spatial_grid.insert(agent)
+        for obstacle in self.obstacles:
+            self.spatial_grid.insert(obstacle)
+    
+    def update_agent(self, agent):
+        with self.agent_locks[agent]:
+            # Get nearby objects using spatial partitioning
+            nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
+            agent.state.objs = [obj for obj in nearby if obj is not agent]
+            
+            # Update agent state and position
+            agent.update_action()
+            agent.get_collisions()
+            agent.solve_collision()
+            self.check_bounds(agent)
     def view(self, real_time=False):
         # Close any existing figures to prevent memory buildup
         plt.close('all')
@@ -107,48 +145,29 @@ class Environment:
         else:
             plt.show()
 
-    def environment_to_json(env):
-        env_dict = {
-            "agents": [
-                {
-                    "id": idx + 1,
-                    "x": int(agent.pos[0]),
-                    "y": int(agent.pos[1]),
-                    "color": "blue"  # Assuming all agents are blue for now
-                } for idx, agent in enumerate(env.agents)
-            ],
-            "shapes": [
-                {
-                    "type": "Circle" if obstacle.shape == "circle" else "Rectangle",
-                    "x": int(obstacle.pos[0]),
-                    "y": int(obstacle.pos[1]),
-                    "radius": int(obstacle.radius) if obstacle.shape == "circle" else None,
-                    "width": int(obstacle.width) if obstacle.shape == "rectangle" else None,
-                    "height": int(obstacle.height) if obstacle.shape == "rectangle" else None,
-                    "color": obstacle.color
-                } for obstacle in env.obstacles
-            ]
 
-
-        }
-        return json.dumps(env_dict, indent=4)
+    def check_bounds(self, agent):
+        # Existing bounds checking code...
+        if agent.pos[0] < self.bounds[0]:
+            agent.pos[0] = self.bounds[0]+1
+        if agent.pos[0] > self.bounds[1]:
+            agent.pos[0] = self.bounds[1]-1
+        if agent.pos[1] < self.bounds[2]:
+            agent.pos[1] = self.bounds[2]+1
+        if agent.pos[1] > self.bounds[3]:
+            agent.pos[1] = self.bounds[3]-1
 
     def run(self):
-        # print how long it takes to run each iteration
-
-        while True:
-            start_time = time.time()
-            for agent in self.agents:
-                self.update_surroundings(agent)
-                agent.update_action()
-                agent.get_collisions()
-                agent.solve_collision()
-                self.check_bounds(agent)
-            end_time = time.time()
-            print(f"Time taken: {(end_time - start_time)*1000}ms")
-            self.view(real_time=True)
-
-            # Add this line at the end of the while loop
-            print(self.environment_to_json())
-            # wait for user imput to continue
-            input("Press Enter to continue...")
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            while True:
+                start_time = time.time()
+                
+                # Update spatial grid
+                self.update_spatial_grid()
+                
+                # Process agents in parallel
+                list(executor.map(self.update_agent, self.agents))
+                
+                end_time = time.time()
+                print(f"Time taken: {(end_time - start_time)*1000}ms")
+            
