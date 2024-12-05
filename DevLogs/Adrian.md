@@ -24,21 +24,47 @@ Today, I completed my assigned portion of the System Requirements Specification 
 ### Date: October 24th, 2024
 The team met in person in our new meeting room. Much of the work spent today was on completing the System Requirements Specification document in order to mark the related sprint tasks as complete. The idea is then to revise each section to make sure that it’s of submission-quality come its due date a few days from now.
 
+### Date: October 29th, 2024
+The team met in person today, with the goal of completing our first version of the SRS document. I had tried to format it as well as I could prior to today, since transferring the original document's contents to a Confluence document proved a little problematic-- Confluence has less formatting options than what the document was originally written in (presumably Word).
+
+### Date: November 5th, 2024
+The team met today with the goal of completing our presentation slides for our second progress presentation. I created the slideshow presentation, setting up the basic slides to cover.
+
+### Date: November 6th, 2024
+We completed our progress presentation slideshow online today, in order to submit it ahead of time for the due date tomorrow.
+
+### Date: November 7th, 2024
+The team met in the instructional center today, since the first set of group presentations started today.
+
+### Date: November 12th, 2024
+Our group presented our progress update presentation today, since there wasn't enough time to do so in the first batch of presentations last class. I also completed our second peer evaluation of the semester, which was due today.
+
+### Date: November 15th, 2024
+I began trying to implement the NEAT algorithm. The bulk of progress today was in reading the documentation for the NEAT Python package, since I had no prior knowledge.
+
+### Date: November 18th, 2024
+I tried to start designing our project poster today. Using Krita, I managed to create an empty document with the proper sizes (48 inches by 36 inches), and made sure to set the color scheme to CMYK and resolution to 300ppi (the recommended resolution for documents to be printed).
+
+It proved to be a bit problematic, however, since Krita bloated the size of the file tremendously even just adding a simple text layer to it, becoming a few gigabytes large. Thus, I wasn't able to complete it, and waited to reconvene with the team.
+
 ### Date: November 19th, 2024
 The team met in person today. I finished coding a very basic implementation of NEAT within my feature-agent branch. Although not functional at this point, it's enough that it can provide a starting point for additional development, ultimately culminating in a fully functional NEAT algorithm. Once that's complete, we'll be able to connect it to the simulation, and the agents should finally be powered by a neural network algorithm.
 
 ![Snippet of very rudimentary NEAT code](./LogPictures/Adrian/Adrian_11192024_NEAT.png)
 
+I also briefly mentioned my troubles with poster development, which is when Canva was brought up as an alternative. We quickly transitioned to that before leaving, creating an empty template before class was over.
+
 ### Date: November 21st, 2024
+The team met in person today again for this week, with the goal of completing our poster. I helped provide the text to cover our different sections of the poster, and also contributed to some of the design aspects, such as how the section divisions and boxes were colored.
 
 ### Date: November 26th, 2024
 The team met in person today, and primarily worked on the SRS v2 document. I added various requirements to sections where they were either sparse or outright missing from the first version of the document.
 
 ### Date: December 3rd, 2024
-The team met in person for the first time after Thanksgiving break. We spent most, if not the entire meeting time, on finalizing the final presentation to round out this semester. I helped create the formatting for the presentation, making it look better than our last two iterations. We also saw the printed version of the poster in person, and Kai got the board to attach it to.
+The team met in person for the first time after Thanksgiving break. We spent most, if not the entire meeting time, on finalizing the final presentation to round out this semester. I helped create the formatting for the presentation, making it look better than our last two iterations. We also saw the printed version of the poster in person, and confirmed that the board we acquired was sufficiently large for it.
 
 ### Date: December 4th, 2024
 The team met virtually over Discord, with the intent of completing our video presentation. After looking over the contents of the presentation once more to make sure we touched on the most important topics, we spent an hour getting both getting programs ready to record ourselves, and then doing the takes proper. Jackson S. was the one who had recording designated to, and was able to do so while streaming the presentation to our Discord voice call session.
 
 ### Date: December 5th, 2024
-The team met in person today at the poster presentation session. I also helped with the completion of the test plan document, which was due tonight.
+The team met in person today at the poster presentation session. We stayed in the Lehman building atrium for the duration of the event; I spoke with a few group members of other projects, as well to others about our own project. I also helped with the completion of the test plan document, which was due tonight.
