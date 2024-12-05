@@ -23,3 +23,22 @@ Today, I completed my assigned portion of the System Requirements Specification 
 
 ### Date: October 24th, 2024
 The team met in person in our new meeting room. Much of the work spent today was on completing the System Requirements Specification document in order to mark the related sprint tasks as complete. The idea is then to revise each section to make sure that it’s of submission-quality come its due date a few days from now.
+
+### Date: November 19th, 2024
+The team met in person today. I finished coding a very basic implementation of NEAT within my feature-agent branch. Although not functional at this point, it's enough that it can provide a starting point for additional development, ultimately culminating in a fully functional NEAT algorithm. Once that's complete, we'll be able to connect it to the simulation, and the agents should finally be powered by a neural network algorithm.
+
+![Snippet of very rudimentary NEAT code](./LogPictures/Adrian/Adrian_11192024_NEAT.png)
+
+### Date: November 21st, 2024
+
+### Date: November 26th, 2024
+The team met in person today, and primarily worked on the SRS v2 document. I added various requirements to sections where they were either sparse or outright missing from the first version of the document.
+
+### Date: December 3rd, 2024
+The team met in person for the first time after Thanksgiving break. We spent most, if not the entire meeting time, on finalizing the final presentation to round out this semester. I helped create the formatting for the presentation, making it look better than our last two iterations. We also saw the printed version of the poster in person, and Kai got the board to attach it to.
+
+### Date: December 4th, 2024
+The team met virtually over Discord, with the intent of completing our video presentation. After looking over the contents of the presentation once more to make sure we touched on the most important topics, we spent an hour getting both getting programs ready to record ourselves, and then doing the takes proper. Jackson S. was the one who had recording designated to, and was able to do so while streaming the presentation to our Discord voice call session.
+
+### Date: December 5th, 2024
+The team met in person today at the poster presentation session. I also helped with the completion of the test plan document, which was due tonight.
