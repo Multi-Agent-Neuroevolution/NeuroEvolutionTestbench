@@ -157,3 +157,5 @@ On this day I helped fix an issue with the simulation taking too long
 TOday I was meeting with the rest of the team to discuss how to finalize our communications between all of our modules with our existing code
 * 12/03/2024
 On this day we made the decision to merge all of our backend code into dev finalizing what we have for our base modules.
+* 12/05/2024
+The team met for a poster session and last night we recorded our 10 minute video.
