@@ -7,3 +7,18 @@
 - Oct 16. I finished up the code for parsing json files by doing a few different things. For one I made it so that I could edit the data inside the json "dictionaries" and "lists". I did this so that I could understand in what ways editing the information inside the json would look like. Next I made sure that I could dump the edited data into a new json file without touching the old one just incase any information was messed up or still needed from the previous one. Lastly I  made sure to include an indent = 4 for the writing to a new file so that our jsons would be more standardized when reading them in person and not through code.
 - Oct 17. Completed the presentation slides that were due the 18th. I added more context to the slides and helped make the formatting look a little bit nicer.
 - Oct 23. Finished section 2.1 for Product Perspective on the System Requirements Specification document that shows more information about our product but I'll need to go back and edit it because of information that should be added. I also finished section 2.2 for Product Perspective which gave a more high level view which should be understood by the customer but needs a use case diagram to be added.
+# Sprint 4 Start: October 29
+- Nov 4th. Edited 2.1 and 2.2 on the SRS document, added more context to the information 
+- Creating Jira Tasks for the SDD document due on Nov. 5th, and presentation 2 due on Nov. 7th
+- Nov 4th. Added more information to my websocket branch, expanded the code a little bit more so it was more understandable.
+- Nov 4th. Added SDD document into Jira knowledge bases and updated the Introduction as well as the Software Interface Architecture.
+# Sprint 5 Start: November 12
+- Nov 15th. Local websocket branch files actually completed and understandable. Also pushed my files to github with the comment "localwebsocket implementation"
+- Nov 15th. Use curl -X POST http://127.0.0.1:5000/upload_json -F "file=@flaskdata.json" to upload data from the running file into a http website at http://127.0.0.1:5000/view_data. Also shows the information in the terminal
+- Nov 19th. Began work on our poster and started cementing ideas onto the canvas for later editing and ideas.
+- Nov 21st. Made dramatic changes to the poster and fixed things for Akbas feedback
+## Sprint 6 Start: November 26
+- Nov 26th. Started documentation on the SRSv2
+- Dec 3rd. Working on 10 minute presentation, added things to slides like rewording and extra information
+- Dec 4th. Finished recording the presentation with everyone.
+- Dec 5th. Presented our posters in the Lehman building today, and also worked on the Test plan document with everyone.
