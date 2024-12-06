@@ -28,10 +28,6 @@ Kai Sniadach Dev Log
 
 ## Sprint 4
     10/29 - 11/07
-What was due:
-    Simulation viewer panel 
-    Presentation 2
-    first websocket connection
 
     ### 10/29/2024
         set up backlog items for sprint 4
