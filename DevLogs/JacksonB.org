@@ -136,3 +136,24 @@ fn get_Layer_positions(&self, width: f32, padding: f32) -> Vec<f32> {
 * 10/24/2024
 Today I made Fixes to the rust gui to fix a compilation error
 can be seen in code above
+
+* 10/29/2024
+Today I added several features adding some bounds for properly drawing the Neural net.
+* 10/30/2024
+Today I added weight drawing to the neural net view and a JSON format for the Neural networks so that neural networks can be sent to the controller and render based on the format.
+* 10/31/2024
+Today I finished the weights drawing including intensisty based on the value of the weight of the weights of the neural network
+* 11/1/2024
+Today I merged a branch to change the looks of the GUI for the controller.
+* 11/5/2024
+Today I started the simulation code by initializing the poetry repository build system to run the simulation in the python virtual environment
+* 11/9/2024
+Today I helped with the work on the simulation and some documentation to keep our SDD in order
+* 11/14/2024
+Today I helped with salyards to fix the simulation environment from its memory leak issues
+* 11/19/2024
+On this day I helped fix an issue with the simulation taking too long
+* 11/22/2024
+TOday I was meeting with the rest of the team to discuss how to finalize our communications between all of our modules with our existing code
+* 12/03/2024
+On this day we made the decision to merge all of our backend code into dev finalizing what we have for our base modules.
