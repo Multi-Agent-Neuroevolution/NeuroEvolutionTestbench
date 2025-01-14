@@ -1,1 +1,3 @@
 /rust-gui/target/
+/Simulation/simulation/__pycache__/
+/Simulation/simulation/src/__pycache__/
