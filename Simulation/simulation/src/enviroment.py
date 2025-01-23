@@ -89,16 +89,24 @@ class Environment:
 
     def update_agent(self, agent):
         with self.agent_locks[agent]:
-            # Get nearby objects using spatial partitioning
-            # 10 is the radius of the circle around the agent
+            # Get nearby objects
             nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
             agent.state.objs = [obj for obj in nearby if obj is not agent]
 
-            # Update agent state and position
-            agent.update_action()
-            agent.get_collisions()
-            agent.solve_collision()
+            # Update action and handle specific logic
+            if isinstance(agent, Predator):
+                agent.update_action()
+                for obj in agent.state.objs:
+                    if isinstance(obj, Prey) and np.linalg.norm(agent.pos - obj.pos) <= 1:
+                        obj.alive = False  # Prey is caught
+                        agent.energy += 20  # Predator gains energy
+            elif isinstance(agent, Prey):
+                agent.update_action()
+
+            # Check bounds and handle death
             self.check_bounds(agent)
+            if not agent.alive:
+                self.agents.remove(agent)  # Remove dead agent
 
     def view(self, real_time=False):
         """
