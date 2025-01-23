@@ -4,6 +4,8 @@ from agent import Agent
 from enviroment import Environment, Obstacle
 import multiprocessing
 
+import logging
+logger = logging.getLogger(__name__)
 
 def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
     # Create the environment with optimal number of workers

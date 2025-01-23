@@ -8,6 +8,8 @@ import time
 from utils import shape
 import json
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Obstacle(shape):
     def __init__(self, pos, type, hasCollision, color, interactible, isGoal, shape, radius, width, height):

@@ -9,6 +9,8 @@ from agent import Agent
 # This is the base movement state to be assigned to each agent
 
 
+import logging
+logger = logging.getLogger(__name__)
 class MovementState(TaskState):
     def __init__(self, agents: List[Agent], bounds: Tuple[float, float, float, float]):
         self.agents = agents
