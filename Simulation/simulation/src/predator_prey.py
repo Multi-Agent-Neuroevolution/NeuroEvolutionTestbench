@@ -2,6 +2,8 @@ import neat
 import numpy as np
 from agent import Agent
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Predator(Agent):
     def __init__(self, id, pos, neat_genome, config):

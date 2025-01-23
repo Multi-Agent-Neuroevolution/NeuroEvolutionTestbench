@@ -6,6 +6,8 @@ from typing import Dict, List
 from agent import Agent
 from movement import MovementHandler # Left out the distances def for now
 
+import logging
+logger = logging.getLogger(__name__)
 # NOTES: The plotting here is just for making sure that movement actually works and will not be used in the final product!
 # Later on will be connected to the GUI being developed in Rust
 
@@ -100,6 +102,8 @@ class MovementTest:
         plt.show()
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='sim.log',level=logging.INFO)
+    logger.info('started')
     # Random seed, self explanatory; change the number so if you're using random actions the paths are different
     np.random.seed(42)
     

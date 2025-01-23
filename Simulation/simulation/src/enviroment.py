@@ -9,6 +9,8 @@ from utils import shape
 from predator_prey import Predator, Prey
 import json
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Obstacle(shape):
     def __init__(self, pos, type, hasCollision, color, interactible, isGoal, shape, radius, width, height):

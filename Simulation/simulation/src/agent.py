@@ -6,6 +6,8 @@ from utils import shape
 # fitness -> score "physical" capability somehow? or see how fitness is historically calculated
 # age -> already a variable for Agents, but could use value to gauge health
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Metrics:
     def __init__(self):

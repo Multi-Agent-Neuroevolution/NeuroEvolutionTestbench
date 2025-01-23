@@ -1,7 +1,8 @@
 import numpy as np
+from abc import ABC
 from typing import List, Dict, Tuple
-from main import TaskState
 from agent import Agent
+
 
 # NOTES: I implemented velocity and friction values just in case (better to work from a detailed system and simplify than the other way around).
 # If that isn't necessary then easily removable!
@@ -9,6 +10,10 @@ from agent import Agent
 # This is the base movement state to be assigned to each agent
 
 
+import logging
+logger = logging.getLogger(__name__)
+class TaskState(ABC):
+    obs: np.ndarray
 class MovementState(TaskState):
     def __init__(self, agents: List[Agent], bounds: Tuple[float, float, float, float]):
         self.agents = agents
