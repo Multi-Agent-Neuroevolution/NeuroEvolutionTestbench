@@ -1,3 +1,8 @@
+import neat
+import numpy as np
+from agent import Agent
+
+
 class Predator(Agent):
     def __init__(self, id, pos, neat_genome, config):
         super().__init__(id, "NEAT", "PRED_PREY", pos)
@@ -14,6 +19,7 @@ class Predator(Agent):
         self.energy -= 1
         if self.energy <= 0:
             self.alive = False
+
 
 class Prey(Agent):
     def __init__(self, id, pos, neat_genome, config):
