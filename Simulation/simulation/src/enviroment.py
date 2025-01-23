@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from utils import shape
+from predator_prey import Predator, Prey
 import json
 
 

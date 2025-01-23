@@ -60,6 +60,8 @@ class Agent(shape):
         super().__init__("agent", 1, 0, 0, pos)
         self.id = id
         self.age = 0
+        self.neat_genome = neat_genome
+        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, config)
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
@@ -108,7 +110,7 @@ class Agent(shape):
         ]
 
     def get_inputs(self):
-
+        self.inputs = []
         for obj in self.state.objs:
             relative_pos = self.get_relative_pos(obj)
             if obj.shape == "agent":

@@ -6,13 +6,11 @@ from agent import Agent
 class Predator(Agent):
     def __init__(self, id, pos, neat_genome, config):
         super().__init__(id, "NEAT", "PRED_PREY", pos)
-        self.neat_genome = neat_genome
-        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, config)
         self.energy = 100
 
     def update_action(self):
-        inputs = [...]  # Gather inputs like nearby prey positions
-        action = self.brain.activate(inputs)
+        get_inputs(self)
+        action = self.brain.activate(self.inputs)
         self.pos += np.array(action[:2])  # Update position
 
         # Energy loss for moving
@@ -24,10 +22,9 @@ class Predator(Agent):
 class Prey(Agent):
     def __init__(self, id, pos, neat_genome, config):
         super().__init__(id, "NEAT", "PRED_PREY", pos)
-        self.neat_genome = neat_genome
-        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, config)
 
     def update_action(self):
-        inputs = [...]  # Gather inputs like nearby predator positions
+        get_inputs(self)
+        action = self.brain.activate(self.inputs)
         action = self.brain.activate(inputs)
         self.pos += np.array(action[:2])
