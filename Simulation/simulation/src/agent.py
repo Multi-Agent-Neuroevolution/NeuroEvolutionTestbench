@@ -50,7 +50,7 @@ class State:
         self.interactables = []
         self.collisions = []
         self.fitness = 0
-        #These are pre-allocated for performance reasons
+        # These are pre-allocated for performance reasons
         self.pos_array = np.zeros(2)
         self.direction = np.zeros(2)
 
@@ -65,6 +65,9 @@ class Agent(shape):
         self.metrics = Metrics()
         self.state = State()
         self.random_movement = np.zeros(2)
+        self.energy = 0
+        self.alive = True
+        self.inputs
 
     def init_algorithm(self, algorithm_name):
         try:
@@ -100,27 +103,43 @@ class Agent(shape):
     # Update the list of interactables around the agent
     def update_interatibles(self):
         self.state.interactables = [
-            obj for obj in self.state.objs 
+            obj for obj in self.state.objs
             if np.linalg.norm(self.pos - obj.pos) <= 3
         ]
+
+    def get_inputs(self):
+
+        for obj in self.state.objs:
+            relative_pos = self.get_relative_pos(obj)
+            if obj.shape == "agent":
+                if obj.alive:
+                    if obj.energy > 0:
+                        self.inputs.append((relative_pos, "pred"))
+                    else:
+                        self.inputs.append((relative_pos, "prey"))
+
+    def get_relative_pos(self, obj):
+        return self.pos - obj.pos
 
     # Determine what action the agent should take based on its current state
     def update_action(self):
         # move randomly
-         if self.state.interactables:
+        if self.state.interactables:
             # Vectorized!!
-            distances = np.array([np.linalg.norm(self.pos - obj.pos) for obj in self.state.interactables])
+            distances = np.array([np.linalg.norm(self.pos - obj.pos)
+                                 for obj in self.state.interactables])
             closest_idx = np.argmin(distances)
-            closest_obj = self.state.interactables[closest_idx]             
+            closest_obj = self.state.interactables[closest_idx]
             distance = distances[closest_idx]
-            
+
             if distance > 0:
                 # Reuse pre-allocated array
-                np.subtract(closest_obj.pos, self.pos, out=self.state.direction)
+                np.subtract(closest_obj.pos, self.pos,
+                            out=self.state.direction)
                 self.state.direction /= distance
                 self.pos += self.state.direction
             else:
-                # Reuse pre-allocated array 
+                # Reuse pre-allocated array
                 np.random.uniform(-1, 1, size=2, out=self.random_movement)
                 self.pos += self.random_movement
 
@@ -154,11 +173,12 @@ class Agent(shape):
         return self.state.collisions
 
     def solve_collision(self):
-        for collision in self.state.collisions[:]:  # Create copy of list for iteration. This is necessary because we are modifying the list. But it is kinda slow
+        # Create copy of list for iteration. This is necessary because we are modifying the list. But it is kinda slow
+        for collision in self.state.collisions[:]:
             # Reuse pre-allocated arrays FAST!!
             np.subtract(self.pos, collision.pos, out=self.state.direction)
             norm = np.linalg.norm(self.state.direction)
-            if norm > 0: 
+            if norm > 0:
                 self.state.direction /= norm
                 self.pos += self.state.direction
             self.state.collisions.remove(collision)
