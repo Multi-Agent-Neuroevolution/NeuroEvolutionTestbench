@@ -63,12 +63,13 @@ def main():
         # Configuration
         NUM_AGENTS = 4000
         SIMULATION_TYPE = "PRED_PREY"
+        logging.basicConfig(filename='sim.log',level=logging.INFO)
 
         # Create simulation
         env = create_simulation(num_agents=NUM_AGENTS,
                                 simulation_type=SIMULATION_TYPE)
-        print(f"Starting simulation with {NUM_AGENTS} agents...")
-        print(
+        logger.info(f"Starting simulation with {NUM_AGENTS} agents...")
+        logger.info(
             f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
         # Run the simulation
