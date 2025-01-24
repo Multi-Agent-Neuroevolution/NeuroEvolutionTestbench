@@ -3,6 +3,11 @@ Recent research on neuroevolution has shown that it is a “competitive alternat
 
 The simulations are displayed as 2D environments where either competitive or collaborative learning will be required, and agents can be implemented using Neuro-evolutionary models.
 
+### Dependencies
+This project requires package and crate dependencies for Python and Rust respectively.
+Python: run `poetry install`, then activate the virtual environment. PYTHON 3.12+
+Rust: run `cargo build`
+
 ### References:
 Gautier, Hamon & Nisioti, Eleni & Moulin-Frier, Clément. (2023). Eco-evolutionary Dynamics of Non-episodic Neuroevolution in Large Multi-agent Environments. 10.48550/arXiv.2302.09334. 
 

@@ -1,0 +1,28 @@
+[tool.poetry]
+package-mode = false
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+contourpy = "1.3.0"
+cycler = "0.12.1"
+fonttools = "4.54.1"
+kiwisolver = "1.4.7"
+matplotlib = "3.9.2"
+neat-python = "0.92"
+numpy = "2.1.3"
+packaging = "24.1"
+pillow = "11.0.0"
+pyparsing = "3.2.0"
+pyqt5 = "5.15.11"
+pyqt5-qt5 = "5.15.15"
+pyqt5-sip = "12.15.0"
+python-dateutil = "2.9.0.post0"
+six = "1.16.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

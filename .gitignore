@@ -1,7 +1,5 @@
-/rust-gui/target/
-/Simulation/simulation/__pycache__/
-/Simulation/simulation/src/__pycache__/
-**/__pycache__/
-/.vscode/
+/target/
 /.venv/
-/Simulation/.venv/
+/.vscode/
+/src/simulation/__pycache__/
+sim.log
