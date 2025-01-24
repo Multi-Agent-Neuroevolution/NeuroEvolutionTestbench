@@ -5,7 +5,9 @@ The simulations are displayed as 2D environments where either competitive or col
 
 ### Dependencies
 This project requires package and crate dependencies for Python and Rust respectively.
+
 Python: run `poetry install`, then activate the virtual environment. PYTHON 3.12+
+
 Rust: run `cargo build`
 
 ### References:
