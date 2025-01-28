@@ -6,6 +6,8 @@ from predator_prey import Predator, Prey
 from enviroment import Environment, Obstacle
 import multiprocessing
 
+import logging
+logger = logging.getLogger(__name__)
 
 def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=None):
     # Create the environment with optimal number of workers
@@ -78,25 +80,27 @@ def main():
         # Configuration
         NUM_AGENTS = 4000
         SIMULATION_TYPE = "PRED_PREY"
-        CONFIG_PATH = "balls.conf"  # Path to your NEAT config file
+        CONFIG_PATH = "../../Config/balls.conf"  # Path to your NEAT config file
 
         # Create simulation
         env, population, config = create_simulation(
             num_agents=NUM_AGENTS, simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH)
 
-        print(f"Starting simulation with {NUM_AGENTS} agents...")
-        print(
+        logger.info(f"Starting simulation with {NUM_AGENTS} agents...")
+        logger.info(
             f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
         # Run the simulation
         env.run()
 
     except KeyboardInterrupt:
-        print("\nSimulation terminated by user")
+        logger.info("\nSimulation terminated by user")
     except Exception as e:
-        print(f"Error during simulation: {str(e)}")
+        logger.info(f"Error during simulation: {str(e)}")
         raise
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='../../Logs/sim.log',level=logging.INFO)
+    logger.info('started')
     main()

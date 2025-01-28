@@ -258,6 +258,6 @@ class Environment:
                 print(f"Number of Predators Alive: {num_predators_alive}")
 
                 # Append stats to CSV file
-                with open('simulation_stats.csv', 'a') as f:
+                with open('../../Data/simulation_stats.csv', 'a') as f:
                     f.write(f"{time.time()},{num_prey_alive},{
                             num_predators_alive}\n")
