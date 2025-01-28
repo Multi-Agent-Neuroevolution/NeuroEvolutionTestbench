@@ -236,6 +236,26 @@ class Environment:
         if agent.pos[1] > self.bounds[3]:
             agent.pos[1] = self.bounds[3]-1
 
+    def reset(self):
+        # reset the agents positions
+        for agent in self.agents:
+            agent.pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
+                                  np.random.uniform(self.bounds[2], self.bounds[3])])
+            agent.alive = True
+            if isinstance(agent, Predator):
+                agent.energy = 100
+                agent.prey_eaten = 0
+            else:
+                agent.energy = 0
+            agent.fitness = 0
+            agent.state.fitness = 0
+            agent.state.objs = []
+
+    def overwrite_agents(self, agents):
+        self.agents = agents
+        for agent in agents:
+            self.agent_locks[agent] = Lock()
+
     def run(self):
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             for _ in range(self.steps):
@@ -257,8 +277,3 @@ class Environment:
 
                 print(f"Number of Prey Alive: {num_prey_alive}")
                 print(f"Number of Predators Alive: {num_predators_alive}")
-
-                # Append stats to CSV file
-                with open('./Data/simulation_stats.csv', 'a') as f:
-                    f.write(f"{time.time()}, {num_prey_alive}, {
-                            num_predators_alive}\n")

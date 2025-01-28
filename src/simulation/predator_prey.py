@@ -28,19 +28,19 @@ class Predator(Agent):
             if action_choice == 0:  # Move Up
                 self.pos[1] += 1
                 # Energy loss for moving
-                self.energy -= 0.005  # Energy consumed per movement
+                self.energy -= 0.05  # Energy consumed per movement
             elif action_choice == 1:  # Move Down
                 self.pos[1] -= 1
                 # Energy loss for moving
-                self.energy -= 0.005  # Energy consumed per movement
+                self.energy -= 0.05  # Energy consumed per movement
             elif action_choice == 2:  # Move Left
                 self.pos[0] -= 1
                 # Energy loss for moving
-                self.energy -= 0.005  # Energy consumed per movement
+                self.energy -= 0.05  # Energy consumed per movement
             elif action_choice == 3:  # Move Right
                 self.pos[0] += 1
                 # Energy loss for moving
-                self.energy -= 0.005  # Energy consumed per movement
+                self.energy -= 0.05  # Energy consumed per movement
             elif action_choice == 4:  # Eat
                 self.eat()
 
@@ -63,13 +63,13 @@ class Predator(Agent):
                     closest_prey = obj
                     min_distance = distance
         if (closest_prey is None):
-            self.energy -= 0.1
+            self.energy -= 1
             return
         else:
             # Predator eats the closest prey, gains energy, and removes the prey
             logger.info(f"Predator {self.id} eats prey {
                         closest_prey.id} and gains energy.")
-            self.energy += 20  # Regain energy (this can be adjusted)
+            self.energy += 2  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
             self.prey_eaten += 1  # Increment prey eaten counter
 
