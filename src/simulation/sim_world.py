@@ -80,7 +80,7 @@ def main():
         # Configuration
         NUM_AGENTS = 4000
         SIMULATION_TYPE = "PRED_PREY"
-        CONFIG_PATH = "../../Config/balls.conf"  # Path to your NEAT config file
+        CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
 
         # Create simulation
         env, population, config = create_simulation(
@@ -101,6 +101,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='../../Logs/sim.log',level=logging.INFO)
+    logging.basicConfig(filename='./Logs/sim.log',level=logging.INFO)
     logger.info('started')
     main()
