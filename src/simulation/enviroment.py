@@ -245,7 +245,8 @@ class Environment:
                 list(executor.map(self.update_agent, self.agents))
 
                 end_time = time.time()
-                print(f"Time taken: {(end_time - start_time)*1000}ms")
-                #Print the amount of agents alive
-                print(f"Agents alive: {len(self.agents)}")
+                #print(f"Time taken: {(end_time - start_time)*1000}ms")
+                #Print agent[0] position and alive status
+                print(f"Agen pos: {self.agents[0].pos}")
+                print(f"Agent alive: {self.agents[0].alive}")
                 #self.view(real_time=False)
