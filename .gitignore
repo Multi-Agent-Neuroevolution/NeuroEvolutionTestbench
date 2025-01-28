@@ -1,6 +1,7 @@
 /target/
 /.venv/
 /.vscode/
+/Data/simulation_stats.csv
 /src/simulation/__pycache__/
-sim.log
+/Logs/sim.log
 /rust-gui/
