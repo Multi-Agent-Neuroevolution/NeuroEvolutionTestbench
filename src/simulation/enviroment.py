@@ -12,6 +12,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Obstacle(shape):
     def __init__(self, pos, type, hasCollision, color, interactible, isGoal, shape, radius, width, height):
         super().__init__(shape, radius, width, height, pos)
@@ -109,6 +110,7 @@ class Environment:
             # Check bounds and handle death
             self.check_bounds(agent)
             if not agent.alive:
+                agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
 
     def view(self, real_time=False):
@@ -245,8 +247,17 @@ class Environment:
                 list(executor.map(self.update_agent, self.agents))
 
                 end_time = time.time()
-                #print(f"Time taken: {(end_time - start_time)*1000}ms")
-                #Print agent[0] position and alive status
-                print(f"Agen pos: {self.agents[0].pos}")
-                print(f"Agent alive: {self.agents[0].alive}")
-                #self.view(real_time=False)
+                print(f"Time taken: {(end_time - start_time)*1000}ms")
+                # print number of prey and predatorys alive
+                num_prey_alive = len(
+                    [agent for agent in self.agents if isinstance(agent, Prey)])
+                num_predators_alive = len(
+                    [agent for agent in self.agents if isinstance(agent, Predator)])
+
+                print(f"Number of Prey Alive: {num_prey_alive}")
+                print(f"Number of Predators Alive: {num_predators_alive}")
+
+                # Append stats to CSV file
+                with open('simulation_stats.csv', 'a') as f:
+                    f.write(f"{time.time()},{num_prey_alive},{
+                            num_predators_alive}\n")

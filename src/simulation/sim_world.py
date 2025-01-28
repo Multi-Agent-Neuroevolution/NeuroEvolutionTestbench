@@ -61,7 +61,8 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=Non
         pos = np.array([np.random.uniform(-200, 200),
                         np.random.uniform(-200, 200)])
         if i % 2 == 0:
-            agents.append(Predator(i, "NEAT", "PRED_PREY", pos, genome, config))
+            agents.append(
+                Predator(i, "NEAT", "PRED_PREY", pos, genome, config))
         else:
             agents.append(Prey(i, "NEAT", "PRED_PREY", pos, genome, config))
 
@@ -75,7 +76,7 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=Non
 def main():
     try:
         # Configuration
-        NUM_AGENTS = 200
+        NUM_AGENTS = 4000
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "balls.conf"  # Path to your NEAT config file
 

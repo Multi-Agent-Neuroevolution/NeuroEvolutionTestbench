@@ -70,7 +70,7 @@ class Agent(shape):
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
         self.state = State()
-        self.random_movement = np.zeros(2)
+        self.fitness = 0
         self.energy = 0
         self.alive = True
         self.inputs = []
@@ -98,7 +98,7 @@ class Agent(shape):
     def interact(self, obj):
         if obj in self.state.interactables:
             obj.interact(self)
-
+            
     # Update the position of the agent every tick (could be handled differently? Again skeletal basic idea)
     def update_pos(self):
         """
@@ -148,27 +148,6 @@ class Agent(shape):
     def get_relative_pos(self, obj):
         return self.pos - obj.pos
 
-    # Determine what action the agent should take based on its current state
-    def update_action(self):
-        # move randomly
-        if self.state.interactables:
-            # Vectorized!!
-            distances = np.array([np.linalg.norm(self.pos - obj.pos)
-                                 for obj in self.state.interactables])
-            closest_idx = np.argmin(distances)
-            closest_obj = self.state.interactables[closest_idx]
-            distance = distances[closest_idx]
-
-            if distance > 0:
-                # Reuse pre-allocated array
-                np.subtract(closest_obj.pos, self.pos,
-                            out=self.state.direction)
-                self.state.direction /= distance
-                self.pos += self.state.direction
-            else:
-                # Reuse pre-allocated array
-                np.random.uniform(-1, 1, size=2, out=self.random_movement)
-                self.pos += self.random_movement
 
 # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
     def update_metrics(self):
