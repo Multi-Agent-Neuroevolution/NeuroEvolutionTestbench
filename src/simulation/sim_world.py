@@ -9,10 +9,11 @@ import multiprocessing
 import logging
 logger = logging.getLogger(__name__)
 
-def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=None):
+
+def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200]):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
-    env = Environment(simulation_type)
+    env = Environment(simulation_type, steps, bounds)
     env.max_workers = max(1, num_cores - 1)
 
     # Load NEAT configuration
@@ -71,24 +72,23 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=Non
     # Add agents and obstacles to environment
     env.add_agents(agents)
     env.add_obstacles(objects)
-
+    logger.info(f"Starting simulation with {config.pop_size} agents...")
+    logger.info(
+        f"Using {env.max_workers} Logical CPU cores for parallel processing")
     return env, population, config
 
 
 def main():
     try:
         # Configuration
-        NUM_AGENTS = 4000
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
+        STEPS = 100
+        BOUNDS = [-200, 200, -200, 200]
 
         # Create simulation
         env, population, config = create_simulation(
-            num_agents=NUM_AGENTS, simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH)
-
-        logger.info(f"Starting simulation with {NUM_AGENTS} agents...")
-        logger.info(
-            f"Using {env.max_workers} Logical CPU cores for parallel processing")
+            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS)
 
         # Run the simulation
         env.run()
@@ -101,6 +101,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='./Logs/sim.log',level=logging.INFO)
+    logging.basicConfig(filename='./Logs/sim.log', level=logging.INFO)
     logger.info('started')
     main()

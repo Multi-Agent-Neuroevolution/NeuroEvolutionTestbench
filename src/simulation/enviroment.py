@@ -66,11 +66,12 @@ class SpatialGrid:
 
 
 class Environment:
-    def __init__(self, type):
+    def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200)):
         self.agents = []
-        self.bounds = (-200, 200, -200, 200)
+        self.bounds = bounds
         self.obstacles = []
         self.type = type
+        self.steps = steps
         # Can adjust cell size for better performance depending on simulation
         self.spatial_grid = SpatialGrid(self.bounds, cell_size=10)
         self.agent_locks = {}  # locking critical sections for each agent
@@ -237,7 +238,7 @@ class Environment:
 
     def run(self):
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            while True:
+            for _ in range(self.steps):
                 start_time = time.time()
 
                 # Update spatial grid
@@ -259,5 +260,5 @@ class Environment:
 
                 # Append stats to CSV file
                 with open('./Data/simulation_stats.csv', 'a') as f:
-                    f.write(f"{time.time()},{num_prey_alive},{
+                    f.write(f"{time.time()}, {num_prey_alive}, {
                             num_predators_alive}\n")
