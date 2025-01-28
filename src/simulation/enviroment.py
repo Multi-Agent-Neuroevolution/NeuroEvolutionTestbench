@@ -96,17 +96,9 @@ class Environment:
         with self.agent_locks[agent]:
             # Get nearby objects
             nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
-            agent.state.objs = [obj for obj in nearby if obj is not agent]
+            agent.state.objs = [obj for obj in nearby]
 
-            # Update action and handle specific logic
-            if isinstance(agent, Predator):
-                agent.update_action()
-                for obj in agent.state.objs:
-                    if isinstance(obj, Prey) and np.linalg.norm(agent.pos - obj.pos) <= 1:
-                        obj.alive = False  # Prey is caught
-                        agent.energy += 20  # Predator gains energy
-            elif isinstance(agent, Prey):
-                agent.update_action()
+            agent.update_action()
 
             # Check bounds and handle death
             self.check_bounds(agent)

@@ -10,6 +10,7 @@ import neat
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Metrics:
     def __init__(self):
         self._metrics = defaultdict(float)
@@ -63,9 +64,11 @@ class Agent(shape):
         super().__init__("agent", 1, 0, 0, pos)
         self.id = id
         self.age = 0
+        self.type = "agent"
         self.neat_config = neat_config
         self.neat_genome = neat_genome
-        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, neat_config)
+        self.brain = neat.nn.FeedForwardNetwork.create(
+            neat_genome, neat_config)
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
@@ -98,7 +101,7 @@ class Agent(shape):
     def interact(self, obj):
         if obj in self.state.interactables:
             obj.interact(self)
-            
+
     # Update the position of the agent every tick (could be handled differently? Again skeletal basic idea)
     def update_pos(self):
         """
@@ -122,7 +125,12 @@ class Agent(shape):
             relative_pos = self.get_relative_pos(obj)
             distance = np.linalg.norm(relative_pos)  # Euclidean distance
             if obj.shape == "agent" and obj.alive:
-                obj_type = 1 if obj.energy > 0 else 0  # 1 for predator, 0 for prey
+                # 1 for predator, 0 for prey
+                obj_type = 1 if obj.energy > 0 else 0
+                relative_objects.append((distance, relative_pos, obj_type))
+            if obj.shape == "obstacle" and obj.interactible:
+                # 2 for food, 3 for obstacle
+                obj_type = 2 if obj.type == "food" else 3
                 relative_objects.append((distance, relative_pos, obj_type))
 
         # Sort objects by distance
@@ -144,12 +152,13 @@ class Agent(shape):
 
         return self.inputs
 
-
     def get_relative_pos(self, obj):
         return self.pos - obj.pos
 
 
 # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
+
+
     def update_metrics(self):
         """
         empty for now

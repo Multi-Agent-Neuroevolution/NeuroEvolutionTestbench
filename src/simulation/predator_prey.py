@@ -90,18 +90,37 @@ class Prey(Agent):
         # Map action to movement
         if action_choice == 0:  # Move Up
             self.pos[1] += 1.5
-            self.fitness += 0.01  # Reward for moving
+
         elif action_choice == 1:  # Move Down
             self.pos[1] -= 1.5
-            self.fitness += 0.01  # Reward for moving
+
         elif action_choice == 2:  # Move Left
             self.pos[0] -= 1.5
-            self.fitness += 0.01  # Reward for moving
+
         elif action_choice == 3:  # Move Right
             self.pos[0] += 1.5
-            self.fitness += 0.01  # Reward for moving
+
         elif action_choice == 4:  # Eat
             self.eat()  # Implement eat logic for prey (e.g., regenerate energy)
 
+        # Reward for staying alive
+        self.fitness += 0.01
+
     def eat(self):
-        logger.info(f"Prey {self.id} eats")
+        # Prey can eat food to regenerate energy
+        # Find closest food (if any)
+        closest_food = None
+        min_distance = float('inf')
+        for obj in self.state.objs:
+            if obj.type == "food":
+                distance = np.linalg.norm(self.pos - obj.pos)
+                if distance < min_distance:
+                    closest_food = obj
+                    min_distance = distance
+        if closest_food is None:
+            logger.info(f"Prey {self.id} fails to find food")
+            self.fitness -= 0.0005  # Punish for not finding food
+            return
+        else:
+            logger.info(f"Prey {self.id} eats")
+            self.fitness += 0.005
