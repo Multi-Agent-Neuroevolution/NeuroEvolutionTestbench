@@ -246,4 +246,6 @@ class Environment:
 
                 end_time = time.time()
                 print(f"Time taken: {(end_time - start_time)*1000}ms")
-                # self.view(real_time=False)
+                #Print the amount of agents alive
+                print(f"Agents alive: {len(self.agents)}")
+                #self.view(real_time=False)

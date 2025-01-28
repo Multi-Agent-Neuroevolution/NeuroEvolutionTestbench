@@ -1,20 +1,31 @@
+import neat
 import numpy as np
 import matplotlib.pyplot as plt
 from agent import Agent
+from predator_prey import Predator, Prey
 from enviroment import Environment, Obstacle
 import multiprocessing
 
-import logging
-logger = logging.getLogger(__name__)
 
-def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
+def create_simulation(num_agents=5, simulation_type="PRED_PREY", config_path=None):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
     env = Environment(simulation_type)
-    # Leave one core for system processes
     env.max_workers = max(1, num_cores - 1)
 
-    # Create the agents
+    # Load NEAT configuration
+    config = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+
+    # Create the NEAT population
+    population = neat.Population(config)
+
+    # Create agents
     agents = []
     objects = []
 
@@ -45,31 +56,35 @@ def create_simulation(num_agents=5, simulation_type="PRED_PREY"):
         10     # height
     ))
 
-    # Create agents with random positions
-    for i in range(num_agents):
+    # Create agents with genomes
+    for i, (genome_id, genome) in enumerate(population.population.items()):
         pos = np.array([np.random.uniform(-200, 200),
-                       np.random.uniform(-200, 200)])
-        agents.append(Agent(i, "NEAT", "PRED_PREY", pos))
+                        np.random.uniform(-200, 200)])
+        if i % 2 == 0:
+            agents.append(Predator(i, "NEAT", "PRED_PREY", pos, genome, config))
+        else:
+            agents.append(Prey(i, "NEAT", "PRED_PREY", pos, genome, config))
 
     # Add agents and obstacles to environment
     env.add_agents(agents)
     env.add_obstacles(objects)
 
-    return env
+    return env, population, config
 
 
 def main():
     try:
         # Configuration
-        NUM_AGENTS = 4000
+        NUM_AGENTS = 200
         SIMULATION_TYPE = "PRED_PREY"
-        logging.basicConfig(filename='sim.log',level=logging.INFO)
+        CONFIG_PATH = "balls.conf"  # Path to your NEAT config file
 
         # Create simulation
-        env = create_simulation(num_agents=NUM_AGENTS,
-                                simulation_type=SIMULATION_TYPE)
-        logger.info(f"Starting simulation with {NUM_AGENTS} agents...")
-        logger.info(
+        env, population, config = create_simulation(
+            num_agents=NUM_AGENTS, simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH)
+
+        print(f"Starting simulation with {NUM_AGENTS} agents...")
+        print(
             f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
         # Run the simulation

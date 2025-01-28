@@ -3,3 +3,4 @@
 /.vscode/
 /src/simulation/__pycache__/
 sim.log
+/rust-gui/

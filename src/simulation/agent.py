@@ -1,6 +1,7 @@
 import numpy as np
 from collections import defaultdict
 from utils import shape
+import neat
 # This class works in conjunction with the Agent class, used to store all metrics calculated from agent performance
 # Some metric ideas...
 # fitness -> score "physical" capability somehow? or see how fitness is historically calculated
@@ -58,12 +59,13 @@ class State:
 
 
 class Agent(shape):
-    def __init__(self, id, algorithm_name, relationship_name, pos,):
+    def __init__(self, id, algorithm_name, relationship_name, pos, neat_genome, neat_config):
         super().__init__("agent", 1, 0, 0, pos)
         self.id = id
         self.age = 0
+        self.neat_config = neat_config
         self.neat_genome = neat_genome
-        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, config)
+        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, neat_config)
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
@@ -71,7 +73,7 @@ class Agent(shape):
         self.random_movement = np.zeros(2)
         self.energy = 0
         self.alive = True
-        self.inputs
+        self.inputs = []
 
     def init_algorithm(self, algorithm_name):
         try:
@@ -111,16 +113,37 @@ class Agent(shape):
             if np.linalg.norm(self.pos - obj.pos) <= 3
         ]
 
-    def get_inputs(self):
-        self.inputs = []
+    def get_inputs(self, max_closest=5):
+        # List to store relative positions and object type
+        relative_objects = []
+
+        # Collect relative positions and object types
         for obj in self.state.objs:
             relative_pos = self.get_relative_pos(obj)
-            if obj.shape == "agent":
-                if obj.alive:
-                    if obj.energy > 0:
-                        self.inputs.append((relative_pos, "pred"))
-                    else:
-                        self.inputs.append((relative_pos, "prey"))
+            distance = np.linalg.norm(relative_pos)  # Euclidean distance
+            if obj.shape == "agent" and obj.alive:
+                obj_type = 1 if obj.energy > 0 else 0  # 1 for predator, 0 for prey
+                relative_objects.append((distance, relative_pos, obj_type))
+
+        # Sort objects by distance
+        relative_objects.sort(key=lambda x: x[0])
+
+        # Take the 5 closest objects (or fewer if there aren't 5)
+        closest_objects = relative_objects[:max_closest]
+
+        # Flatten inputs (distance, x, y, type for each object)
+        self.inputs = []
+        for _, rel_pos, obj_type in closest_objects:
+            self.inputs.append(rel_pos[0])  # x position
+            self.inputs.append(rel_pos[1])  # y position
+            self.inputs.append(obj_type)   # object type
+
+        # Pad inputs to ensure a fixed size
+        while len(self.inputs) < max_closest * 3:  # 3: x, y, type
+            self.inputs.append(0.0)
+
+        return self.inputs
+
 
     def get_relative_pos(self, obj):
         return self.pos - obj.pos
