@@ -86,7 +86,7 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     for agent in predators + preys:
         if agent.neat_genome:
             # scale the fitness of the agent using like tanh (0-100)
-            agent.fitness = np.tanh(agent.fitness) * 100
+            #agent.fitness = np.tanh(agent.fitness) * 100
             # Sync agent fitness with genome fitness
             agent.neat_genome.fitness = agent.fitness
     avg_pred_fitness = np.mean(
@@ -105,30 +105,47 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     # Function to breed and mutate agents
     def breed_and_mutate(parents, is_predator, num_offspring):
         new_agents = []
-        for _ in range(num_offspring):
-            # Select two random parents
-            parent1 = random.choice(parents)
-            parent2 = random.choice(parents)
+        if len(parents) == 0:
+            #generate new parents randomly
+            for _ in range(num_offspring):
+                # Create a child genome by crossover
+                child_id = random.randint(0, 100000)
+                child_genome = neat.DefaultGenome(child_id)
+                child_genome.configure_new(config.genome_config)
+                pos = (random.randint(0, 100), random.randint(
+                    0, 100))  # Random position
+                if is_predator:
+                    new_agent = Predator(
+                        child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                else:
+                    new_agent = Prey(child_id, "NEAT", "PRED_PREY",
+                                    pos, child_genome, config)
+                new_agents.append(new_agent)
+        else:
+            for _ in range(num_offspring):
+                # Select two random parents
+                parent1 = random.choice(parents)
+                parent2 = random.choice(parents)
 
-            # Create a child genome by crossover
-            child_id = random.randint(0, 100000)  # Generate a unique ID
-            child_genome = neat.DefaultGenome(child_id)
-            child_genome.configure_crossover(
-                parent1.neat_genome, parent2.neat_genome, config)
+                # Create a child genome by crossover
+                child_id = random.randint(0, 100000)  # Generate a unique ID
+                child_genome = neat.DefaultGenome(child_id)
+                child_genome.configure_crossover(
+                    parent1.neat_genome, parent2.neat_genome, config)
 
-            # Mutate the child's genome
-            child_genome.mutate(config.genome_config)
+                # Mutate the child's genome
+                child_genome.mutate(config.genome_config)
 
-            # Create a new agent based on the child genome
-            pos = (random.randint(0, 100), random.randint(
-                0, 100))  # Random position
-            if is_predator:
-                new_agent = Predator(
-                    child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
-            else:
-                new_agent = Prey(child_id, "NEAT", "PRED_PREY",
-                                 pos, child_genome, config)
-            new_agents.append(new_agent)
+                # Create a new agent based on the child genome
+                pos = (random.randint(0, 100), random.randint(
+                    0, 100))  # Random position
+                if is_predator:
+                    new_agent = Predator(
+                        child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                else:
+                    new_agent = Prey(child_id, "NEAT", "PRED_PREY",
+                                    pos, child_genome, config)
+                new_agents.append(new_agent)
         return new_agents
 
     # Number of offspring to create for predators and prey
@@ -196,8 +213,8 @@ def main():
         # Configuration
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
-        STEPS = 500
-        EPOCHS = 50
+        STEPS = 1000
+        EPOCHS = 200
         BOUNDS = [-200, 200, -200, 200]
         RATIO = 0.75
         FOODAMOUNT = 400

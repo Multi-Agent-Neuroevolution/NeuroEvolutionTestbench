@@ -28,19 +28,19 @@ class Predator(Agent):
             if action_choice == 0:  # Move Up
                 self.pos[1] += 1
                 # Energy loss for moving
-                self.energy -= 0.05  # Energy consumed per movement
+                self.energy -= 0.15  # Energy consumed per movement
             elif action_choice == 1:  # Move Down
                 self.pos[1] -= 1
                 # Energy loss for moving
-                self.energy -= 0.05  # Energy consumed per movement
+                self.energy -= 0.15  # Energy consumed per movement
             elif action_choice == 2:  # Move Left
                 self.pos[0] -= 1
                 # Energy loss for moving
-                self.energy -= 0.05  # Energy consumed per movement
+                self.energy -= 0.15  # Energy consumed per movement
             elif action_choice == 3:  # Move Right
                 self.pos[0] += 1
                 # Energy loss for moving
-                self.energy -= 0.05  # Energy consumed per movement
+                self.energy -= 0.15  # Energy consumed per movement
             elif action_choice == 4:  # Eat
                 self.eat()
 
@@ -63,13 +63,13 @@ class Predator(Agent):
                     closest_prey = obj
                     min_distance = distance
         if (closest_prey is None):
-            self.energy -= 1
+            self.energy -= 4
             return
         else:
             # Predator eats the closest prey, gains energy, and removes the prey
             logger.info(f"Predator {self.id} eats prey {
                         closest_prey.id} and gains energy.")
-            self.energy += 2  # Regain energy (this can be adjusted)
+            self.energy += 12  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
             self.prey_eaten += 1  # Increment prey eaten counter
 
@@ -104,7 +104,7 @@ class Prey(Agent):
             self.eat()  # Implement eat logic for prey (e.g., regenerate energy)
 
         # Reward for staying alive
-        self.fitness += 0.01
+        self.fitness += 0.1
 
     def eat(self):
         # Prey can eat food to regenerate energy
@@ -119,8 +119,8 @@ class Prey(Agent):
                     min_distance = distance
         if closest_food is None:
             logger.info(f"Prey {self.id} fails to find food")
-            self.fitness -= 0.0005  # Punish for not finding food
+            self.fitness -= 0.025  # Punish for not finding food
             return
         else:
             logger.info(f"Prey {self.id} eats")
-            self.fitness += 0.005
+            self.fitness += 0.05

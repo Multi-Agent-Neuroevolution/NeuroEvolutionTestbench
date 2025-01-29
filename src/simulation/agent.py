@@ -145,11 +145,11 @@ class Agent(shape):
             self.inputs.append(rel_pos[0])  # x position
             self.inputs.append(rel_pos[1])  # y position
             self.inputs.append(obj_type)   # object type
-
+        
         # Pad inputs to ensure a fixed size
-        while len(self.inputs) < max_closest * 3:  # 3: x, y, type
+        while len(self.inputs) < (max_closest * 3):  # 3: x, y, type
             self.inputs.append(0.0)
-
+        self.inputs.append(self.energy)  # Add energy as input
         return self.inputs
 
     def get_relative_pos(self, obj):
