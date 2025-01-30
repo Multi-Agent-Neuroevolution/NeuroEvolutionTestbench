@@ -22,6 +22,7 @@ class Obstacle(shape):
         self.interactible = interactible
         # used to determine the type of obstacle, such as food, door, etc.
         self.type = type
+        self.alive = True
         # used to determine if the agent has reached the goal for simulations where the task is to reach a goal. Not used for predator-prey
         self.isGoal = isGoal
 
@@ -60,12 +61,13 @@ class SpatialGrid:
 
 
 class Environment:
-    def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200)):
+    def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200), food_spawn_rate=0.1):
         self.agents = []
         self.bounds = bounds
         self.obstacles = []
         self.type = type
         self.steps = steps
+        self.food_spawn_rate = food_spawn_rate
         # Can adjust cell size for better performance depending on simulation
         self.spatial_grid = SpatialGrid(self.bounds, cell_size=10)
         self.agent_locks = {}  # locking critical sections for each agent
@@ -213,6 +215,20 @@ class Environment:
         else:
             plt.show()
 
+    def food_handler(self):
+        for obs in self.obstacles:
+            if obs.type == "food":
+                if obs.alive == False:
+                    # remove food
+                    self.obstacles.remove(obs)
+        # Respawn food
+        if np.random.rand() < self.food_spawn_rate:
+            pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
+                            np.random.uniform(self.bounds[2], self.bounds[3])])
+            food = Obstacle(pos, type="food", hasCollision=False,
+                            color="green", interactible=True, isGoal=False, shape="circle", radius=5, width=0, height=0)
+            self.obstacles.append(food)
+
     def check_bounds(self, agent):
         # Existing bounds checking code...
         if agent.pos[0] < self.bounds[0]:
@@ -254,9 +270,10 @@ class Environment:
                 # Update spatial grid
                 self.update_spatial_grid()
 
-                # Process agents in parallel
+                # Handle Agents
                 list(executor.map(self.update_agent, self.agents))
-
+                # Handle food
+                self.food_handler()
                 # end_time = time.time()
                 # print(f"Time taken: {(end_time - start_time)*1000}ms")
                 # print number of prey and predatorys alive
@@ -268,29 +285,5 @@ class Environment:
                 # print(f"Number of Prey Alive: {num_prey_alive}")
                 # print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
-                fittest_predator = max(
-                    (agent for agent in self.agents if isinstance(agent, Predator)),
-                    key=lambda a: a.fitness,
-                    default=None
-                )
-                fittest_prey = max(
-                    (agent for agent in self.agents if isinstance(agent, Prey)),
-                    key=lambda a: a.fitness,
-                    default=None
-                )
-
-                if fittest_predator:
-                    print(
-                        f"Fittest Predator: {fittest_predator.id} Position: {fittest_predator.pos} Energy: {fittest_predator.energy} Fitness: {fittest_predator.fitness} Alive: {fittest_predator.alive}"
-                    )
-
-                if fittest_prey:
-                    print(
-                        f"Fittest Prey: {fittest_prey.id} Position: {fittest_prey.pos} Energy: {fittest_prey.energy} Fitness: {fittest_prey.fitness} Alive: {fittest_prey.alive}"
-                    )
-                # Check for collisions
-                for agent in self.agents:
-                    if agent.state.collisions:
-                        print(
-                            f"Agent {agent.id} has collisions: {agent.state.collisions} at position {agent.pos} with objects at {[obj.pos for obj in agent.state.collisions]}")
+                # Find amount of food left
                 # self.view(real_time=True)

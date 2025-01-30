@@ -124,4 +124,5 @@ class Prey(Agent):
             return
         else:
             logger.info(f"Prey {self.id} eats")
+            obj.alive = False  # Remove food by marking it as dead
             self.fitness += 0.05

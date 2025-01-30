@@ -40,3 +40,6 @@ Avg nodes: 9.0, Avg connections: 84.0
 Avg nodes: 9.0, Avg connections: 84.0
 Avg nodes: 9.0, Avg connections: 84.0
 Avg nodes: 9.0, Avg connections: 84.0
+Avg nodes: 9.0, Avg connections: 84.0
+Avg nodes: 9.0, Avg connections: 84.0
+Avg nodes: 9.0, Avg connections: 84.0

@@ -13,10 +13,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50]):
+def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
-    env = Environment(simulation_type, steps, bounds)
+    env = Environment(simulation_type, steps, bounds, food_respawn_rate)
     env.max_workers = max(1, num_cores - 1)
 
     # Load NEAT configuration
@@ -231,10 +231,11 @@ def main():
         PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
         RATIO = 0.75
         FOODAMOUNT = 100
+        FOOD_RESPAWN_RATE = 0.1
         pred_percent = 1 - RATIO
         # Create simulation
         env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
-            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT, prey_spawn_bounds=PREY_SPAWN_BOUNDS, pred_spawn_bounds=PRED_SPAWN_BOUNDS)
+            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT, prey_spawn_bounds=PREY_SPAWN_BOUNDS, pred_spawn_bounds=PRED_SPAWN_BOUNDS, food_respawn_rate=FOOD_RESPAWN_RATE)
 
         log_avg_network_size(env.agents)
         # Run the simulation
