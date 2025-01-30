@@ -77,6 +77,7 @@ class Agent(shape):
         self.energy = 0
         self.alive = True
         self.inputs = []
+        self.hasCollision = False
 
     def init_algorithm(self, algorithm_name):
         try:
@@ -145,10 +146,10 @@ class Agent(shape):
             self.inputs.append(rel_pos[0])  # x position
             self.inputs.append(rel_pos[1])  # y position
             self.inputs.append(obj_type)   # object type
-        
+
         # Pad inputs to ensure a fixed size
         while len(self.inputs) < (max_closest * 3):  # 3: x, y, type
-            self.inputs.append(0.0)
+            self.inputs.append(-999)
         self.inputs.append(self.energy)  # Add energy as input
         return self.inputs
 
@@ -157,7 +158,6 @@ class Agent(shape):
 
 
 # Handle updating each metric, then calculating a final value (fitness value?). Need to determine metrics
-
 
     def update_metrics(self):
         """
@@ -180,20 +180,52 @@ class Agent(shape):
         pass
 
     def get_collisions(self):
-        self.state.collisions.clear()  # Clear the list of collisions
+        self.state.collisions.clear()
         for obj in self.state.objs:
-            if obj.shape != "agent" and obj.hasCollision:   # Only check for collisions with obstacles
-                if np.linalg.norm(self.pos - obj.pos) <= self.radius:
+            if not obj.hasCollision:
+                continue
+
+            if obj.shape == "circle":
+                # Check collision with circular objects
+                dist = np.linalg.norm(self.pos - obj.pos)
+                if dist <= self.radius + obj.radius:
                     self.state.collisions.append(obj)
+
+            elif obj.shape == "rectangle":
+                # Check collision with AABB
+                if (self.pos[0] + self.radius >= obj.pos[0] - obj.width / 2 and
+                    self.pos[0] - self.radius <= obj.pos[0] + obj.width / 2 and
+                    self.pos[1] + self.radius >= obj.pos[1] - obj.height / 2 and
+                        self.pos[1] - self.radius <= obj.pos[1] + obj.height / 2):
+                    self.state.collisions.append(obj)
+
         return self.state.collisions
 
     def solve_collision(self):
-        # Create copy of list for iteration. This is necessary because we are modifying the list. But it is kinda slow
         for collision in self.state.collisions[:]:
-            # Reuse pre-allocated arrays FAST!!
-            np.subtract(self.pos, collision.pos, out=self.state.direction)
-            norm = np.linalg.norm(self.state.direction)
-            if norm > 0:
-                self.state.direction /= norm
-                self.pos += self.state.direction
-            self.state.collisions.remove(collision)
+            if collision.shape == "circle":
+                # Compute vector from obstacle to agent
+                direction = self.pos - collision.pos
+                norm = np.linalg.norm(direction)
+                if norm > 0:
+                    direction /= norm  # Normalize
+                    # Move agent to nearest valid position outside the circle
+                    self.pos = collision.pos + direction * \
+                        (collision.radius + self.radius)
+
+            elif collision.shape == "rectangle":
+                # Get the nearest valid position outside the rectangle
+                nearest_x = np.clip(
+                    self.pos[0], collision.pos[0] - collision.width / 2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
+                nearest_y = np.clip(
+                    self.pos[1], collision.pos[1] - collision.height / 2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
+
+                # Compute vector from the nearest point to the agent
+                direction = self.pos - np.array([nearest_x, nearest_y])
+                norm = np.linalg.norm(direction)
+
+                if norm > 0:
+                    direction /= norm  # Normalize
+                    # Move agent just outside the obstacle
+                    self.pos = np.array([nearest_x, nearest_y]
+                                        ) + direction * self.radius

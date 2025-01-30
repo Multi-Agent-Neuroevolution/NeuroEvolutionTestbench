@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10):
+def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50]):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
     env = Environment(simulation_type, steps, bounds)
@@ -53,17 +53,28 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
             0,    # width
             0     # height
         ))
-
+    objects.append(Obstacle(
+        np.array([0, 0]),  # Center of the rectangle
+        "obstacle",
+        True,  # hasCollision
+        "red",  # color
+        False,  # interactible
+        False,  # isGoal
+        "rectangle",
+        0,     # radius (0 for rectangle)
+        100,    # width
+        45     # height
+    ))
     # Create agents with genomes
     for i in range(pred_pop):
-        pos = np.array([np.random.uniform(bounds[0], bounds[1]),
-                        np.random.uniform(bounds[2], bounds[3])])
+        pos = np.array([np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+                        np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])])
         genome = population.population[i+1]
         agent = Predator(i, "NEAT", "PRED_PREY", pos, genome, config)
         agents.append(agent)
     for i in range(prey_pop):
-        pos = np.array([np.random.uniform(bounds[0], bounds[1]),
-                        np.random.uniform(bounds[2], bounds[3])])
+        pos = np.array([np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
+                        np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])])
         genome = population.population[i + pred_pop]
         agent = Prey(i + pred_pop, "NEAT",
                      "PRED_PREY", pos, genome, config)
@@ -86,7 +97,7 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     for agent in predators + preys:
         if agent.neat_genome:
             # scale the fitness of the agent using like tanh (0-100)
-            #agent.fitness = np.tanh(agent.fitness) * 100
+            # agent.fitness = np.tanh(agent.fitness) * 100
             # Sync agent fitness with genome fitness
             agent.neat_genome.fitness = agent.fitness
     avg_pred_fitness = np.mean(
@@ -106,7 +117,7 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     def breed_and_mutate(parents, is_predator, num_offspring):
         new_agents = []
         if len(parents) == 0:
-            #generate new parents randomly
+            # generate new parents randomly
             for _ in range(num_offspring):
                 # Create a child genome by crossover
                 child_id = random.randint(0, 100000)
@@ -119,7 +130,7 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
                         child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
                 else:
                     new_agent = Prey(child_id, "NEAT", "PRED_PREY",
-                                    pos, child_genome, config)
+                                     pos, child_genome, config)
                 new_agents.append(new_agent)
         else:
             for _ in range(num_offspring):
@@ -144,7 +155,7 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
                         child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
                 else:
                     new_agent = Prey(child_id, "NEAT", "PRED_PREY",
-                                    pos, child_genome, config)
+                                     pos, child_genome, config)
                 new_agents.append(new_agent)
         return new_agents
 
@@ -213,24 +224,27 @@ def main():
         # Configuration
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
-        STEPS = 1000
-        EPOCHS = 200
+        STEPS = 1500
+        EPOCHS = 20
         BOUNDS = [-200, 200, -200, 200]
+        PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
+        PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
         RATIO = 0.75
-        FOODAMOUNT = 400
+        FOODAMOUNT = 100
         pred_percent = 1 - RATIO
         # Create simulation
         env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
-            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT)
+            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT, prey_spawn_bounds=PREY_SPAWN_BOUNDS, pred_spawn_bounds=PRED_SPAWN_BOUNDS)
 
-        # Run the simulation
         log_avg_network_size(env.agents)
+        # Run the simulation
         for i in range(EPOCHS):
             env.run()
             mutate(population, config, env, populationSize, pred_pop, prey_pop)
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")
+
         # save the pred and prey genomes
         with open('./Data/pred_genomes.pkl', 'wb') as f:
             pickle.dump([agent.neat_genome for agent in env.agents if isinstance(
