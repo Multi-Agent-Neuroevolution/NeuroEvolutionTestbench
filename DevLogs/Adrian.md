@@ -68,3 +68,19 @@ The team met virtually over Discord, with the intent of completing our video pre
 
 ### Date: December 5th, 2024
 The team met in person today at the poster presentation session. We stayed in the Lehman building atrium for the duration of the event; I spoke with a few group members of other projects, as well to others about our own project. I also helped with the completion of the test plan document, which was due tonight.
+
+### Date: January 23rd, 2025
+The team met today during class time. I finally fixed my dependency issues, although the manner I did so was unconventional. Because of this, I recommended--and subsequently took it upon myself--to clean the project file structure. When the extra branches we had on GitHub were cleaned up, the merges must have resulted in some wonky directory, such as there being a "simulation" folder nested within a parent "Simulation" folder for no real reason.
+
+Since I was reworking the file structuring, I also adjusted the dependency installation process, mainly Poetry for the Python packages.
+
+### Date: January 24th, 2025
+I finalized the project file structure rework, and pushed the changes to the feature branch focused on the implementation of HyperNEAT.
+
+### Date: January 28th, 2025
+The team met in person today, with a major breakthrough: basic NEAT configuration was finally implemented into the program. There are still major issues to adjust, since as it stands, both predator and prey populations populate instantaneously at the start. Since the environment boundaries are static, with a large enough population size, this results in a mass casualty event within the first few ticks thanks to there being no free space for prey to not be covered by predators. I updated the .gitignore file for our project to accomodate for new logging implementations.
+
+### Date: January 30th, 2025
+The team met in person today. We were able to finally see the agents working autonomously in a basic simulation, where the statistics were recorded that showed the average fitness values of both predator and prey populations fluctuating over time. We touched on steps to complete the SRS document, as it is due at the start of this next week.
+
+Since our main Python file used for creating and running the simulation was starting to become overly large, I worked on reformatting the file to cut down on this issue. This mainly consisted of creating a new, dedicated Python file for logging purposes (besides the basic sim.log).
