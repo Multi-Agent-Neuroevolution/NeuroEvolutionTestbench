@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import time
 from utils import shape
 from predator_prey import Predator, Prey
+from agent import State
 import json
 
 import logging
@@ -21,15 +22,9 @@ class Obstacle(shape):
         self.interactible = interactible
         # used to determine the type of obstacle, such as food, door, etc.
         self.type = type
+        self.alive = True
         # used to determine if the agent has reached the goal for simulations where the task is to reach a goal. Not used for predator-prey
         self.isGoal = isGoal
-
-    def interact(self, agent):
-        if self.interactible:
-            if self.type == "food":
-                agent.state.fitness += 1  # True American units
-            elif self.type == "door":
-                self.hasCollision = not self.hasCollision
 
 
 class SpatialGrid:
@@ -66,12 +61,13 @@ class SpatialGrid:
 
 
 class Environment:
-    def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200)):
+    def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200), food_spawn_rate=0.1):
         self.agents = []
         self.bounds = bounds
         self.obstacles = []
         self.type = type
         self.steps = steps
+        self.food_spawn_rate = food_spawn_rate
         # Can adjust cell size for better performance depending on simulation
         self.spatial_grid = SpatialGrid(self.bounds, cell_size=10)
         self.agent_locks = {}  # locking critical sections for each agent
@@ -105,6 +101,8 @@ class Environment:
             if not agent.alive:
                 agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
+            agent.get_collisions()
+            agent.solve_collision()
 
     def view(self, real_time=False):
         """
@@ -217,6 +215,20 @@ class Environment:
         else:
             plt.show()
 
+    def food_handler(self):
+        for obs in self.obstacles:
+            if obs.type == "food":
+                if obs.alive == False:
+                    # remove food
+                    self.obstacles.remove(obs)
+        # Respawn food
+        if np.random.rand() < self.food_spawn_rate:
+            pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
+                            np.random.uniform(self.bounds[2], self.bounds[3])])
+            food = Obstacle(pos, type="food", hasCollision=False,
+                            color="green", interactible=True, isGoal=False, shape="circle", radius=5, width=0, height=0)
+            self.obstacles.append(food)
+
     def check_bounds(self, agent):
         # Existing bounds checking code...
         if agent.pos[0] < self.bounds[0]:
@@ -228,20 +240,22 @@ class Environment:
         if agent.pos[1] > self.bounds[3]:
             agent.pos[1] = self.bounds[3]-1
 
-    def reset(self):
+    def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
         # reset the agents positions
         for agent in self.agents:
-            agent.pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
-                                  np.random.uniform(self.bounds[2], self.bounds[3])])
-            agent.alive = True
             if isinstance(agent, Predator):
+                pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]),
+                                np.random.uniform(predator_bound[2], predator_bound[3])])
+                agent.pos = pos
                 agent.energy = 100
                 agent.prey_eaten = 0
             else:
+                pos = np.array([np.random.uniform(prey_bound[0], prey_bound[1]),
+                                np.random.uniform(prey_bound[2], prey_bound[3])])
+                agent.pos = pos
                 agent.energy = 0
             agent.fitness = 0
-            agent.state.fitness = 0
-            agent.state.objs = []
+            agent.state = State()
 
     def overwrite_agents(self, agents):
         self.agents = agents
@@ -256,16 +270,20 @@ class Environment:
                 # Update spatial grid
                 self.update_spatial_grid()
 
-                # Process agents in parallel
+                # Handle Agents
                 list(executor.map(self.update_agent, self.agents))
-
-                end_time = time.time()
-                print(f"Time taken: {(end_time - start_time)*1000}ms")
+                # Handle food
+                self.food_handler()
+                # end_time = time.time()
+                # print(f"Time taken: {(end_time - start_time)*1000}ms")
                 # print number of prey and predatorys alive
-                num_prey_alive = len(
-                    [agent for agent in self.agents if isinstance(agent, Prey)])
-                num_predators_alive = len(
-                    [agent for agent in self.agents if isinstance(agent, Predator)])
+                # num_prey_alive = len(
+                #     [agent for agent in self.agents if isinstance(agent, Prey)])
+                # num_predators_alive = len(
+                #     [agent for agent in self.agents if isinstance(agent, Predator)])
 
-                print(f"Number of Prey Alive: {num_prey_alive}")
-                print(f"Number of Predators Alive: {num_predators_alive}")
+                # print(f"Number of Prey Alive: {num_prey_alive}")
+                # print(f"Number of Predators Alive: {num_predators_alive}")
+                # Find the fittest predator and prey
+                # Find amount of food left
+                # self.view(real_time=True)
