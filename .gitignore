@@ -2,6 +2,11 @@
 /.venv/
 /.vscode/
 /Data/simulation_stats.csv
+/src/simulation/simulation_stats.csv
 /src/simulation/__pycache__/
+/Data/final_genomes.json
+/Data/fitness.csv
+/Data/network_size_log.txt
 /Logs/sim.log
+/sim.log
 /rust-gui/
