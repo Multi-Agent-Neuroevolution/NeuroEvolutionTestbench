@@ -56,7 +56,7 @@ class Predator(Agent):
         closest_prey = None
         min_distance = float('inf')
 
-        for obj in self.state.objs:
+        for obj in self.state.interactables:
             if obj.shape == "agent" and obj.alive and isinstance(obj, Prey):
                 distance = np.linalg.norm(self.pos - obj.pos)
                 if distance < min_distance:
@@ -71,6 +71,7 @@ class Predator(Agent):
             self.energy += 12  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
             self.prey_eaten += 1  # Increment prey eaten counter
+            # Share with predators around it
 
 
 class Prey(Agent):
@@ -122,4 +123,5 @@ class Prey(Agent):
             return
         else:
             logger.info(f"Prey {self.id} eats")
+            obj.alive = False  # Remove food by marking it as dead
             self.fitness += 0.05
