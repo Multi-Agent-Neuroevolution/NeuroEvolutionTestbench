@@ -186,7 +186,7 @@ def main():
 
         # Creates simulation environment
         env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
-            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT)
+            simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT, prey_spawn_bounds=PREY_SPAWN_BOUNDS, pred_spawn_bounds=PRED_SPAWN_BOUNDS, food_respawn_rate=FOOD_RESPAWN_RATE)
 
         # Create log for the average network size
         logs.log_avg_network_size(env.agents)
@@ -198,7 +198,7 @@ def main():
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")
-        
+
         # Create logs for genome information
         logs.pickle_genomes(env.agents)
         logs.save_genomes_json(env.agents)
