@@ -1,0 +1,16 @@
+syntax="proto3";
+package comms;
+service NeuroEvolution{
+    rpc FetchEnvironmentFrame (Command) returns (stream Environment);
+}
+
+message Command{
+    string In = 1;
+    string Out = 2;
+}
+
+message Environment{
+    string json_data=1;
+    bool success=2;
+    string message=3;
+}
