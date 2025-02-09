@@ -1,6 +1,6 @@
 syntax="proto3";
 package comms;
-service communication{
+service Communication{
     rpc FetchEnvironmentStream (Command) returns (stream JSONData);
     rpc FetchNeuralNet (Command) returns (JSONData);
 }
