@@ -1,12 +1,11 @@
 syntax="proto3";
 package comms;
 service NeuroEvolution{
-    rpc FetchEnvironmentFrame (Command) returns (stream Environment);
+    rpc FetchEnvironmentStream (Command) returns (stream Environment);
 }
 
 message Command{
     string In = 1;
-    string Out = 2;
 }
 
 message Environment{
