@@ -159,3 +159,17 @@ TOday I was meeting with the rest of the team to discuss how to finalize our com
 On this day we made the decision to merge all of our backend code into dev finalizing what we have for our base modules.
 * 12/05/2024
 The team met for a poster session and last night we recorded our 10 minute video.
+* 1/16/2025
+Made Agent brain class for NEAT training
+* 1/18/2025
+Talked with the team on how to make the AI and how to work on the simulations
+* 1/23/2025
+worked on the simulation configuration system
+* 1/28/2025
+worked on fixing some problems to make sure the simulation works across platforms
+* 1/30/2025
+worked with team to clean project directories
+* 2/4/2025
+merged some pull requests to place features into dev and how the food system works
+* 2/9/2025
+started API for the two systems to talk to eachother
