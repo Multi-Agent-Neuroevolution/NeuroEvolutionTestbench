@@ -1,14 +1,13 @@
 syntax="proto3";
 package comms;
-service NeuroEvolution{
+service communication{
     rpc FetchEnvironmentStream (Command) returns (stream JSONData);
-    rpc FetchNeuralNet (Command) returns (JSONData)
+    rpc FetchNeuralNet (Command) returns (JSONData);
 }
 
 message Command{
     string In = 1;
 }
-
 message JSONData{
     string json_data=1;
     bool success=2;

@@ -4,6 +4,8 @@
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, row, text, Column, Row};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
+use tokio::sync::mpsc;
+mod WebClient;
 mod neural_net;
 mod sim_view;
 use iced::time;
