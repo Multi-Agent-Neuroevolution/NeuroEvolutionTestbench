@@ -44,7 +44,8 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     for i in range(food_amount):
         objects.append(Obstacle(
             np.array([np.random.uniform(bounds[0], bounds[1]),
-                      np.random.uniform(bounds[2], bounds[3])]),  # Center of the rectangle
+                      # Center of the rectangle
+                      np.random.uniform(bounds[2], bounds[3])]),
             "food",
             False,  # hasCollision
             "green",  # color

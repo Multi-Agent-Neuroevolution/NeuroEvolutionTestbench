@@ -274,14 +274,13 @@ class Environment:
                 list(executor.map(self.update_agent, self.agents))
                 # Handle food
                 self.food_handler()
-                # end_time = time.time()
-                # print(f"Time taken: {(end_time - start_time)*1000}ms")
+                end_time = time.time()
+                print(f"Time taken: {(end_time - start_time)*1000}ms")
                 # print number of prey and predatorys alive
                 # num_prey_alive = len(
                 #     [agent for agent in self.agents if isinstance(agent, Prey)])
                 # num_predators_alive = len(
                 #     [agent for agent in self.agents if isinstance(agent, Predator)])
-
                 # print(f"Number of Prey Alive: {num_prey_alive}")
                 # print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
