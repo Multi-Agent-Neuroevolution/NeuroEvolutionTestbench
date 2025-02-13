@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from utils import shape
+from utils import Shape
 import neat
 # This class works in conjunction with the Agent class, used to store all metrics calculated from agent performance
 # Some metric ideas...
@@ -59,7 +59,7 @@ class State:
         self.direction = np.zeros(2)
 
 
-class Agent(shape):
+class Agent(Shape):
     def __init__(self, id, algorithm_name, relationship_name, pos, neat_genome, neat_config):
         super().__init__("agent", 1, 0, 0, pos)
         self.id = id
@@ -67,8 +67,7 @@ class Agent(shape):
         self.type = "agent"
         self.neat_config = neat_config
         self.neat_genome = neat_genome
-        self.brain = neat.nn.FeedForwardNetwork.create(
-            neat_genome, neat_config)
+        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, neat_config)
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
         self.metrics = Metrics()
@@ -215,10 +214,8 @@ class Agent(shape):
 
             elif collision.shape == "rectangle":
                 # Get the nearest valid position outside the rectangle
-                nearest_x = np.clip(
-                    self.pos[0], collision.pos[0] - collision.width / 2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
-                nearest_y = np.clip(
-                    self.pos[1], collision.pos[1] - collision.height / 2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
+                nearest_x = np.clip(self.pos[0], collision.pos[0] - collision.width / 2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
+                nearest_y = np.clip(self.pos[1], collision.pos[1] - collision.height / 2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
 
                 # Compute vector from the nearest point to the agent
                 direction = self.pos - np.array([nearest_x, nearest_y])
@@ -227,5 +224,4 @@ class Agent(shape):
                 if norm > 0:
                     direction /= norm  # Normalize
                     # Move agent just outside the obstacle
-                    self.pos = np.array([nearest_x, nearest_y]
-                                        ) + direction * self.radius
+                    self.pos = np.array([nearest_x, nearest_y]) + direction * self.radius

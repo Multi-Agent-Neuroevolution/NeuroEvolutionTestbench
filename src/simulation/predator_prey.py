@@ -20,29 +20,25 @@ class Predator(Agent):
             # Neural network activation AI!!!! LLM BLOCK CHAIN AI CHAIN!
             action = self.brain.activate(self.inputs)
 
-            # Determine action (move or eat)
-            # 5 outputs (move up, down, left, right, eat)
+            # Determine action (move or eat), then match it to the match statement below
             action_choice = np.argmax(action)
-
-            # Map action to movement or eating OM NOM NOM NOM NOM!!!
-            if action_choice == 0:  # Move Up
-                self.pos[1] += 1
-                # Energy loss for moving
-                self.energy -= 0.15  # Energy consumed per movement
-            elif action_choice == 1:  # Move Down
-                self.pos[1] -= 1
-                # Energy loss for moving
-                self.energy -= 0.15  # Energy consumed per movement
-            elif action_choice == 2:  # Move Left
-                self.pos[0] -= 1
-                # Energy loss for moving
-                self.energy -= 0.15  # Energy consumed per movement
-            elif action_choice == 3:  # Move Right
-                self.pos[0] += 1
-                # Energy loss for moving
-                self.energy -= 0.15  # Energy consumed per movement
-            elif action_choice == 4:  # Eat
-                self.eat()
+            match action_choice:
+                case 0:  # Agent moves up
+                    self.pos[1] += 1
+                    self.energy -= 0.15
+                case 1:  # Agent moves down
+                    self.pos[1] -= 1
+                    self.energy -= 0.15
+                case 2:  # Agent moves left
+                    self.pos[0] -= 1
+                    self.energy -= 0.15
+                case 3:  # Agent moves right
+                    self.pos[0] += 1
+                    self.energy -= 0.15
+                case 4:  # Agent eats a prey
+                    self.eat()
+                case _:  # Default case (should replace pass)
+                    pass
 
             # Calculate fitness
             self.calc_fitness()
@@ -52,21 +48,22 @@ class Predator(Agent):
         self.fitness = self.prey_eaten*10 + self.energy/3
 
     def eat(self):
-        # Find closest prey (if any)
         closest_prey = None
         min_distance = float('inf')
 
+        # Runs through all prey agent-type objects to find the closest prey
         for obj in self.state.interactables:
             if obj.shape == "agent" and obj.alive and isinstance(obj, Prey):
                 distance = np.linalg.norm(self.pos - obj.pos)
                 if distance < min_distance:
                     closest_prey = obj
                     min_distance = distance
+
+        # If there's no prey nearby, deduct energy; otherwise, eat the prey (marking it as dead) and gain energy
         if (closest_prey is None):
             self.energy -= 4
             return
         else:
-            # Predator eats the closest prey, gains energy, and removes the prey
             logger.info(f"Predator {self.id} eats prey {closest_prey.id} and gains energy.")
             self.energy += 12  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
@@ -79,49 +76,47 @@ class Prey(Agent):
         super().__init__(id, "NEAT", "PRED_PREY", pos, neat_genome, neat_config)
 
     def update_action(self):
-
         self.get_inputs()
-        action = self.brain.activate(self.inputs)  # Neural network activation
+        action = self.brain.activate(self.inputs)  # IMPORTANT: The neural network is activated here
 
-        # Determine action (move or eat)
-        # Assuming 5 outputs (move up, down, left, right, eat)
+        # Determine action (move or eat), then match it to the match statement below
         action_choice = np.argmax(action)
-
-        # Map action to movement
-        if action_choice == 0:  # Move Up
-            self.pos[1] += 1.5
-
-        elif action_choice == 1:  # Move Down
-            self.pos[1] -= 1.5
-
-        elif action_choice == 2:  # Move Left
-            self.pos[0] -= 1.5
-
-        elif action_choice == 3:  # Move Right
-            self.pos[0] += 1.5
-
-        elif action_choice == 4:  # Eat
-            self.eat()  # Implement eat logic for prey (e.g., regenerate energy)
+        match action_choice:
+            case 0:  # Agent moves up
+                self.pos[1] += 1.5
+            case 1:  # Agent moves down
+                self.pos[1] -= 1.5
+            case 2:  # Agent moves left
+                self.pos[0] -= 1.5
+            case 3:  # Agent moves right
+                self.pos[0] += 1.5
+            case 4:  # Agent eats a food object
+                self.eat()
+            case _:  # Default case (should replace pass)
+                pass
 
         # Reward for staying alive
         self.fitness += 0.1
 
+    # This function handles the eating action of the prey, finding the closest food object if applicable
     def eat(self):
-        # Prey can eat food to regenerate energy
-        # Find closest food (if any)
         closest_food = None
         min_distance = float('inf')
+
+        # Runs through all food-type objects if they exist in order to determine the one closest to the prey
         for obj in self.state.objs:
             if obj.type == "food":
                 distance = np.linalg.norm(self.pos - obj.pos)
                 if distance < min_distance:
                     closest_food = obj
                     min_distance = distance
+        
+        # If there's no food nearby, deduct fitness; otherwise, eat the food (marking the object as dead) and gain fitness
         if closest_food is None:
             logger.info(f"Prey {self.id} fails to find food")
-            self.fitness -= 0.025  # Punish for not finding food
+            self.fitness -= 0.025
             return
         else:
             logger.info(f"Prey {self.id} eats")
-            obj.alive = False  # Remove food by marking it as dead
+            obj.alive = False
             self.fitness += 0.05

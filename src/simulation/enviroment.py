@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from utils import shape
+from utils import Shape
 from predator_prey import Predator, Prey
 from agent import State
 import json
@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Handles the creation of obstacles in the environment
-class Obstacle(shape):
+class Obstacle(Shape):
     def __init__(self, pos, type, hasCollision, color, interactible, isGoal, shape, radius, width, height):
         super().__init__(shape, radius, width, height, pos)
         self.hasCollision = hasCollision
@@ -242,6 +242,7 @@ class Environment:
             agent.fitness = 0
             agent.state = State()
 
+    # ADRIAN: This seems redundant with the add_agents function
     def overwrite_agents(self, agents):
         self.agents = agents
         for agent in agents:
