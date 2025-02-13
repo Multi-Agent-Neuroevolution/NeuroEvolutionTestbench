@@ -11,6 +11,8 @@ import json
 import pickle
 
 # Definition for converting a genome to a dictionary, used in tandem with the genome JSON saving function below
+
+
 def genome_to_dict(genome):
     # Convert connections' tuple keys into strings
     connections = {str(k): vars(v) for k, v in genome.connections.items()}
@@ -19,6 +21,8 @@ def genome_to_dict(genome):
     return {'key': genome.key, 'fitness': genome.fitness, 'nodes': {k: vars(v) for k, v in genome.nodes.items()}, 'connections': connections}
 
 # Definition for saving the final agent genomes to a JSON file
+
+
 def save_genomes_json(agents):
     # Convert each agent's genome to a dictionary using the genome_to_dict def
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
@@ -27,16 +31,22 @@ def save_genomes_json(agents):
         json.dump(genomes, file, indent=4)
 
 # Definition for saving genomes to a pickle file
+
+
 def pickle_genomes(agents):
     # Genomes from predators
     with open('./Data/pred_genomes.pkl', 'wb') as f:
-        pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
-    
+        pickle.dump(
+            [agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
+
     # Genomes from preys
     with open('./Data/prey_genomes.pkl', 'wb') as f:
-        pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
+        pickle.dump(
+            [agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
 
 # Definition for logging the average network size to a text file
+
+
 def log_avg_network_size(agents):
     # Initialize local variables
     total_nodes = 0
@@ -55,11 +65,26 @@ def log_avg_network_size(agents):
     avg_nodes = total_nodes / total_agents if total_agents > 0 else 0
     avg_connections = total_connections / total_agents if total_agents > 0 else 0
 
-    # Log the average network size, both in console and to text file
-    print(f"Average number of nodes: {avg_nodes}")
-    print(f"Average number of connections: {avg_connections}")
-    with open('./Data/network_size_log.txt', 'a') as file:
-        file.write(f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
+    # Log the average network size, both in console  a csv file
+    print(
+        f"Average Nodes: {avg_nodes}, Average Connections: {avg_connections}")
+    with open('./Data/network_size_log.csv', 'a') as f:
+        f.write(f"{avg_nodes},{avg_connections}\n")
+
+# Log amount of agent alive at the end of each epoch
+
+
+def log_agent_alive(agents):
+    # Initialize local variables
+    # Dead agents are removed from list, so this is all curently alive agents
+    total_agents = len(agents)
+
+    # Log the average network size, both in console  a csv file
+    print(
+        f"Alive agents: {total_agents}")
+    with open('./Data/agent_alive_log.csv', 'a') as f:
+        f.write(f"{total_agents}\n")
+
 
 # Definition for saving the average fitness of predators and preys population to a CSV file
 def avg_agent_fitness(predators, preys):
@@ -67,3 +92,11 @@ def avg_agent_fitness(predators, preys):
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
     with open('./Data/fitness.csv', 'a') as f:
         f.write(f"{avg_pred_fitness},{avg_prey_fitness}\n")
+
+# Definition for deleting the logs
+
+
+def delete_logs():
+    open('./Data/network_size_log.csv', 'w').close()
+    open('./Data/fitness.csv', 'w').close()
+    open('./Logs/sim.log', 'w').close()

@@ -67,7 +67,8 @@ class Predator(Agent):
             return
         else:
             # Predator eats the closest prey, gains energy, and removes the prey
-            logger.info(f"Predator {self.id} eats prey {closest_prey.id} and gains energy.")
+            logger.info(
+                f"Predator {self.id} eats prey {closest_prey.id} and gains energy.")
             self.energy += 12  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
             self.prey_eaten += 1  # Increment prey eaten counter
@@ -118,7 +119,7 @@ class Prey(Agent):
                     closest_food = obj
                     min_distance = distance
         if closest_food is None:
-            logger.info(f"Prey {self.id} fails to find food")
+            # logger.info(f"Prey {self.id} fails to find food")
             self.fitness -= 0.025  # Punish for not finding food
             return
         else:

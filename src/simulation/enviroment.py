@@ -101,6 +101,9 @@ class Environment:
             if not agent.alive:
                 agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
+                agent_type = "Predator" if isinstance(
+                    agent, Predator) else "Prey"
+                logger.info(f"{agent_type} {agent.id} has died.")
             agent.get_collisions()
             agent.solve_collision()
 

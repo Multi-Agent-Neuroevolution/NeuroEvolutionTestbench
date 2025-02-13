@@ -13,6 +13,8 @@ import logs
 logger = logging.getLogger(__name__)
 
 # Definition for handling the creation of the simulation environment
+
+
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
@@ -89,7 +91,8 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
 
     # Update logger with simulation start info and max CPU cores being used
     logger.info(f"Starting simulation with {config.pop_size} agents...")
-    logger.info(f"Using {env.max_workers} Logical CPU cores for parallel processing")
+    logger.info(
+        f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
     return env, population, config, len(population.population.items()), pred_pop, prey_pop
 
@@ -105,13 +108,17 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
             # agent.fitness = np.tanh(agent.fitness) * 100
             # Sync agent fitness with genome fitness
             agent.neat_genome.fitness = agent.fitness
-    
+
     # Save the average fitness of both predator and prey populations to a CSV file
     logs.avg_agent_fitness(predators, preys)
+    logs.log_avg_network_size(env.agents)
+    logs.log_agent_alive(env.agents)
 
     # Sort and retain the top 10% based on fitness
-    top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[:max(1, int(len(predators) * 0.1))]
-    top_preys = sorted(preys, key=lambda x: x.fitness, reverse=True)[:max(1, int(len(preys) * 0.1))]
+    top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(len(predators) * 0.1))]
+    top_preys = sorted(preys, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(len(preys) * 0.1))]
 
     # ADRIAN: I'm not touching this but does this def have to be nested?
     # Function to breed and mutate agents
@@ -130,7 +137,8 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
                     new_agent = Predator(
                         child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
                 else:
-                    new_agent = Prey(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                    new_agent = Prey(child_id, "NEAT",
+                                     "PRED_PREY", pos, child_genome, config)
                 new_agents.append(new_agent)
         else:
             for _ in range(num_offspring):
@@ -151,11 +159,13 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
                 pos = (random.randint(0, 100), random.randint(
                     0, 100))  # Random position
                 if is_predator:
-                    new_agent = Predator(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                    new_agent = Predator(
+                        child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
                 else:
-                    new_agent = Prey(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                    new_agent = Prey(child_id, "NEAT",
+                                     "PRED_PREY", pos, child_genome, config)
                 new_agents.append(new_agent)
-                
+
         return new_agents
 
     # Number of offspring to create for predators and prey
@@ -163,19 +173,25 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     num_prey_offspring = int(prey_pop - len(top_preys))
 
     # Breed and mutate predators and prey
-    new_predators = breed_and_mutate(top_predators, is_predator=True, num_offspring=num_pred_offspring)
-    new_preys = breed_and_mutate(top_preys, is_predator=False, num_offspring=num_prey_offspring)
+    new_predators = breed_and_mutate(
+        top_predators, is_predator=True, num_offspring=num_pred_offspring)
+    new_preys = breed_and_mutate(
+        top_preys, is_predator=False, num_offspring=num_prey_offspring)
 
     # Replace the old population with the new one
     env.overwrite_agents(top_predators + top_preys + new_predators + new_preys)
 
 # Main function, configures simulation then runs through epochs
+
+
 def main():
     try:
+        # delete logs and previous genomes
+        logs.delete_logs()
         # Configuration constants (parameters)
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
-        STEPS = 1500
+        STEPS = 150
         EPOCHS = 20
         BOUNDS = [-200, 200, -200, 200]
         PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
@@ -203,7 +219,6 @@ def main():
         # Create logs for genome information
         logs.pickle_genomes(env.agents)
         logs.save_genomes_json(env.agents)
-        logs.log_avg_network_size(env.agents)
 
     # Error-handling for if the user manually stops the simulation or if an error occurs
     except KeyboardInterrupt:
@@ -211,6 +226,7 @@ def main():
     except Exception as e:
         logger.info(f"Error during simulation: {str(e)}")
         raise
+
 
 # Initialize logger, starts simulation by calling main()
 if __name__ == "__main__":
