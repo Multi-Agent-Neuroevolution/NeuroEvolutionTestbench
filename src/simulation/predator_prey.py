@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class Predator(Agent):
-    def __init__(self, id, algorithm_name, relationship_name, pos, neat_genome, neat_config):
-        super().__init__(id, "NEAT", "PRED_PREY", pos, neat_genome, neat_config)
+    def __init__(self, id, algorithm_name, relationship_name, relationship_role, pos, neat_genome, neat_config):
+        super().__init__(id, "NEAT", "PRED_PREY", "PRED", pos, neat_genome, neat_config)
         self.energy = 100  # Starting energy
         self.prey_eaten = 0  # Number of prey eaten
 
@@ -72,8 +72,8 @@ class Predator(Agent):
 
 
 class Prey(Agent):
-    def __init__(self, id, algorithm_name, relationship_name, pos, neat_genome, neat_config):
-        super().__init__(id, "NEAT", "PRED_PREY", pos, neat_genome, neat_config)
+    def __init__(self, id, algorithm_name, relationship_name, relationship_role, pos, neat_genome, neat_config):
+        super().__init__(id, "NEAT", "PRED_PREY", "PREY", pos, neat_genome, neat_config)
 
     def update_action(self):
         self.get_inputs()

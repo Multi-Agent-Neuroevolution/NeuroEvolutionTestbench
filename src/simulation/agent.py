@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from utils import Shape
+from utils import State, Shape
 import neat
 # This class works in conjunction with the Agent class, used to store all metrics calculated from agent performance
 # Some metric ideas...
@@ -44,23 +44,8 @@ class Metrics:
     # selected_algorithm -> necessary in order to apply neural network algorithm to each agent and allow for easy substitution
 
 
-# Used to determine the state of the agent, and what is happening around it. Updated every tick
-class State:
-    def __init__(self):
-        self.vel = 0
-        # list of obstacles/agents around the agent. Each object may or may not have collision.
-        self.objs = []
-        # list of objects close enought for the agent to interact with
-        self.interactables = []
-        self.collisions = []
-        self.fitness = 0
-        # These are pre-allocated for performance reasons
-        self.pos_array = np.zeros(2)
-        self.direction = np.zeros(2)
-
-
 class Agent(Shape):
-    def __init__(self, id, algorithm_name, relationship_name, pos, neat_genome, neat_config):
+    def __init__(self, id, algorithm_name, relationship_name, relationship_role, pos, neat_genome, neat_config):
         super().__init__("agent", 1, 0, 0, pos)
         self.id = id
         self.age = 0
@@ -70,6 +55,7 @@ class Agent(Shape):
         self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, neat_config)
         self.selected_algorithm = self.init_algorithm(algorithm_name)
         self.selected_relationship = self.init_relationship(relationship_name)
+        self.relationship_role = relationship_role
         self.metrics = Metrics()
         self.state = State()
         self.fitness = 0
@@ -97,6 +83,9 @@ class Agent(Shape):
         except:
             print(
                 f"Invalid relationship specified! {relationship_name} is not implemented.")
+
+    def get_role(self):
+        return self.relationship_role
 
     def interact(self, obj):
         if obj in self.state.interactables:

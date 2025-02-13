@@ -6,9 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from utils import Shape
-from predator_prey import Predator, Prey
-from agent import State
+from utils import Shape, State
 import json
 import logging
 
@@ -228,7 +226,7 @@ class Environment:
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
         for agent in self.agents:
             # If-else statement separates prey and predators
-            if isinstance(agent, Predator):
+            if agent.get_role() == "PRED":
                 pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]), np.random.uniform(predator_bound[2], predator_bound[3])])
                 agent.pos = pos
                 agent.energy = 100

@@ -2,13 +2,13 @@ import random
 import neat
 import numpy as np
 import matplotlib.pyplot as plt
-from agent import Agent
 from evolution_utils import breed_and_mutate
 from predator_prey import Predator, Prey
 from enviroment import Environment, Obstacle
 import multiprocessing
 import logging
 import logs
+import constants
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -50,12 +50,12 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     for i in range(pred_pop):
         pos = np.array([np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]), np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])])
         genome = population.population[i + 1]
-        agent = Predator(i, "NEAT", "PRED_PREY", pos, genome, config)
+        agent = Predator(i, "NEAT", "PRED_PREY", "PRED", pos, genome, config)
         agents.append(agent)
     for i in range(prey_pop):
         pos = np.array([np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]), np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])])
         genome = population.population[i + pred_pop]
-        agent = Prey(i + pred_pop, "NEAT", "PRED_PREY", pos, genome, config)
+        agent = Prey(i + pred_pop, "NEAT", "PRED_PREY", "PREY", pos, genome, config)
         agents.append(agent)
 
     # Add agents and obstacles to environment
@@ -102,27 +102,24 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
 # Main function, configures simulation then runs through epochs
 def main():
     try:
-        # Configuration constants (parameters)
-        SIMULATION_TYPE = "PRED_PREY"
-        CONFIG_PATH = "./Config/balls.conf"
-        STEPS = 1500
-        EPOCHS = 20
-        BOUNDS = [-200, 200, -200, 200]
-        PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
-        PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
-        RATIO = 0.75
-        FOODAMOUNT = 100
-        FOOD_RESPAWN_RATE = 0.1
-        pred_percent = 1 - RATIO
-
         # Creates simulation environment
-        env, population, config, populationSize, pred_pop, prey_pop = create_simulation(simulation_type=SIMULATION_TYPE, config_path=CONFIG_PATH, steps=STEPS, bounds=BOUNDS, pred_percent=pred_percent, food_amount=FOODAMOUNT, prey_spawn_bounds=PREY_SPAWN_BOUNDS, pred_spawn_bounds=PRED_SPAWN_BOUNDS, food_respawn_rate=FOOD_RESPAWN_RATE)
+        env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
+            simulation_type=constants.SIMULATION_TYPE,
+            config_path=constants.CONFIG_PATH,
+            steps=constants.STEPS,
+            bounds=constants.BOUNDS,
+            pred_percent=constants.PRED_PERCENT,
+            food_amount=constants.FOOD_AMOUNT,
+            prey_spawn_bounds=constants.PREY_SPAWN_BOUNDS,
+            pred_spawn_bounds=constants.PRED_SPAWN_BOUNDS,
+            food_respawn_rate=constants.FOOD_RESPAWN_RATE
+        )
 
         # Create log for the average network size
         logs.log_avg_network_size(env.agents)
 
         # Run simulation, looping according to the number of epochs specified
-        for i in range(EPOCHS):
+        for i in range(constants.EPOCHS):
             env.run()
             mutate(population, config, env, populationSize, pred_pop, prey_pop)
             env.reset()

@@ -13,9 +13,9 @@ def breed_and_mutate(config, parents, is_predator, num_offspring):
             child_genome.configure_new(config.genome_config)
             pos = (random.randint(0, 100), random.randint(0, 100))  # Random position
             if is_predator:
-                new_agent = Predator(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                new_agent = Predator(child_id, "NEAT", "PRED_PREY", "PRED", pos, child_genome, config)
             else:
-                new_agent = Prey(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                new_agent = Prey(child_id, "NEAT", "PRED_PREY", "PREY", pos, child_genome, config)
             new_agents.append(new_agent)
     else:
         for _ in range(num_offspring):
@@ -34,9 +34,9 @@ def breed_and_mutate(config, parents, is_predator, num_offspring):
             # Create a new agent based on the child genome
             pos = (random.randint(0, 100), random.randint(0, 100))  # Random position
             if is_predator:
-                new_agent = Predator(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                new_agent = Predator(child_id, "NEAT", "PRED_PREY", "PRED", pos, child_genome, config)
             else:
-                new_agent = Prey(child_id, "NEAT", "PRED_PREY", pos, child_genome, config)
+                new_agent = Prey(child_id, "NEAT", "PRED_PREY", "PREY", pos, child_genome, config)
             new_agents.append(new_agent)
                 
     return new_agents
