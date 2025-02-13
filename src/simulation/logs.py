@@ -98,5 +98,6 @@ def avg_agent_fitness(predators, preys):
 
 def delete_logs():
     open('./Data/network_size_log.csv', 'w').close()
+    open('./Data/agent_alive_log.csv', 'w').close()
     open('./Data/fitness.csv', 'w').close()
     open('./Logs/sim.log', 'w').close()

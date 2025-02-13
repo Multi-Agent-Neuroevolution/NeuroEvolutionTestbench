@@ -191,13 +191,13 @@ def main():
         # Configuration constants (parameters)
         SIMULATION_TYPE = "PRED_PREY"
         CONFIG_PATH = "./Config/balls.conf"  # Path to your NEAT config file
-        STEPS = 150
-        EPOCHS = 20
+        STEPS = 1500
+        EPOCHS = 400
         BOUNDS = [-200, 200, -200, 200]
         PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
         PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
         RATIO = 0.75
-        FOODAMOUNT = 100
+        FOODAMOUNT = 500
         FOOD_RESPAWN_RATE = 0.1
         pred_percent = 1 - RATIO
 

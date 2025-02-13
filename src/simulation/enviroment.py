@@ -272,13 +272,18 @@ class Environment:
 
                 # Update spatial grid
                 self.update_spatial_grid()
-
+                spacial_time = time.time()
+                print(f"Spatial grid update time: {
+                      (spacial_time - start_time)*1000}ms")
                 # Handle Agents
                 list(executor.map(self.update_agent, self.agents))
+                agent_time = time.time()
+                print(f"Agent update time: {
+                      (agent_time - spacial_time)*1000}ms")
                 # Handle food
                 self.food_handler()
                 end_time = time.time()
-                print(f"Time taken: {(end_time - start_time)*1000}ms")
+                print(f"Total time taken: {(end_time - start_time)*1000}ms")
                 # print number of prey and predatorys alive
                 # num_prey_alive = len(
                 #     [agent for agent in self.agents if isinstance(agent, Prey)])
