@@ -9,6 +9,7 @@ from utils import shape
 from predator_prey import Predator, Prey
 from agent import State
 import json
+from messenger import messageChannel
 
 import logging
 logger = logging.getLogger(__name__)
@@ -287,3 +288,4 @@ class Environment:
                 # Find the fittest predator and prey
                 # Find amount of food left
                 # self.view(real_time=True)
+                messageChannel.put()
