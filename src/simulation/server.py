@@ -10,8 +10,8 @@ from messenger import messageChannel
 
 class JsonTransferService(json_transfer_pb2_grpc.JsonTransferServicer):
     def FetchEnvironmentStream(self, request, context):
-        data = messageChannel.get()
-        while True:
+        while messageChannel.empty == False:
+            data = messageChannel.get()
             try:
                 json_str = json.dumps(data)
                 yield json_transfer_pb2.JsonResponse(
@@ -26,6 +26,7 @@ class JsonTransferService(json_transfer_pb2_grpc.JsonTransferServicer):
                     success=False,
                     message=f"Error processing data: {str(e)}"
                 )
+                time.sleep(1)
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     json_transfer_pb2_grpc.add_JsonTransferServicer_to_server(
