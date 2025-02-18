@@ -69,7 +69,7 @@ class Predator(Agent):
             # Predator eats the closest prey, gains energy, and removes the prey
             logger.info(
                 f"Predator {self.id} eats prey {closest_prey.id} and gains energy.")
-            self.energy += 12  # Regain energy (this can be adjusted)
+            self.energy += 24  # Regain energy (this can be adjusted)
             closest_prey.alive = False  # Remove prey by marking it as dead
             self.prey_eaten += 1  # Increment prey eaten counter
             # Share with predators around it
