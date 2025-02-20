@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import time
 from utils import State
 from obstacles import Food, Wall
-from agents import Predator
+from agents import Predator, Prey
 import logging
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
             genome = population.population[i + pred_pop]
-            agents.append(Predator(id=(i + pred_pop), pos=pos,
+            agents.append(Prey(id=(i + pred_pop), pos=pos,
                           neat_genome=genome, neat_config=config))
 
         self.add_agents(agents)
@@ -140,20 +140,16 @@ class Environment:
             # Get nearby objects
             nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
             agent.state.objs = [obj for obj in nearby]
-
             agent.update_action()
-
-            # Check bounds and handle death
+            # Check bounds
             agent.check_bounds(self.bounds)
-
+            # ADRIAN: should this be made into an else function for the above?
+            agent.get_collisions()
+            agent.solve_collision()
             # If the agent is dead, it's removed from the environment
             if not agent.living:
                 agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
-
-            # ADRIAN: should this be made into an else function for the above?
-            agent.get_collisions()
-            agent.solve_collision()
 
     # # This definition is FOR DEBUGGING PURPOSES and is for visualizing the environment
     # def view(self, real_time=False):
@@ -248,6 +244,7 @@ class Environment:
     #         plt.show()
 
     # This definition handles food addition and removal
+
     def food_handler(self):
         # This segment checks food is "living" (in other words, not eaten) and removes it if it's not
         for obs in self.obstacles:
@@ -301,18 +298,18 @@ class Environment:
                 # Handle food
                 self.food_handler()
 
-                print(f"Step {_} completed")
+                # print(f"Step {_} completed")
 
                 # end_time = time.time()
                 # print(f"Time taken: {(end_time - start_time)*1000}ms")
                 # print number of prey and predatorys alive
-                # num_prey_alive = len(
-                #     [agent for agent in self.agents if isinstance(agent, Prey)])
-                # num_predators_alive = len(
-                #     [agent for agent in self.agents if isinstance(agent, Predator)])
+                num_prey_alive = len(
+                    [agent for agent in self.agents if not isinstance(agent, Predator)])
+                num_predators_alive = len(
+                    [agent for agent in self.agents if isinstance(agent, Predator)])
 
-                # print(f"Number of Prey Alive: {num_prey_alive}")
-                # print(f"Number of Predators Alive: {num_predators_alive}")
+                print(f"Number of Prey Alive: {num_prey_alive}")
+                print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
                 # Find amount of food left
                 # self.view(real_time=True)
