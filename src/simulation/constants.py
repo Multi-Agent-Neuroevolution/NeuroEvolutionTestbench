@@ -1,7 +1,8 @@
+"""constants.py"""
 # Parameters for simulation creation
 SIMULATION_TYPE = "PRED_PREY"
 CONFIG_PATH = "./Config/neat.conf"
-STEPS = 1500
+STEPS = 100
 BOUNDS = [-200, 200, -200, 200]
 RATIO = 0.75
 PRED_PERCENT = 1 - RATIO
@@ -11,4 +12,4 @@ PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
 FOOD_RESPAWN_RATE = 0.1
 
 # Parameter for number of times simulation will run
-EPOCHS = 20
+EPOCHS = 2

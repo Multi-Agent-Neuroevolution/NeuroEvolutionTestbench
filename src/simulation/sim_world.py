@@ -1,10 +1,11 @@
+"""sim_world.py is where the simulation is created, ran and reran. It is the main file for the simulation."""
 import random
 import neat
 import numpy as np
 import matplotlib.pyplot as plt
 from evolution_utils import breed_and_mutate
-from predator_prey import Predator, Prey
-from enviroment import Environment, Obstacle
+from agents import Predator, Prey
+from environment import Environment
 import multiprocessing
 import logging
 import logs
@@ -36,38 +37,48 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     print(len(population.population.items()))
     prey_pop = len(population.population.items()) - pred_pop
 
-    # Empty lists for agents and objects are initialized here
-    agents = []
-    objects = []
+    env.initialize_environment(
+        config=config,
+        population=population,
+        pred_pop=pred_pop,
+        prey_pop=prey_pop,
+        pred_spawn_bounds=pred_spawn_bounds,
+        prey_spawn_bounds=prey_spawn_bounds,
+        food_amount=food_amount
+    )
 
-    # Add objects with format as follows: (object center, obstacle type, hasCollision, color, interactible, isGoal, shape, radius (0 for rectangles), width, height)
-    # For loop is to make food-type objects limited to a certain amount (food_amount)
-    for i in range(food_amount):
-        objects.append(Obstacle(np.array([np.random.uniform(bounds[0], bounds[1]), np.random.uniform(bounds[2], bounds[3])]), "food", False, "green", True, False, "circle", 1, 0, 0))
-    objects.append(Obstacle(np.array([0, 0]), "obstacle", True, "red", False, False, "rectangle", 0, 100, 45))
+    # # Empty lists for agents and objects are initialized here
+    # agents = []
+    # objects = []
+
+    # # Add objects with format as follows: (object center, obstacle type, hasCollision, color, interactible, isGoal, shape, radius (0 for rectangles), width, height)
+    # # For loop is to make food-type objects limited to a certain amount (food_amount)
+    # for i in range(food_amount):
+    #     objects.append(Obstacle(np.array([np.random.uniform(bounds[0], bounds[1]), np.random.uniform(bounds[2], bounds[3])]), "food", False, "green", True, False, "circle", 1, 0, 0))
+    # objects.append(Obstacle(np.array([0, 0]), "obstacle", True, "red", False, False, "rectangle", 0, 100, 45))
     
-    # Genomes and agents are both created and paired together here, for both predator and prey populations
-    for i in range(pred_pop):
-        pos = np.array([np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]), np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])])
-        genome = population.population[i + 1]
-        agent = Predator(i, "NEAT", "PRED_PREY", "PRED", pos, genome, config)
-        agents.append(agent)
-    for i in range(prey_pop):
-        pos = np.array([np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]), np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])])
-        genome = population.population[i + pred_pop]
-        agent = Prey(i + pred_pop, "NEAT", "PRED_PREY", "PREY", pos, genome, config)
-        agents.append(agent)
+    # # Genomes and agents are both created and paired together here, for both predator and prey populations
+    # for i in range(pred_pop):
+    #     pos = np.array([np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]), np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])])
+    #     genome = population.population[i + 1]
+    #     agent = Predator(i, pos, genome, config)
+    #     agents.append(agent)
+    
+    # for i in range(prey_pop):
+    #     pos = np.array([np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]), np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])])
+    #     genome = population.population[i + pred_pop]
+    #     agent = Prey(i + pred_pop, pos, genome, config)
+    #     agents.append(agent)
 
-    # Add agents and obstacles to environment
-    env.add_agents(agents)
-    env.add_obstacles(objects)
+    # # Add agents and obstacles to environment
+    # env.add_agents(agents)
+    # env.add_obstacles(objects)
 
     # Update logger with simulation start info and max CPU cores being used
     logger.info(f"Starting simulation with {config.pop_size} agents...")
     logger.info(f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
     return env, population, config, len(population.population.items()), pred_pop, prey_pop
-
 
 def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     # Create separate lists for predators and prey
@@ -140,6 +151,23 @@ def main():
 
 # Initialize logger, starts simulation by calling main()
 if __name__ == "__main__":
-    logging.basicConfig(filename='./Logs/sim.log', level=logging.INFO)
+    formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+
+    # Setup handlers for different log files
+    info_handler = logging.FileHandler('./Logs/sim.log')
+    info_handler.setLevel(logging.INFO)
+    info_handler.setFormatter(formatter)
+    
+    # # Comment this out when debugging log is unnecessary
+    # debug_handler = logging.FileHandler('./Logs/debug.log')
+    # debug_handler.setLevel(logging.DEBUG)
+    # debug_handler.setFormatter(formatter)
+    
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # Set to lowest level you want to capture
+    root_logger.addHandler(info_handler)
+    # root_logger.addHandler(debug_handler) # Comment this out when debugging log is unnecessary
+    
     logger.info('started')
     main()

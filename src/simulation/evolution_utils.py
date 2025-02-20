@@ -1,5 +1,6 @@
+"""evolution_utils.py"""
 import random, neat
-from predator_prey import Predator, Prey
+from agents import Predator, Prey
 
 # This function handles selecting parents to breed, then mutating the resultant child's genome
 def breed_and_mutate(config, parents, is_predator, num_offspring):
@@ -22,9 +23,9 @@ def breed_and_mutate(config, parents, is_predator, num_offspring):
 
         # This determines whether the new agent is a predator or prey
         if is_predator:
-            new_agent = Predator(child_id, "NEAT", "PRED_PREY", "PRED", pos, child_genome, config)
+            new_agent = Predator(id=child_id, pos=pos, neat_genome=child_genome, neat_config=config)
         else:
-            new_agent = Prey(child_id, "NEAT", "PRED_PREY", "PREY", pos, child_genome, config)
+            new_agent = Prey(id=child_id, pos=pos, neat_genome=child_genome, neat_config=config)
 
         new_agents.append(new_agent)
                 

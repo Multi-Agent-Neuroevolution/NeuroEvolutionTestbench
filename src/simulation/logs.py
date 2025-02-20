@@ -1,3 +1,4 @@
+"""logs.py"""
 # 5 different logging-related files are generated and stored in the Data folder. The files are:
 # final_genomes.json - handled by save_genomes_json
 # pred_genomes.pkl - handled by pickle_genomes
@@ -5,7 +6,7 @@
 # network_size_log.txt - handled by log_avg_network_size
 # fitness.csv - handled by avg_agent_fitness
 
-from predator_prey import Predator, Prey
+from agents import Predator, Prey
 import numpy as np
 import json
 import pickle
