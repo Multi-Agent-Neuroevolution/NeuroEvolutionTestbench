@@ -6,9 +6,10 @@ import neat
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Agent(Shape):
     """Class for the agent in the simulation.
-    
+
     Args:
         id (int): The unique identifier for the agent.
         pos (np.ndarray): The initial position of the agent.
@@ -18,8 +19,10 @@ class Agent(Shape):
         energy (float): The initial energy of the agent.
         move_speed (float): The speed at which the agent moves.
     """
+
     def __init__(self, id, pos, neat_genome, neat_config, agent_type="agent", energy=0, move_speed=1.0):
-        super().__init__(shape="agent", radius=1, width=0, height=0, pos=pos, collidable=False)
+        super().__init__(shape="agent", radius=1, width=0,
+                         height=0, pos=pos, collidable=False)
         self.id = id
         self.pos = pos
         self.neat_genome = neat_genome
@@ -32,7 +35,8 @@ class Agent(Shape):
         self.fitness = 0
         self.state = State()
         self.metrics = Metrics()
-        self.brain = neat.nn.FeedForwardNetwork.create(neat_genome, neat_config)
+        self.brain = neat.nn.FeedForwardNetwork.create(
+            neat_genome, neat_config)
         self.inputs = []
 
     def interact(self, obj):
@@ -43,7 +47,8 @@ class Agent(Shape):
         """Updates the action of the agent based on the neural network output."""
         self.get_inputs()
         self._update_interactables()
-        action = self.brain.activate(self.inputs)  # IMPORTANT: The neural network is activated here
+        # IMPORTANT: The neural network is activated here
+        action = self.brain.activate(self.inputs)
         action_choice = np.argmax(action)
 
         self._handle_movement(action_choice)
@@ -52,7 +57,7 @@ class Agent(Shape):
 
     def _handle_movement(self, action_choice):
         """Handles the movement of the agent based on the action choice.
-        
+
         Args:
             action_choice (int): The action choice made by the agent.
         """
@@ -78,10 +83,10 @@ class Agent(Shape):
 
     def _find_closest_target(self, target_filter):
         """Finds the closest target object based on the filter function.
-        
+
         Args:
             target_filter (function): The filter function to apply to the objects.
-            
+
         Returns:
             closest (object): The closest target object.
             min_distance (float): The minimum distance to the closest target object.
@@ -96,7 +101,7 @@ class Agent(Shape):
                     closest = obj
                     min_distance = distance
 
-        return closest, min_distance # is returning min_distance necessary?
+        return closest, min_distance  # is returning min_distance necessary?
 
     # Update the list of interactables around the agent
     def _update_interactables(self):
@@ -181,8 +186,10 @@ class Agent(Shape):
 
             elif collision.shape == "rectangle":
                 # Get the nearest valid position outside the rectangle
-                nearest_x = np.clip(self.pos[0], collision.pos[0] - collision.width / 2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
-                nearest_y = np.clip(self.pos[1], collision.pos[1] - collision.height / 2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
+                nearest_x = np.clip(self.pos[0], collision.pos[0] - collision.width /
+                                    2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
+                nearest_y = np.clip(self.pos[1], collision.pos[1] - collision.height /
+                                    2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
 
                 # Compute vector from the nearest point to the agent
                 direction = self.pos - np.array([nearest_x, nearest_y])
@@ -191,25 +198,40 @@ class Agent(Shape):
                 if norm > 0:
                     direction /= norm  # Normalize
                     # Move agent just outside the obstacle
-                    self.pos = np.array([nearest_x, nearest_y]) + direction * self.radius
+                    self.pos = np.array(
+                        [nearest_x, nearest_y]) + direction * self.radius
+        # This definition adjusts the agent position if it goes out of bounds
+
+    def check_bounds(self, bounds):
+        if self.pos[0] < bounds[0]:
+            self.pos[0] = bounds[0] + 1
+        if self.pos[0] > bounds[1]:
+            self.pos[0] = bounds[1] - 1
+        if self.pos[1] < bounds[2]:
+            self.pos[1] = bounds[2] + 1
+        if self.pos[1] > bounds[3]:
+            self.pos[1] = bounds[3] - 1
+
 
 class Predator(Agent):
     """Class for the predator agent in the predator-prey simulation.
-    
+
     Args:
         id (int): The unique identifier for the predator agent.
         pos (np.ndarray): The initial position of the predator agent.
         neat_genome (neat.DefaultGenome): The NEAT genome for the predator agent.
         neat_config (neat.DefaultConfig): The NEAT configuration for the predator agent.
     """
+
     def __init__(self, id, pos, neat_genome, neat_config):
-        super().__init__(id=id, pos=pos, neat_genome=neat_genome, neat_config=neat_config, agent_type="PRED", energy=100)
+        super().__init__(id=id, pos=pos, neat_genome=neat_genome,
+                         neat_config=neat_config, agent_type="PRED", energy=100)
         self.prey_eaten = 0
         self.ENERGY_COST = 0.15
 
     def _handle_action(self, action_choice):
         """Handles the action of the predator agent based on the action choice.
-        
+
         Args:
             action_choice (int): The index of the action with the highest value.
         """
@@ -223,7 +245,7 @@ class Predator(Agent):
         if self.energy <= 0:
             self.alive = False
             logger.info(f"Predator {self.id} has run out of energy and died.")
-    
+
     def _update_fitness(self):
         """Updates the fitness of the predator agent based on the number of prey eaten and current energy."""
         self.fitness = (self.prey_eaten * 10) + (self.energy / 3)
@@ -237,26 +259,32 @@ class Predator(Agent):
 
         if closest_prey is None:
             self.energy -= 4
-            logger.info(f"Predator {self.id} chooses to eat, but fails to find a prey.")
+            logger.info(
+                f"Predator {self.id} chooses to eat, but fails to find a prey.")
         else:
             closest_prey.living = False
             self.prey_eaten += 1
             self.energy += 12
-            logger.info(f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
-            print(f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
+            logger.info(
+                f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
+            print(
+                f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
             # TO DO: Share with predators around it
+
 
 class Prey(Agent):
     """Class for the prey agent in the predator-prey simulation.
-    
+
     Args:
         id (int): The unique identifier for the prey agent.
         pos (np.ndarray): The initial position of the prey agent.
         neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent.
         neat_config (neat.DefaultConfig): The NEAT configuration for the prey agent.
     """
+
     def __init__(self, id, pos, neat_genome, neat_config):
-        super().__init__(id=id, pos=pos, neat_genome=neat_genome, neat_config=neat_config, agent_type="PREY", move_speed=1.5)
+        super().__init__(id=id, pos=pos, neat_genome=neat_genome,
+                         neat_config=neat_config, agent_type="PREY", move_speed=1.5)
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
@@ -264,7 +292,7 @@ class Prey(Agent):
             logger.info(f"Prey {self.id} chooses to move.")
         elif action_choice == 4:
             self._eat()
-    
+
     def _update_fitness(self):
         """Updates the fitness of the prey agent."""
         self.fitness += 0.1
@@ -273,11 +301,12 @@ class Prey(Agent):
         """Handles the eating action of the prey agent, finding the closest food object if applicable."""
         def _food_filter(obj):
             return isinstance(obj, Food)
-        
+
         closest_food, _ = self._find_closest_target(_food_filter)
 
         if closest_food is None:
-            logger.info(f"Prey {self.id} chooses to eat, but fails to find food.")
+            logger.info(
+                f"Prey {self.id} chooses to eat, but fails to find food.")
             self.fitness -= 0.025
         else:
             closest_food.living = False

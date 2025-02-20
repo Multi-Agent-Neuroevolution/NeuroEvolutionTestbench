@@ -12,6 +12,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SpatialGrid:
     def __init__(self, bounds, cell_size=10):
         self.cell_size = cell_size
@@ -53,18 +54,22 @@ class Environment:
         self.type = type
         self.steps = steps
         self.food_spawn_rate = food_spawn_rate
-        self.spatial_grid = SpatialGrid(self.bounds, cell_size=10)  # Cell size can be adjusted here for better performance depending on sim
-        self.agent_locks = {}                                       # locking critical sections for each agent
-        self.max_workers = 8                                        # Default to 8 workers, but is adjusted by sim_world.py
+        # Cell size can be adjusted here for better performance depending on sim
+        self.spatial_grid = SpatialGrid(self.bounds, cell_size=10)
+        # locking critical sections for each agent
+        self.agent_locks = {}
+        # Default to 8 workers, but is adjusted by sim_world.py
+        self.max_workers = 8
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
     def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount):
-        self._initialize_agents(config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
+        self._initialize_agents(
+            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
         self._initialize_obstacles(food_amount)
 
     def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds):
         agents = []
-        
+
         # Initialize predators
         for i in range(pred_pop):
             pos = np.array([
@@ -72,7 +77,8 @@ class Environment:
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
             ])
             genome = population.population[i + 1]
-            agents.append(Predator(id=i, pos=pos, neat_genome=genome, neat_config=config))
+            agents.append(
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config))
 
         # Initialize prey
         for i in range(prey_pop):
@@ -81,7 +87,8 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
             genome = population.population[i + pred_pop]
-            agents.append(Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config))
+            agents.append(Predator(id=(i + pred_pop), pos=pos,
+                          neat_genome=genome, neat_config=config))
 
         self.add_agents(agents)
 
@@ -115,7 +122,7 @@ class Environment:
 
     def add_obstacles(self, obstacles):
         """Adds obstacles to the environment.
-        
+
         Args:
             obstacles (list): List of obstacles to add to the environment.
         """
@@ -137,13 +144,13 @@ class Environment:
             agent.update_action()
 
             # Check bounds and handle death
-            self.check_bounds(agent)
+            agent.check_bounds(self.bounds)
 
             # If the agent is dead, it's removed from the environment
             if not agent.living:
                 agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
-            
+
             # ADRIAN: should this be made into an else function for the above?
             agent.get_collisions()
             agent.solve_collision()
@@ -247,39 +254,33 @@ class Environment:
             if isinstance(obs, Food):
                 if obs.living == False:
                     self.obstacles.remove(obs)
-        
+
         # This segment handles the spawning of food
         if np.random.rand() < self.food_spawn_rate:
-            pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]), np.random.uniform(self.bounds[2], self.bounds[3])])
+            pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
+                           np.random.uniform(self.bounds[2], self.bounds[3])])
             food = Food(pos)
             self.obstacles.append(food)
 
-    # This definition adjusts the agent position if it goes out of bounds
-    def check_bounds(self, agent):
-        if agent.pos[0] < self.bounds[0]:
-            agent.pos[0] = self.bounds[0] + 1
-        if agent.pos[0] > self.bounds[1]:
-            agent.pos[0] = self.bounds[1] - 1
-        if agent.pos[1] < self.bounds[2]:
-            agent.pos[1] = self.bounds[2] + 1
-        if agent.pos[1] > self.bounds[3]:
-            agent.pos[1] = self.bounds[3] - 1
-
     # This definition resets all agents when the current epoch is over
+
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
         print("Resetting environment...")
         for agent in self.agents:
             # If-else statement separates prey and predators
-            if isinstance(agent, Predator): # TO DO: Move Predator() and Prey() subclasses to agent.py
-                pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]), np.random.uniform(predator_bound[2], predator_bound[3])])
+            # TO DO: Move Predator() and Prey() subclasses to agent.py
+            if isinstance(agent, Predator):
+                pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]), np.random.uniform(
+                    predator_bound[2], predator_bound[3])])
                 agent.pos = pos
                 agent.energy = 100
                 agent.prey_eaten = 0
             else:
-                pos = np.array([np.random.uniform(prey_bound[0], prey_bound[1]), np.random.uniform(prey_bound[2], prey_bound[3])])
+                pos = np.array([np.random.uniform(
+                    prey_bound[0], prey_bound[1]), np.random.uniform(prey_bound[2], prey_bound[3])])
                 agent.pos = pos
                 agent.energy = 0
-            
+
             # Regardless of agent type, fitness is reset to 0
             agent.fitness = 0
             agent.state = State()
