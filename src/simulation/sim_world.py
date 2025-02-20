@@ -20,7 +20,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     env = Environment(simulation_type, steps, bounds, food_respawn_rate)
     env.max_workers = max(1, num_cores - 1)
 
-    # Load NEAT configuration from read config file
+    # Variables to be sent to the environment initialization function
     config = neat.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -28,8 +28,6 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         neat.DefaultStagnation,
         config_path
     )
-
-    # Create the NEAT population
     population = neat.Population(config)
     pred_pop = int(len(population.population.items())*pred_percent)
     print(pred_pop)

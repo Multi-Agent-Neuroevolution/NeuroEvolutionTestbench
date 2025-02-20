@@ -63,8 +63,7 @@ class Environment:
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
     def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount):
-        self._initialize_agents(
-            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
+        self._initialize_agents(config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
         self._initialize_obstacles(food_amount)
 
     def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds):
@@ -136,6 +135,11 @@ class Environment:
             self.spatial_grid.insert(obstacle)
 
     def update_agent(self, agent):
+        """Updates the agent's state and checks for collisions.
+        
+        Args:
+            agent (Agent): The agent to update.
+        """
         with self.agent_locks[agent]:
             # Get nearby objects
             nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
@@ -155,8 +159,8 @@ class Environment:
             agent.get_collisions()
             agent.solve_collision()
 
-    # This definition handles food addition and removal
     def food_handler(self):
+        """Handles food-related operations, such as spawning and removal."""
         # This segment checks food is "living" (in other words, not eaten) and removes it if it's not
         for obs in self.obstacles:
             if isinstance(obs, Food):
@@ -171,12 +175,15 @@ class Environment:
             self.obstacles.append(food)
 
     # This definition resets all agents when the current epoch is over
-
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
+        """Resets the environment by reinitializing all agents.
+        
+        Args:
+            prey_bound (list, optional): The bounds for the prey agents. Defaults to [-150, 150, 50, 150].
+            predator_bound (list, optional): The bounds for the predator agents. Defaults to [-150, 150, -150, -50].
+        """
         print("Resetting environment...")
         for agent in self.agents:
-            # If-else statement separates prey and predators
-            # TO DO: Move Predator() and Prey() subclasses to agent.py
             if isinstance(agent, Predator):
                 pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]), np.random.uniform(
                     predator_bound[2], predator_bound[3])])
@@ -189,12 +196,12 @@ class Environment:
                 agent.pos = pos
                 agent.energy = 0
 
-            # Regardless of agent type, fitness is reset to 0
             agent.fitness = 0
             agent.state = State()
         print("Environment reset")
 
     def run(self):
+        """Runs the simulation for the specified number of steps."""
         print("Running simulation...")
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             for _ in range(self.steps):
