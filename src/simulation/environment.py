@@ -5,23 +5,12 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from utils import Shape, State
+from utils import State
 from obstacles import Food, Wall
 from agents import Predator
-import json
 import logging
 
 logger = logging.getLogger(__name__)
-
-# Handles the creation of obstacles in the environment
-# class Obstacle(Shape):
-#     def __init__(self, type, color, interactible, isGoal, shape, radius, width, height, pos, collidable):
-#         super().__init__(shape=shape, radius=radius, width=width, height=height, pos=pos, collidable=collidable)
-#         self.type = type        # Type is used to determine the type of obstacle (food? door? etc.)
-#         self.color = color
-#         self.interactible = interactible
-#         self.alive = True
-#         self.isGoal = isGoal    # isGoal is used to determine if the obstacle is a goal for the agent. NOT USED FOR PREDATOR-PREY
 
 class SpatialGrid:
     def __init__(self, bounds, cell_size=10):

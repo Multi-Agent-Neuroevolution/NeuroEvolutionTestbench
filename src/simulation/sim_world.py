@@ -1,5 +1,4 @@
 """sim_world.py is where the simulation is created, ran and reran. It is the main file for the simulation."""
-import random
 import neat
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,33 +45,6 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         prey_spawn_bounds=prey_spawn_bounds,
         food_amount=food_amount
     )
-
-    # # Empty lists for agents and objects are initialized here
-    # agents = []
-    # objects = []
-
-    # # Add objects with format as follows: (object center, obstacle type, hasCollision, color, interactible, isGoal, shape, radius (0 for rectangles), width, height)
-    # # For loop is to make food-type objects limited to a certain amount (food_amount)
-    # for i in range(food_amount):
-    #     objects.append(Obstacle(np.array([np.random.uniform(bounds[0], bounds[1]), np.random.uniform(bounds[2], bounds[3])]), "food", False, "green", True, False, "circle", 1, 0, 0))
-    # objects.append(Obstacle(np.array([0, 0]), "obstacle", True, "red", False, False, "rectangle", 0, 100, 45))
-    
-    # # Genomes and agents are both created and paired together here, for both predator and prey populations
-    # for i in range(pred_pop):
-    #     pos = np.array([np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]), np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])])
-    #     genome = population.population[i + 1]
-    #     agent = Predator(i, pos, genome, config)
-    #     agents.append(agent)
-    
-    # for i in range(prey_pop):
-    #     pos = np.array([np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]), np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])])
-    #     genome = population.population[i + pred_pop]
-    #     agent = Prey(i + pred_pop, pos, genome, config)
-    #     agents.append(agent)
-
-    # # Add agents and obstacles to environment
-    # env.add_agents(agents)
-    # env.add_obstacles(objects)
 
     # Update logger with simulation start info and max CPU cores being used
     logger.info(f"Starting simulation with {config.pop_size} agents...")
@@ -132,7 +104,7 @@ def main():
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
-            mutate(population, config, env, populationSize, pred_pop, prey_pop)
+            mutate(population, config, env, populationSize, pred_pop, prey_pop) # TO DO: this can probably be moved to environment.py
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")
