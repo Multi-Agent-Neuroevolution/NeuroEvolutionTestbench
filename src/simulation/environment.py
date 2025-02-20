@@ -155,98 +155,6 @@ class Environment:
             agent.get_collisions()
             agent.solve_collision()
 
-    # # This definition is FOR DEBUGGING PURPOSES and is for visualizing the environment
-    # def view(self, real_time=False):
-    #     # plt.close('all')  # Close any existing figures
-
-    #     # Create figure and axes with a larger size for better visibility
-    #     fig, ax = plt.subplots(figsize=(12, 12))
-    #     ax.set_xlim(self.bounds[0], self.bounds[1])
-    #     ax.set_ylim(self.bounds[2], self.bounds[3])
-
-    #     # Add grid for better spatial reference
-    #     ax.grid(True, linestyle='--', alpha=0.3)
-    #     ax.set_facecolor('#f0f0f0')  # Light gray background
-
-    #     # This segment of the code draws all existing objects in the environment
-    #     for i, obstacle in enumerate(self.obstacles):
-    #         if obstacle.shape == "circle":
-    #             circle = plt.Circle(
-    #                 obstacle.pos,
-    #                 obstacle.radius,
-    #                 color = obstacle.color if hasattr(obstacle, 'color') else 'red',
-    #                 alpha=0.7,
-    #                 label=f'Obstacle {i}: {obstacle.type}' if hasattr(obstacle, 'type') else f'Obstacle {i}'
-    #             )
-    #             ax.add_artist(circle)
-    #         elif obstacle.shape == "rectangle":
-    #             rect = plt.Rectangle(
-    #                 (obstacle.pos[0] - obstacle.width/2, obstacle.pos[1] - obstacle.height/2),
-    #                 obstacle.width,
-    #                 obstacle.height,
-    #                 color=obstacle.color if hasattr(obstacle, 'color') else 'red',
-    #                 alpha=0.7,
-    #                 label=f'Obstacle {i}: {obstacle.type}' if hasattr(obstacle, 'type') else f'Obstacle {i}'
-    #             )
-    #             ax.add_artist(rect)
-
-    #     # This segment of the code draws all existing agents in the environment
-    #     for i, agent in enumerate(self.agents):
-    #         # Draw vision circle (as in, how far the agent can see). Vision radius is second value in the tuple (this should be made a constant)
-    #         vision_circle = plt.Circle(agent.pos, 10, color='green', alpha=0.1, fill=True)
-    #         ax.add_artist(vision_circle)
-
-    #         # Draw agent itself
-    #         agent_circle = plt.Circle(agent.pos, agent.radius, color='blue', alpha=0.7)
-    #         ax.add_artist(agent_circle)
-
-    #         # This adds an ID label to the agent
-    #         ax.annotate(
-    #             f'A{i}',
-    #             xy=(agent.pos[0], agent.pos[1]),
-    #             xytext=(5, 5),
-    #             textcoords='offset points',
-    #             fontsize=8,
-    #             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7)
-    #         )
-
-    #         # Draw connections agent has between all objects
-    #         if hasattr(agent, 'state') and hasattr(agent.state, 'objs'):
-    #             for obj in agent.state.objs:
-    #                 # Calculate distance
-    #                 distance = np.linalg.norm(agent.pos - obj.pos)
-
-    #                 # Draw line with distance label
-    #                 line = ax.plot([agent.pos[0], obj.pos[0]], [agent.pos[1], obj.pos[1]], 'k--', alpha=0.3, linewidth=0.5)[0]
-
-    #                 # Add distance label at midpoint
-    #                 midpoint = (agent.pos + obj.pos) / 2
-    #                 ax.annotate(
-    #                     f'{distance:.1f}',
-    #                     xy=(midpoint[0], midpoint[1]),
-    #                     fontsize=6,
-    #                     bbox=dict(facecolor='white', edgecolor='none', alpha=0.7)
-    #                 )
-
-    #     # Add title with simulation info
-    #     ax.set_title(f'Environment Type: {self.type}\n' f'Agents: {len(self.agents)} | ' f'Obstacles: {len(self.obstacles)}')
-
-    #     # Add legend
-    #     if self.obstacles:
-    #         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-
-    #     # Adjust layout to prevent cutting off elements
-    #     plt.tight_layout()
-
-    #     # Finally, display the plot depending on if it's real-time or not
-    #     if real_time:
-    #         plt.ion()
-    #         plt.draw()
-    #         plt.pause(0.1)
-    #         plt.close(fig)
-    #     else:
-    #         plt.show()
-
     # This definition handles food addition and removal
     def food_handler(self):
         # This segment checks food is "living" (in other words, not eaten) and removes it if it's not
@@ -315,4 +223,3 @@ class Environment:
                 # print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
                 # Find amount of food left
-                # self.view(real_time=True)
