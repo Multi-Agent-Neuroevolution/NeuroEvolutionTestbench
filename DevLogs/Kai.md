@@ -79,3 +79,35 @@ Kai Sniadach Dev Log
 
     ### 12/5/2024
         Test plan v1 finished - filled out introduction section, testing approach, and system overview, and helped out with some other sections
+
+## Sprint 7
+    1/14 - 1/23
+
+    ### 01/14/2025
+        Set initial tasks for start of semester sprint.
+    ### 01/16/2025
+        Set up goals for the next sprints, and came up with an outline of the minimum viable product that needs to be delivered by the end of the semester.
+    ### 01/21/2025
+        Discussed some of the bottlenecks in the simulation runtime with Jackson Salyards, worked on some parts of simulation.
+
+## Sprint 8
+    01/28 - 02/06
+
+    ### 01/28/2025
+        Worked on the SRS document, filling in some of the group sections and then my own section (global impact).
+    ### 01/30/2025
+        Went over the current NEAT implementation with Jackson Salyards and suggested code reviews.
+    ### 02/04/2025
+        Did a lot of work and the final touches of the SRS with Jackson Salyards.
+        
+## Sprint 9
+    02/11 - 02/20
+
+    ### 02/11/2025
+        Set up sprint goals and backlog for the sprint, focus was on fixing some of the performance issues with simulation runtime.
+    ### 02/13/2025
+        Investigated the use of SHAP for some explainable AI, and for looking at the logging that we already do.
+    ### 02/18/2025
+        Worked through some functions in agent.py to try and remove redundancies and set up some methods to make hyperNEAT easier to implement.
+    ### 02/20/2025
+        Started to set up tasks for next sprint in order to get HyperNEAT working. Talked with Jackson Baker and Salyards about what steps we need to take.
