@@ -69,6 +69,9 @@ The team met virtually over Discord, with the intent of completing our video pre
 ### Date: December 5th, 2024
 The team met in person today at the poster presentation session. We stayed in the Lehman building atrium for the duration of the event; I spoke with a few group members of other projects, as well to others about our own project. I also helped with the completion of the test plan document, which was due tonight.
 
+### Date: January 21st, 2025
+The team met today in person. I have been having dependency issues and thus have been unable to run the project in order to ensure changes that I make to the project codebase work properly. Unfortunately, this has hampered my productivity, so I've been focused on getting these issues fixed as soon as possible. Besides that, the team has been making good progress on HyperNEAT implementation.
+
 ### Date: January 23rd, 2025
 The team met today during class time. I finally fixed my dependency issues, although the manner I did so was unconventional. Because of this, I recommended--and subsequently took it upon myself--to clean the project file structure. When the extra branches we had on GitHub were cleaned up, the merges must have resulted in some wonky directory, such as there being a "simulation" folder nested within a parent "Simulation" folder for no real reason.
 
@@ -84,3 +87,31 @@ The team met in person today, with a major breakthrough: basic NEAT configuratio
 The team met in person today. We were able to finally see the agents working autonomously in a basic simulation, where the statistics were recorded that showed the average fitness values of both predator and prey populations fluctuating over time. We touched on steps to complete the SRS document, as it is due at the start of this next week.
 
 Since our main Python file used for creating and running the simulation was starting to become overly large, I worked on reformatting the file to cut down on this issue. This mainly consisted of creating a new, dedicated Python file for logging purposes (besides the basic sim.log).
+
+### Date: February 4th, 2025
+The team met in person today. Since the final revision of the SRS document is due tonight, much of the discussion we had was focused on making sure we finished our new section of the document to do with global impacts. I helped complete parts of the group-assigned topics in order to get the ball rolling, then revised many of the requirements, new and old, in order to make sure that they were written in a proper manner.
+
+### Date: February 6th, 2025
+The team met in person today. Being the first meeting post-SRS submission, we touched back on base to get a feel of how everyone's been progressing in their respective tasks.
+
+### Date: February 11th, 2025
+The team met in person today. Working on code maintenance, I figured a good place to start would be to identify which files are being unused. Two files that I chose to delete were move_test.py and movement.py. These were the original pieces of movement code created last semester, which we've ended up expanding on and implementing in a better manner in other files, such as environment.py. move_test.py was also test code, and not meant to be a final product, so removing them from the project was for the best. I also made some formatting adjustments in environment.py while seeing where the movement code was implemented, in order to improve code readability. In doing so, I also noticed some pieces of code that I figure can be reworked later.
+
+### Date: February 13th, 2025
+The team met in person today. I continued working on code maintenance. Progress today involved the mutation functionality for the agents, which occurs after each epoch. The function mutate() is found in environment.py, and included a nested function breed_and_mutate(). In order to cut down on the length of the file, I opted to move the nested function into its own proper utilities file, named evolution_utils.py. I then adjusted the code of said function to be less redundant, by moving the initial if-else statement into the for loop. It is functionally the same, but cuts back on repeated code.
+
+I also noticed that there were a few variables being used for creating the simulation that were effectively being treated as constants. In order to keep track of these constants, I created a Python module specifically for holding every constant (constants.py), which can then be imported into files where necessary.
+
+![Snippet showing how constants.py looks](./LogPictures/Adrian/Adrian_02132025_constants.png)
+
+### Date: February 19th, 2025
+Today marked a turning point in my progress towards creating a better, more maintainable project codebase. Ever since we added predator and prey agent creation functionality, the code for that was delegated to a file, predator_prey.py. Two classes, Predator() and Prey(), are subclasses based on the Agent() class found in agents.py. In order to cut down on "file spam," I worked on moving these subclasses to agents.py. That way, it would also be easier to know where to look for these subclasses; it makes sense that you would find subclasses under their parent classes (though I should note that obviously this is on).
+
+I also reworked how obstacles are created in the simulation environment. Previously, obstacles would be created with the Obstacle() class, which would include an attribute indicating the type of obstacle being created. Different types of obstacles were thus created and differentiated just by strings, such as "food." I decided to rework this into new subclasses, like Food(), which allow for the subclass to be called with various attributes automatically filled (only needing to pass a position value), rather than having to manually do so in the code every time someone wants to add a section that pertains to food spawning.
+
+### Date: February 20th, 2025
+The team met in person today, where I was able to discuss the big changes I've made to the codebase with respect to how obstacles are created in the simulation environment and where different subclasses are stored. Jackson S. and I both went over my changes, so he would be able to understand what exactly has changed and where functions may have been moved to. During this, we were able to fix a bug that popped up while I was reworking the code, where no prey agents would actually be created during the first epoch ran. As it turns out, this was due to the _initialize_agents() function never utilizing the Prey() class; I had accidentally written Predator() twice when moving this functionality to environment.py.
+
+![Snippet of code that was fixed](./LogPictures/Adrian/Adrian_02202025_preyissue.png)
+
+Besides that, after looking over the changes, I got approval from my team to merge the changes I've made into the main "feature-hyperneat" branch, so everyone can work from the new, reworked code.
