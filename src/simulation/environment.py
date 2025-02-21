@@ -155,9 +155,9 @@ class Environment:
                 agent.fitness = -9999
                 self.agents.remove(agent)  # Remove dead agent
 
-            # ADRIAN: should this be made into an else function for the above?
-            agent.get_collisions()
-            agent.solve_collision()
+            # # ADRIAN: should this be made into an else function for the above?
+            # agent.get_collisions()
+            # agent.solve_collision()
 
     def food_handler(self):
         """Handles food-related operations, such as spawning and removal."""
