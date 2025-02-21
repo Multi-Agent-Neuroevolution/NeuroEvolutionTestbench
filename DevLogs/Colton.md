@@ -22,3 +22,14 @@
 - Dec 3rd. Working on 10 minute presentation, added things to slides like rewording and extra information
 - Dec 4th. Finished recording the presentation with everyone.
 - Dec 5th. Presented our posters in the Lehman building today, and also worked on the Test plan document with everyone.
+# Sprint 7 Start: January 14
+- January 15th. Research on HyperNeat as well as NEAT integration for our code base
+- January 18th. Created steps on a document of ways to make sure our neat is integrated properly and is able to fulfill our purposes
+
+# Sprint 8 Start: January 28
+- January 30th. Started working on my part of the SRS where I talk about how our project is affected socially
+- February 4th. Finished my part of the SRS with social impact of multi agent neuroevolution as well as helped add and fix parts of the SRS Public Health, safety and welfare.
+
+# Sprint 9 Start: February 11
+- Feb 11th. Started research on SHAP XAI for our codebase. Trying to understand the documentation and how to implement some functions through our code so that we can have some physical data/graphs that we'll be able to observe.
+- Feb 18th. Worked on implementing SHAP functions in code but will need to remake when new branches get merged so I can work on it properly.
