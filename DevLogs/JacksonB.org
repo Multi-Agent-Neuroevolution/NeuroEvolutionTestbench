@@ -173,3 +173,9 @@ worked with team to clean project directories
 merged some pull requests to place features into dev and how the food system works
 * 2/9/2025
 started API for the two systems to talk to eachother
+* 2/13/2024
+Worked more towards the web connection and implementing both the rust and python versions
+* 2/18/2025
+Finished python server portion and rust version needs to be tested
+* 2/20/2025
+merged changes into parent branch to make sure features are compatible with rework on adrians side
