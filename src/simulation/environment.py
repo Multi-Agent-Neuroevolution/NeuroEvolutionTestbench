@@ -113,12 +113,6 @@ class Environment:
         for agent in agents:
             self.agent_locks[agent] = Lock()
 
-    # ADRIAN: This seems redundant with the add_agents function (both are used in sim_world.py)
-    def overwrite_agents(self, agents):
-        self.agents = agents
-        for agent in agents:
-            self.agent_locks[agent] = Lock()
-
     def add_obstacles(self, obstacles):
         """Adds obstacles to the environment.
 
@@ -142,8 +136,8 @@ class Environment:
         """
         with self.agent_locks[agent]:
             # Get nearby objects
-            nearby = self.spatial_grid.get_nearby_objects(agent.pos, 10)
-            agent.state.objs = [obj for obj in nearby]
+            nearby = self.spatial_grid.get_nearby_objects(
+                agent.pos, agent.sight)
             agent.update_action()
             # Check bounds
             agent.check_bounds(self.bounds)

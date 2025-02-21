@@ -11,5 +11,14 @@ PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
 PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
 FOOD_RESPAWN_RATE = 0.1
 
+# Parameters for Agents
+PREY_SIGHT = 12
+PRED_SIGHT = 10
+PREY_SPEED = 1.5
+PRED_SPEED = 1
+PRED_MOVE_COST = 0.10
+PRED_EAT_ENERGY_GAIN = 12
+PRED_FAIL_ENERGY_COST = 3
+
 # Parameter for number of times simulation will run
 EPOCHS = 2

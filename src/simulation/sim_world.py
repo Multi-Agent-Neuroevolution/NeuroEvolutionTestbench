@@ -35,7 +35,6 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     print(pred_pop)
     print(len(population.population.items()))
     prey_pop = len(population.population.items()) - pred_pop
-    print(prey_pop)
     env.initialize_environment(
         config=config,
         population=population,
@@ -81,12 +80,12 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
 
     # Breed and mutate predators and prey
     new_predators = breed_and_mutate(
-        config, top_predators, is_predator=True, num_offspring=num_pred_offspring)
+        config, top_predators, is_predator=True, num_offspring=num_pred_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
     new_preys = breed_and_mutate(
-        config, top_preys, is_predator=False, num_offspring=num_prey_offspring)
+        config, top_preys, is_predator=False, num_offspring=num_prey_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
 
     # Replace the old population with the new one
-    env.overwrite_agents(top_predators + top_preys + new_predators + new_preys)
+    env.add_agents(top_predators + top_preys + new_predators + new_preys)
 
 # Main function, configures simulation then runs through epochs
 
