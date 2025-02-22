@@ -92,6 +92,15 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
 
 def main():
     try:
+        # scale bounds
+        constants.BOUNDS = [
+            bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
+        constants.PREY_SPAWN_BOUNDS = [
+            bound * constants.SCALE_FACTOR for bound in constants.PREY_SPAWN_BOUNDS]
+        constants.PRED_SPAWN_BOUNDS = [
+            bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS
+        ]
+
         # Creates simulation environment
         env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
             simulation_type=constants.SIMULATION_TYPE,
