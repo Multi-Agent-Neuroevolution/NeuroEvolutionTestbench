@@ -14,8 +14,6 @@ import constants
 logger = logging.getLogger(__name__)
 
 # Definition for handling the creation of the simulation environment
-
-
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
@@ -88,8 +86,6 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     env.add_agents(top_predators + top_preys + new_predators + new_preys)
 
 # Main function, configures simulation then runs through epochs
-
-
 def main():
     try:
         # scale bounds
