@@ -1,9 +1,19 @@
 // This is the main file for the GUI, it will be responsible for creating the GUI and handling user input
 // It is built using the iced crate.
 
+use crate::WebClient::comms::communication_client::CommunicationClient;
+use crate::WebClient::comms::JsonData;
+use crate::WebClient::comms::JsonData;
+use iced::Executor;
+use tokio::runtime::Runtime;
+use tonic::{Request, Status};
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, row, text, Column, Row};
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
+use WebClient::getConnection;
+mod WebClient;
 mod neural_net;
 mod sim_view;
 use iced::time;
@@ -11,14 +21,20 @@ use neural_net::{Layer, NeuralNet};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use sim_view::{Shape, Simulation};
+use std::future::IntoFuture;
 use std::time::Duration;
-#[derive(Default, Clone)]
+use tonic::transport::Channel;
+
+#[derive(Default)]
 struct View {
     speed: i32,
     agent_view: AgentView,
     sim_view: SimulationView,
     nn_view: NNView,
     simulation_data: SimulationData,
+    receiver: Option<Receiver<JsonData>>,
+    sender: Option<Sender<JsonData>>,
+    connection: Option<CommunicationClient<Channel>>
 }
 #[derive(Default, Clone)]
 struct SimulationView {
@@ -43,6 +59,9 @@ enum Message {
     DecrementPressed,
     DecrementPressedx10,
     Tick,
+    SimStart,
+    SimPause,
+    SimEnd,
 }
 
 #[derive(Deserialize, Clone, Default)]
@@ -69,12 +88,18 @@ pub fn main() -> iced::Result {
 }
 impl View {
     fn new() -> Self {
+        let (send, recv) = mpsc::channel::<JsonData>(100000000000000);
+        let rt = Runtime::new().unwrap();
+        let conn = rt.block_on(getConnection()).unwrap();
         Self {
             speed: 1,
             agent_view: AgentView::new(),
             sim_view: SimulationView::new(),
             nn_view: NNView::new(),
             simulation_data: SimulationData::default(),
+            receiver: Some(recv),
+            sender: Some(send),
+            connection: Some(conn)
         }
     }
     fn view(&self) -> Column<Message> {
@@ -125,6 +150,13 @@ impl View {
                 let simulation_data = self.get_simulation_data();
                 self.update_simulation_data(simulation_data);
             }
+            Message::SimStart => {
+                let rt = Runtime::new().unwrap();
+                let cloneConn = *self.connection.as_mut().unwrap().clone();
+                rt.spawn(async { WebClient::getSimStream(cloneConn, self.sender.unwrap()); });
+            }
+            Message::SimPause => {}
+            Message::SimEnd => {}
         }
         if self.speed < 1 {
             self.speed = 1;
@@ -134,7 +166,7 @@ impl View {
     }
     fn get_simulation_data(&mut self) -> SimulationData {
         //In the future this will be replaced with a function that gets the data from the simulation over a web socket
-        let json_data = r#"
+        /*let json_data = r#"
         {
             "agents": [
                 {
@@ -193,7 +225,7 @@ impl View {
                     "y2": 100.0,
                     "color": "green"
 
-                }    
+                }
             ],
         "layers": [
         {
@@ -206,7 +238,7 @@ impl View {
                                 "value": 0.004,
                                 "weights": [0.074, 5.34, 1.50, 4.1]
                         }
-                        
+
                     ]
             },
             {
@@ -264,9 +296,11 @@ impl View {
             }
         ]
         }
-        "#;
+        "#;*/
+
         let json_data: SimulationData =
-            serde_json::from_str(json_data).expect("Failed to parse JSON");
+            serde_json::from_str(&self.receiver.as_mut().unwrap().recv().unwrap().json_data)
+                .expect("Failed to parse JSON");
         json_data
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
@@ -297,8 +331,12 @@ impl AgentView {
     }
     fn controlls(&self) -> Row<Message> {
         let controls = row![
-            button("Pause").width(Length::FillPortion(1)),
-            button("Play").width(Length::FillPortion(1)),
+            button("Pause")
+                .width(Length::FillPortion(1))
+                .on_press(Message::SimPause),
+            button("Play")
+                .width(Length::FillPortion(1))
+                .on_press(Message::SimStart),
             button("Step").width(Length::FillPortion(1))
         ];
         controls

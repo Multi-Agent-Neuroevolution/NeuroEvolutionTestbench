@@ -21,7 +21,14 @@ pyqt5-qt5 = "5.15.15"
 pyqt5-sip = "12.15.0"
 python-dateutil = "2.9.0.post0"
 six = "1.16.0"
+grpcio = "^1.70.0"
+grpcio-tools = "^1.70.0"
+protobuf = "^5.29.3"
 
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+isort = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
