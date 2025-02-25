@@ -9,6 +9,7 @@ from utils import State
 from obstacles import Food, Wall
 from agents import Predator, Prey
 import logging
+from messenger import messageChannel
 
 logger = logging.getLogger(__name__)
 
@@ -224,3 +225,5 @@ class Environment:
                 print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
                 # Find amount of food left
+
+                messageChannel.put()
