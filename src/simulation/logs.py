@@ -1,33 +1,45 @@
-# 5 different logging-related files are generated and stored in the Data folder. The files are:
-# final_genomes.json - handled by save_genomes_json
-# pred_genomes.pkl - handled by pickle_genomes
-# prey_genomes.pkl - handled by pickle_genomes
-# network_size_log.txt - handled by log_avg_network_size
-# fitness.csv - handled by avg_agent_fitness
+"""logs.py is where the logging functions are defined.
 
-from predator_prey import Predator, Prey
+These functions are used to log data about the simulation, such as:
+- the average network size of the agents
+- the average fitness of the predator and prey populations
+- and the final agent genomes. 
+
+The functions are called from sim_world.py to log data at different stages of the simulation.
+"""
+from agents import Predator, Prey
 import numpy as np
 import json
 import pickle
 
-# Definition for converting a genome to a dictionary, used in tandem with the genome JSON saving function below
 def genome_to_dict(genome):
-    # Convert connections' tuple keys into strings
+    """Converts a genome to a dictionary, used in tandem with the save_genomes_json function.
+    
+    Args:
+        genome (neat.genome.DefaultGenome): The genome to convert to a dictionary.
+        
+    Returns:
+        dict: A dictionary representation of the genome.
+    """
     connections = {str(k): vars(v) for k, v in genome.connections.items()}
-
-    # Returns the genome key, fitness, nodes, and connections its made
     return {'key': genome.key, 'fitness': genome.fitness, 'nodes': {k: vars(v) for k, v in genome.nodes.items()}, 'connections': connections}
 
-# Definition for saving the final agent genomes to a JSON file
 def save_genomes_json(agents):
-    # Convert each agent's genome to a dictionary using the genome_to_dict def
+    """Saves the final agent genomes to a JSON file.
+    
+    Args:
+        agents (list): A list of all agents in the simulation.
+    """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
-
     with open('./Data/final_genomes.json', 'w') as file:
         json.dump(genomes, file, indent=4)
 
-# Definition for saving genomes to a pickle file
 def pickle_genomes(agents):
+    """Saves the final agent genomes to a pickle file.
+    
+    Args:
+        agents (list): A list of all agents in the simulation.
+    """
     # Genomes from predators
     with open('./Data/pred_genomes.pkl', 'wb') as f:
         pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
@@ -36,9 +48,12 @@ def pickle_genomes(agents):
     with open('./Data/prey_genomes.pkl', 'wb') as f:
         pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
 
-# Definition for logging the average network size to a text file
 def log_avg_network_size(agents):
-    # Initialize local variables
+    """Logs the average network size of the agents to a text file.
+    
+    Args:
+        agents (list): A list of all agents in the simulation.
+    """
     total_nodes = 0
     total_connections = 0
     total_agents = len(agents)
@@ -61,8 +76,13 @@ def log_avg_network_size(agents):
     with open('./Data/network_size_log.txt', 'a') as file:
         file.write(f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
 
-# Definition for saving the average fitness of predators and preys population to a CSV file
 def avg_agent_fitness(predators, preys):
+    """Saves the average fitness of the predator and prey populations to a CSV file.
+    
+    Args:
+        predators (list): A list of all predators in the simulation.
+        preys (list): A list of all preys in the simulation.
+    """
     avg_pred_fitness = np.mean([predator.fitness for predator in predators])
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
     with open('./Data/fitness.csv', 'a') as f:

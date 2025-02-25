@@ -1,14 +1,9 @@
 /target/
 /.venv/
 /.vscode/
-/Data/simulation_stats.csv
-/Data/final_genomes.json
-/Data/fitness.csv
-/Data/network_size_log.txt
-/Data/pred_genomes.pkl
-/Data/prey_genomes.pkl
+/Data/*
 /src/simulation/simulation_stats.csv
 /src/simulation/__pycache__/
-/Logs/sim.log
+/Logs/*
 /sim.log
 /rust-gui/
