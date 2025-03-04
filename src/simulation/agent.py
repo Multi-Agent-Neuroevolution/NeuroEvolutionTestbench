@@ -201,6 +201,11 @@ class Agent(shape):
 
         return self.state.collisions
 
+    def getAgentRenderData(self):
+        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"white"}
+
+
+
     def solve_collision(self):
         for collision in self.state.collisions[:]:
             if collision.shape == "circle":

@@ -3,15 +3,14 @@
 
 use crate::WebClient::comms::communication_client::CommunicationClient;
 use crate::WebClient::comms::JsonData;
-use crate::WebClient::comms::JsonData;
-use iced::Executor;
-use tokio::runtime::Runtime;
-use tonic::{Request, Status};
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, row, text, Column, Row};
+use iced::Executor;
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
+use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
+use tonic::{Request, Status};
 use WebClient::getConnection;
 mod WebClient;
 mod neural_net;
@@ -34,7 +33,7 @@ struct View {
     simulation_data: SimulationData,
     receiver: Option<Receiver<JsonData>>,
     sender: Option<Sender<JsonData>>,
-    connection: Option<CommunicationClient<Channel>>
+    connection: Option<CommunicationClient<Channel>>,
 }
 #[derive(Default, Clone)]
 struct SimulationView {
@@ -75,7 +74,6 @@ struct Agent {
 struct SimulationData {
     agents: Vec<Agent>,
     shapes: Vec<Shape>,
-    layers: Vec<Layer>,
 }
 
 pub fn main() -> iced::Result {
@@ -99,7 +97,7 @@ impl View {
             simulation_data: SimulationData::default(),
             receiver: Some(recv),
             sender: Some(send),
-            connection: Some(conn)
+            connection: Some(conn),
         }
     }
     fn view(&self) -> Column<Message> {
@@ -152,8 +150,11 @@ impl View {
             }
             Message::SimStart => {
                 let rt = Runtime::new().unwrap();
-                let cloneConn = *self.connection.as_mut().unwrap().clone();
-                rt.spawn(async { WebClient::getSimStream(cloneConn, self.sender.unwrap()); });
+                let cloneConn = self.connection.as_mut().unwrap().clone();
+                let cloneSend = self.sender.as_mut().unwrap().clone();
+                rt.spawn(async move {
+                    WebClient::getSimStream(cloneConn, cloneSend).await;
+                });
             }
             Message::SimPause => {}
             Message::SimEnd => {}
@@ -297,16 +298,16 @@ impl View {
         ]
         }
         "#;*/
-
+        let received = &self.receiver.as_mut().unwrap().blocking_recv().unwrap().json_data;//should block until sim starts
         let json_data: SimulationData =
-            serde_json::from_str(&self.receiver.as_mut().unwrap().recv().unwrap().json_data)
+            serde_json::from_str(&received)
                 .expect("Failed to parse JSON");
         json_data
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
         self.simulation_data = simulation_data;
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
-        self.nn_view.update_network(&self.simulation_data.layers);
+        //self.nn_view.update_network(&self.simulation_data.layers);
         self.sim_view.update_sim(&self.simulation_data.shapes);
     }
     fn subscription(&self) -> Subscription<Message> {

@@ -23,7 +23,7 @@ pub async fn getConnection()->Result<CommunicationClient<Channel>,tonic::transpo
     Ok(())
 }*/
 
-pub async fn getSimStream(connection:CommunicationClient<Channel>,sender:Sender<JsonData>)->Result<(),Box<dyn std::error::Error>>{
+pub async fn getSimStream(mut connection:CommunicationClient<Channel>,sender:Sender<JsonData>)->Result<(),Box<dyn std::error::Error>>{
     let request = Request::new(Command{
        r#in:"start".into(),
     });
@@ -35,7 +35,7 @@ pub async fn getSimStream(connection:CommunicationClient<Channel>,sender:Sender<
     Ok(())
 }
 
-pub async fn getNeuralNet(connection:&mut CommunicationClient<Channel>,agent:i32)->JsonData{
+pub async fn getNeuralNet(mut connection: CommunicationClient<Channel>,agent:i32)->JsonData{
     let request = Request::new(Id{r#id:agent,});
     let netString = connection.fetch_neural_net(request).await.unwrap().into_inner();
     netString

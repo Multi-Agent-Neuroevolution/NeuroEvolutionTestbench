@@ -287,4 +287,6 @@ class Environment:
                 # Find the fittest predator and prey
                 # Find amount of food left
                 # self.view(real_time=True)
-                messageChannel.put()
+                sendData = {"agents":self.agents,"shapes":self.obstacles}
+                print(sendData)
+                #messageChannel.put(sendData)
