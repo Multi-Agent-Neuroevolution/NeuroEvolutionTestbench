@@ -4,11 +4,14 @@ from concurrent import futures
 import json
 import time
 import threading
-from .generated import json_transfer_pb2, json_transfer_pb2_grpc
+from .generated import comms_pb2
+from .generated import comms_pb2_grpc
 from messenger import messageChannel
 
 
-class JsonTransferService(json_transfer_pb2_grpc.JsonTransferServicer):
+class CommunicationService(comms_pb2_grpc.CommunicationServicer):
+    def FetchNeuralNet(slef,request,context):
+        print("here")
     def FetchEnvironmentStream(self, request, context):
         while messageChannel.empty == False:
             data = messageChannel.get()
