@@ -3,7 +3,6 @@
 
 use crate::WebClient::comms::communication_client::CommunicationClient;
 use crate::WebClient::comms::JsonData;
-use crate::WebClient::comms::JsonData;
 use iced::Executor;
 use tokio::runtime::Runtime;
 use tonic::{Request, Status};
@@ -152,8 +151,9 @@ impl View {
             }
             Message::SimStart => {
                 let rt = Runtime::new().unwrap();
-                let cloneConn = *self.connection.as_mut().unwrap().clone();
-                rt.spawn(async { WebClient::getSimStream(cloneConn, self.sender.unwrap()); });
+                let cloneConn = self.connection.as_mut().unwrap().clone();
+                let cloneSend = self.sender.as_mut().unwrap().clone();
+                rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend); });
             }
             Message::SimPause => {}
             Message::SimEnd => {}
@@ -298,9 +298,11 @@ impl View {
         }
         "#;*/
 
-        let json_data: SimulationData =
+        /*let json_data: SimulationData =
             serde_json::from_str(&self.receiver.as_mut().unwrap().recv().unwrap().json_data)
-                .expect("Failed to parse JSON");
+                .expect("Failed to parse JSON");*/
+        let received = &self.receiver.as_mut().unwrap().blocking_recv().unwrap().json_data;
+        let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
         json_data
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {

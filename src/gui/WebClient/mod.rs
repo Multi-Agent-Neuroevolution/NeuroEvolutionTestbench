@@ -23,7 +23,7 @@ pub async fn getConnection()->Result<CommunicationClient<Channel>,tonic::transpo
     Ok(())
 }*/
 
-pub async fn getSimStream(connection:CommunicationClient<Channel>,sender:Sender<JsonData>)->Result<(),Box<dyn std::error::Error>>{
+pub async fn getSimStream(mut connection:CommunicationClient<Channel>,sender:Sender<JsonData>)->Result<(),Box<dyn std::error::Error>>{
     let request = Request::new(Command{
        r#in:"start".into(),
     });
