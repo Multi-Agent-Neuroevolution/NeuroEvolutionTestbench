@@ -146,14 +146,15 @@ impl View {
             Message::IncrementPressedx10 => self.speed += 10,
             Message::DecrementPressedx10 => self.speed = self.speed.saturating_sub(10),
             Message::Tick => {
-                let simulation_data = self.get_simulation_data();
-                self.update_simulation_data(simulation_data);
             }
             Message::SimStart => {
                 let rt = Runtime::new().unwrap();
                 let cloneConn = self.connection.as_mut().unwrap().clone();
                 let cloneSend = self.sender.as_mut().unwrap().clone();
                 rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend); });
+                for _i in 0..999{
+                    self.get_simulation_data();
+                }
             }
             Message::SimPause => {}
             Message::SimEnd => {}
@@ -301,8 +302,10 @@ impl View {
         /*let json_data: SimulationData =
             serde_json::from_str(&self.receiver.as_mut().unwrap().recv().unwrap().json_data)
                 .expect("Failed to parse JSON");*/
+        //let simulation_data = self.get_simulation_data();
         let received = &self.receiver.as_mut().unwrap().blocking_recv().unwrap().json_data;
         let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
+        self.update_simulation_data(json_data.clone());
         json_data
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
