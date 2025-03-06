@@ -12,13 +12,15 @@ import logs
 from environment import Environment
 from agents import Predator, Prey
 from evolution_utils import breed_and_mutate
-from .generated import comms_pb2, comms_pb2_grpc
+#from .generated import comms_pb2, comms_pb2_grpc
 from messenger import messageChannel
+import comms_pb2
+import comms_pb2_grpc
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-class CommunincationService(comms_pb2_grpc.CommunicationServicer):
+class CommunicationService(comms_pb2_grpc.CommunicationServicer):
     def FetchEnvironmentStream(self, request, context):
         while messageChannel.empty == False:
             data = messageChannel.get()
