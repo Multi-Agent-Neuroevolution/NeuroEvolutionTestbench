@@ -24,14 +24,14 @@ class CommunincationService(comms_pb2_grpc.CommunicationServicer):
             data = messageChannel.get()
             try:
                 json_str = json.dumps(data)
-                yield json_transfer_pb2.JsonResponse(
+                yield comms_pb2.JSONData(
                     json_data=json_str,
                     success=True,
                     message="Data sent successfully"
                 )
                 time.sleep(1)
             except Exception as e:
-                yield json_transfer_pb2.JsonResponse(
+                yield comms_pb2.JSONData(
                     json_data="",
                     success=False,
                     message=f"Error processing data: {str(e)}"
@@ -40,7 +40,7 @@ class CommunincationService(comms_pb2_grpc.CommunicationServicer):
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    json_transfer_pb2_grpc.add_JsonTransferServicer_to_server(JsonTransferService(), server)
+    comms_pb2_grpc.add_CommunicationServicer_to_server(CommunicationService(), server)
     server.add_insecure_port('[::1]:50051')
     server.start()
     print("Server started on port 50051")
