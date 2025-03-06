@@ -225,5 +225,5 @@ class Environment:
                 print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
                 # Find amount of food left
-
-                messageChannel.put()
+                sendData = {"agents":self.agents,"shapes":self.obstacles}
+                messageChannel.put(sendData)
