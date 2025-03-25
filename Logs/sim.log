@@ -1,6 +1,6 @@
 INFO:__main__:started
 INFO:__main__:Starting simulation with 2 agents...
-INFO:__main__:Using 23 Logical CPU cores for parallel processing
-INFO:agents:Predator 0 chooses to move.
-INFO:agents:Prey 1 chooses to move.
+INFO:__main__:Using 7 Logical CPU cores for parallel processing
+INFO:agents:Prey 1 chooses to eat, but fails to find food.
+INFO:agents:Predator 0 chooses to eat, but fails to find a prey.
 INFO:__main__:Epoch 1 completed

@@ -64,9 +64,9 @@ class Environment:
         self.max_workers = 8
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
-    def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount):
+    def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount, prey_pop_no_neat=0, pred_pop_no_neat=0):
         self._initialize_agents(
-            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
+            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=pred_pop_no_neat, prey_no_neat_pop=prey_pop_no_neat)
         self._initialize_obstacles(food_amount)
 
     def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=0, prey_no_neat_pop=0):

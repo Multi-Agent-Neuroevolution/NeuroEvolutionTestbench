@@ -43,6 +43,9 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     if multi_model:
         pred_pop_no_neat = int(pred_pop * model_split)
         prey_pop_no_neat = int(prey_pop * model_split)
+    else:
+        pred_pop_no_neat = 0
+        prey_pop_no_neat = 0
     # Initialize the environment with the given parameters
     env.initialize_environment(
         config=config,
@@ -94,11 +97,11 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.
         config, top_predators, is_predator=True, num_offspring=num_pred_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
     new_preys = breed_and_mutate(
         config, top_preys, is_predator=False, num_offspring=num_prey_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
-    if len(prey_pop_no_neat) > 0:
+    if prey_pop_no_neat > 0:
         new_preys += [Prey(id=predator.id, pos=predator.pos,
                            neat_genome=None, neat_config=config)
                       for predator in predators[:prey_pop_no_neat]]
-    if len(pred_pop_no_neat) > 0:
+    if pred_pop_no_neat > 0:
         new_predators += [Predator(id=predator.id, pos=predator.pos,
                                    neat_genome=None, neat_config=config)
                           for predator in predators[:pred_pop_no_neat]]
