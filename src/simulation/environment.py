@@ -9,6 +9,7 @@ from utils import State
 from obstacles import Food, Wall
 from agents import Predator, Prey
 import logging
+import copy
 from messenger import messageChannel
 
 logger = logging.getLogger(__name__)
@@ -68,11 +69,11 @@ class Environment:
             config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
         self._initialize_obstacles(food_amount)
 
-    def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds):
+    def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=0, prey_no_neat_pop=0):
         agents = []
-
         # Initialize predators
         for i in range(pred_pop):
+
             pos = np.array([
                 np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
@@ -83,6 +84,28 @@ class Environment:
 
         # Initialize prey
         for i in range(prey_pop):
+
+            pos = np.array([
+                np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
+                np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
+            ])
+            genome = population.population[i + pred_pop]
+            agents.append(Prey(id=(i + pred_pop), pos=pos,
+                          neat_genome=genome, neat_config=config))
+        # Initialize pred_no_neat
+        for i in range(pred_no_neat_pop):
+
+            pos = np.array([
+                np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+                np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
+            ])
+            genome = population.population[i + 1]
+            agents.append(
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config))
+
+        # Initialize prey_no_neat
+        for i in range(prey_no_neat_pop):
+
             pos = np.array([
                 np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])

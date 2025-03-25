@@ -6,7 +6,7 @@ from agents import Predator, Prey
 # This function handles selecting parents to breed, then mutating the resultant child's genome
 
 
-def breed_and_mutate(config, parents, is_predator, num_offspring, prey_bounds, pred_bounds):
+def breed_and_mutate(config, parents, is_predator, num_offspring, prey_bounds, pred_bounds, multi_model=False, model_split=0.5):
     new_agents = []
 
     for _ in range(num_offspring):
@@ -15,6 +15,11 @@ def breed_and_mutate(config, parents, is_predator, num_offspring, prey_bounds, p
 
         # If there are no parents available(?), a new genome is created.
         # Otherwise, two parents are selected to breed and the child genome is created by crossover, then mutated
+        if multi_model:
+            config.genome_config.__dict__['conn_add_prob'] = 0
+            config.genome_config.__dict__['conn_delete_prob'] = 0
+            config.genome_config.__dict__['node_add_prob'] = 0
+            config.genome_config.__dict__['node_delete_prob'] = 0
         if len(parents) == 0:
             child_genome.configure_new(config.genome_config)
         else:

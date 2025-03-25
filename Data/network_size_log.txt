@@ -1,9 +1,1 @@
 Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
-Avg nodes: 17.0, Avg connections: 252.0
