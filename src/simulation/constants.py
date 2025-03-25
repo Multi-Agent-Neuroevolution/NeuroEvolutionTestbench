@@ -11,13 +11,13 @@ FOOD_AMOUNT = 100
 PREY_SPAWN_BOUNDS = [-150, 150, 50, 150]
 PRED_SPAWN_BOUNDS = [-150, 150, -150, -50]
 FOOD_RESPAWN_RATE = 0.1
-SCALE_FACTOR = 0.75  # Scale factor used for uniformly scaling bounds of environment and spawn bounds. Larger values effectivly spread out the agents and obstacles and vice versa
+SCALE_FACTOR = 0.5  # Scale factor used for uniformly scaling bounds of environment and spawn bounds. Larger values effectivly spread out the agents and obstacles and vice versa
 # Parameters for Agents
 PREY_SIGHT = 12  # Prey sight radius
 PRED_SIGHT = 10  # Predator sight radius
 PREY_SPEED = 1.5
 PRED_SPEED = 1
-PRED_MOVE_COST = 0.10
+PRED_MOVE_COST = 0.12      # Energy lost by predator when moving
 PRED_EAT_ENERGY_GAIN = 12  # Energy gained by predator when eating prey
 PRED_FAIL_ENERGY_COST = 3  # Energy lost by predator when failing to catch prey
 

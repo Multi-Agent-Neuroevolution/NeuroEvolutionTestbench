@@ -64,7 +64,8 @@ class Environment:
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
     def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount):
-        self._initialize_agents(config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
+        self._initialize_agents(
+            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds)
         self._initialize_obstacles(food_amount)
 
     def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds):
@@ -131,7 +132,7 @@ class Environment:
 
     def update_agent(self, agent):
         """Updates the agent's state and checks for collisions.
-        
+
         Args:
             agent (Agent): The agent to update.
         """
@@ -139,6 +140,7 @@ class Environment:
             # Get nearby objects
             nearby = self.spatial_grid.get_nearby_objects(
                 agent.pos, agent.sight)
+            agent.state.objs = nearby
             agent.update_action()
             # Check bounds
             agent.check_bounds(self.bounds)
@@ -172,7 +174,7 @@ class Environment:
     # This definition resets all agents when the current epoch is over
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
         """Resets the environment by reinitializing all agents.
-        
+
         Args:
             prey_bound (list, optional): The bounds for the prey agents. Defaults to [-150, 150, 50, 150].
             predator_bound (list, optional): The bounds for the predator agents. Defaults to [-150, 150, -150, -50].
@@ -225,5 +227,5 @@ class Environment:
                 print(f"Number of Predators Alive: {num_predators_alive}")
                 # Find the fittest predator and prey
                 # Find amount of food left
-                sendData = {"agents":self.agents,"shapes":self.obstacles}
+                sendData = {"agents": self.agents, "shapes": self.obstacles}
                 messageChannel.put(sendData)

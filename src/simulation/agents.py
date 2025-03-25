@@ -110,10 +110,11 @@ class Agent(Shape):
     def _update_interactables(self):
         self.state.interactables = [
             obj for obj in self.state.objs
-            if np.linalg.norm(self.pos - obj.pos) <= 3
+            if np.linalg.norm(self.pos - obj.pos) <= 5
         ]
 
     # TO DO: This function needs to be rewritten straight up it's too hacky
+
     def get_inputs(self, max_closest=5):
         # List to store relative positions and object type
         relative_objects = []

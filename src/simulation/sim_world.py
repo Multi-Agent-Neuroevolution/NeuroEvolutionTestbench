@@ -14,13 +14,16 @@ import constants
 logger = logging.getLogger(__name__)
 
 # Definition for handling the creation of the simulation environment
+
+
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1):
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
     env = Environment(simulation_type, steps, bounds, food_respawn_rate)
     env.max_workers = max(1, num_cores - 1)
-
+    print(f"Using {env.max_workers} workers for parallel processing")
     # Variables to be sent to the environment initialization function
+    print("Creating NEAT config...")
     config = neat.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -28,11 +31,15 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         neat.DefaultStagnation,
         config_path
     )
+    print("Creating NEAT population...")
     population = neat.Population(config)
     pred_pop = int(len(population.population.items())*pred_percent)
-    print(pred_pop)
-    print(len(population.population.items()))
+    print("Predator creating complete")
     prey_pop = len(population.population.items()) - pred_pop
+    print("Created {} predators and {} preys".format(
+        pred_pop, prey_pop))
+    print("Initializing environment...")
+    # Initialize the environment with the given parameters
     env.initialize_environment(
         config=config,
         population=population,
@@ -42,7 +49,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         prey_spawn_bounds=prey_spawn_bounds,
         food_amount=food_amount
     )
-
+    print("Starting Logger...")
     # Update logger with simulation start info and max CPU cores being used
     logger.info(f"Starting simulation with {config.pop_size} agents...")
     logger.info(
@@ -86,6 +93,8 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop):
     env.add_agents(top_predators + top_preys + new_predators + new_preys)
 
 # Main function, configures simulation then runs through epochs
+
+
 def main():
     try:
         # scale bounds
@@ -98,6 +107,7 @@ def main():
         ]
 
         # Creates simulation environment
+        print("Creating simulation environment...")
         env, population, config, populationSize, pred_pop, prey_pop = create_simulation(
             simulation_type=constants.SIMULATION_TYPE,
             config_path=constants.CONFIG_PATH,
@@ -112,7 +122,7 @@ def main():
 
         # Create log for the average network size
         logs.log_avg_network_size(env.agents)
-
+        print("Simulation environment created")
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
