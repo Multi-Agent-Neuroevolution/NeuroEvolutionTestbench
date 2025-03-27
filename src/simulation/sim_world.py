@@ -13,17 +13,40 @@ import constants
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-# Definition for handling the creation of the simulation environment
-
-
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, multi_model=False, model_split=0.5):
+    """Creates the simulation environment and initializes the NEAT population.
+    
+    Args:
+        simulation_type (str): Type of simulation to run.
+        config_path (str): Path to the NEAT configuration file.
+        steps (int): Number of steps to run the simulation.
+        bounds (list): Bounds for the simulation environment.
+        pred_percent (float): Percentage of predators in the population.
+        food_amount (int): Amount of food in the environment.
+        prey_spawn_bounds (list): Spawn bounds for prey.
+        pred_spawn_bounds (list): Spawn bounds for predators.
+        food_respawn_rate (float): Rate at which food respawns.
+        multi_model (bool): Whether to use multiple models.
+        model_split (float): Percentage of agents using the NEAT model.
+    
+    Returns:
+        env (Environment): The simulation environment.
+        population (neat.Population): The NEAT population.
+        config (neat.Config): The NEAT configuration.
+        populationSize (int): Size of the population.
+        pred_pop (int): Number of predators in the population.
+        prey_pop (int): Number of prey in the population.
+        pred_pop_no_neat (int): Number of predators not using NEAT.
+        prey_pop_no_neat (int): Number of prey not using NEAT.
+    """
     # Create the environment with optimal number of workers
     num_cores = multiprocessing.cpu_count()
     env = Environment(simulation_type, steps, bounds, food_respawn_rate)
     env.max_workers = max(1, num_cores - 1)
-    print(f"Using {env.max_workers} workers for parallel processing")
-    # Variables to be sent to the environment initialization function
-    print("Creating NEAT config...")
+    print(f"INFO:\tUsing {env.max_workers} workers for parallel processing")
+
+    # Loads config data to be used in simulation
+    print("START:\tCreating NEAT config...")
     config = neat.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -31,22 +54,22 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         neat.DefaultStagnation,
         config_path
     )
-    print("Creating NEAT population...")
+    print("END:\tCreated NEAT config")
+
+    # Generates all relevant agent populations
+    print("START:\tCreating NEAT population...")
     population = neat.Population(config)
     pred_pop = int(len(population.population.items())*pred_percent)
-    print("Predator creating complete")
     prey_pop = len(population.population.items()) - pred_pop
-    print("Created {} predators and {} preys".format(
-        pred_pop, prey_pop))
-    print("Initializing environment...")
-
+    print("END:\tCreated {} predators and {} preys".format(pred_pop, prey_pop))
+    
+    # Initializes the environment, whether the simulation will be run with multiple models or not
+    print("START:\tInitializing environment...")
     if multi_model:
         pred_pop_no_neat = int(pred_pop * model_split)
         prey_pop_no_neat = int(prey_pop * model_split)
     else:
-        pred_pop_no_neat = 0
-        prey_pop_no_neat = 0
-    # Initialize the environment with the given parameters
+        pred_pop_no_neat = prey_pop_no_neat = 0
     env.initialize_environment(
         config=config,
         population=population,
@@ -58,11 +81,12 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         prey_spawn_bounds=prey_spawn_bounds,
         food_amount=food_amount
     )
-    print("Starting Logger...")
-    # Update logger with simulation start info and max CPU cores being used
+    print("END:\tEnvironment initialized")
+
+    # Initializes the logger
+    print("INFO:\tStarting Logger...")
     logger.info(f"Starting simulation with {config.pop_size} agents...")
-    logger.info(
-        f"Using {env.max_workers} Logical CPU cores for parallel processing")
+    logger.info(f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
     return env, population, config, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
 
@@ -93,38 +117,31 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.
     num_prey_offspring = int(prey_pop - len(top_preys))
 
     # Breed and mutate predators and prey
-    new_predators = breed_and_mutate(
-        config, top_predators, is_predator=True, num_offspring=num_pred_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
-    new_preys = breed_and_mutate(
-        config, top_preys, is_predator=False, num_offspring=num_prey_offspring, pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
+    new_predators = breed_and_mutate(config, top_predators, is_predator=True, num_offspring=num_pred_offspring,
+                                     pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
+    new_preys = breed_and_mutate(config, top_preys, is_predator=False, num_offspring=num_prey_offspring,
+                                 pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
     if prey_pop_no_neat > 0:
-        new_preys += [Prey(id=predator.id, pos=predator.pos,
-                           neat_genome=None, neat_config=config)
+        new_preys += [Prey(id=predator.id, pos=predator.pos, neat_genome=None, neat_config=config) 
                       for predator in predators[:prey_pop_no_neat]]
     if pred_pop_no_neat > 0:
-        new_predators += [Predator(id=predator.id, pos=predator.pos,
-                                   neat_genome=None, neat_config=config)
+        new_predators += [Predator(id=predator.id, pos=predator.pos, neat_genome=None, neat_config=config)
                           for predator in predators[:pred_pop_no_neat]]
 
     # Replace the old population with the new one
     env.add_agents(top_predators + top_preys + new_predators + new_preys)
 
 # Main function, configures simulation then runs through epochs
-
-
 def main():
     try:
         # scale bounds
-        constants.BOUNDS = [
-            bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
-        constants.PREY_SPAWN_BOUNDS = [
-            bound * constants.SCALE_FACTOR for bound in constants.PREY_SPAWN_BOUNDS]
-        constants.PRED_SPAWN_BOUNDS = [
-            bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS
-        ]
+        constants.BOUNDS = [bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
+        constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
+        for bound in constants.PREY_SPAWN_BOUNDS]
+        constants.PRED_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS]
 
         # Creates simulation environment
-        print("Creating simulation environment...")
+        print("START:\tCreating simulation environment...")
         env, population, config, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat = create_simulation(
             simulation_type=constants.SIMULATION_TYPE,
             config_path=constants.CONFIG_PATH,
@@ -138,16 +155,16 @@ def main():
             multi_model=constants.MULTI_MODEL,
             model_split=constants.MODEL_SPLIT
         )
+        print("END:\tSimulation environment created")
 
         # Create log for the average network size
         logs.log_avg_network_size(env.agents)
-        print("Simulation environment created")
+        
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
             # TO DO: this can probably be moved to environment.py
-            mutate(population, config, env, populationSize, pred_pop,
-                   prey_pop, prey_pop_no_neat=0, pred_pop_no_neat=0)
+            mutate(population, config, env, populationSize, pred_pop, prey_pop, prey_pop_no_neat=0, pred_pop_no_neat=0)
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")
