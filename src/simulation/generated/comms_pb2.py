@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x63omms.proto\x12\x05\x63omms\"\x15\n\x07\x43ommand\x12\n\n\x02In\x18\x01 \x01(\t\"B\n\x0b\x45nvironment\x12\x11\n\tjson_data\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t2P\n\x0eNeuroEvolution\x12>\n\x16\x46\x65tchEnvironmentStream\x12\x0e.comms.Command\x1a\x12.comms.Environment0\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x63omms.proto\x12\x05\x63omms\"\x15\n\x07\x43ommand\x12\n\n\x02In\x18\x01 \x01(\t\"\x10\n\x02ID\x12\n\n\x02id\x18\x01 \x01(\x05\"?\n\x08JSONData\x12\x11\n\tjson_data\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t2z\n\rCommunication\x12;\n\x16\x46\x65tchEnvironmentStream\x12\x0e.comms.Command\x1a\x0f.comms.JSONData0\x01\x12,\n\x0e\x46\x65tchNeuralNet\x12\t.comms.ID\x1a\x0f.comms.JSONDatab\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_COMMAND']._serialized_start=22
   _globals['_COMMAND']._serialized_end=43
-  _globals['_ENVIRONMENT']._serialized_start=45
-  _globals['_ENVIRONMENT']._serialized_end=111
-  _globals['_NEUROEVOLUTION']._serialized_start=113
-  _globals['_NEUROEVOLUTION']._serialized_end=193
+  _globals['_ID']._serialized_start=45
+  _globals['_ID']._serialized_end=61
+  _globals['_JSONDATA']._serialized_start=63
+  _globals['_JSONDATA']._serialized_end=126
+  _globals['_COMMUNICATION']._serialized_start=128
+  _globals['_COMMUNICATION']._serialized_end=250
 # @@protoc_insertion_point(module_scope)
