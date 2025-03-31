@@ -62,15 +62,20 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     population = neat.Population(config)
     pred_pop = int(len(population.population.items())*pred_percent)
     prey_pop = len(population.population.items()) - pred_pop
-    print("END:\tCreated {} predators and {} preys".format(pred_pop, prey_pop))
-
-    # Initializes the environment, whether the simulation will be run with multiple models or not
-    print("START:\tInitializing environment...")
     if multi_model:
         pred_pop_no_neat = int(pred_pop * model_split)
         prey_pop_no_neat = int(prey_pop * model_split)
     else:
         pred_pop_no_neat = prey_pop_no_neat = 0
+    print("END:\tCreated NEAT population")
+    print(f"INFO:\tPredator population: {pred_pop}")
+    print(f"INFO:\tPrey population: {prey_pop}")
+    print(f"INFO:\tPredator population no neat: {pred_pop_no_neat}")
+    print(f"INFO:\tPrey population no neat: {prey_pop_no_neat}")
+
+    # Initializes the environment, whether the simulation will be run with multiple models or not
+    print("START:\tInitializing environment...")
+
     env.initialize_environment(
         config=config,
         population=population,
@@ -93,29 +98,30 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     return env, population, config, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
 
 
-def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.1, pred_pop_no_neat=0, prey_pop_no_neat=0):
+def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, eliteism=0.1,):
     # Create separate lists for predators and prey
-    predators = [agent for agent in env.agents if isinstance(agent, Predator)]
-    preys = [agent for agent in env.agents if isinstance(agent, Prey)]
-
-    for agent in predators + preys:
+    predators = [agent for agent in env.agents if isinstance(
+        agent, Predator) and agent.neat == True]
+    preys = [agent for agent in env.agents if isinstance(
+        agent, Prey) and agent.neat == True]
+    no_neat_predators = [agent for agent in env.agents if isinstance(
+        agent, Predator) and agent.neat == False]
+    no_neat_preys = [agent for agent in env.agents if isinstance(
+        agent, Prey) and agent.neat == False]
+    logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
+    for agent in env.agents:
         if agent.neat_genome:
-            # scale the fitness of the agent using like tanh (0-100)
-            # agent.fitness = np.tanh(agent.fitness) * 100
-            # Sync agent fitness with genome fitness
             agent.neat_genome.fitness = agent.fitness
 
     # Sort and retain the top 10% based on fitness
     top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(len(predators) * eliteism))]
+        :max(1, int(pred_pop * eliteism))]
     top_preys = sorted(preys, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(len(preys) * eliteism))]
-
-    # Sort and retain no neat population
-    top_predators_no_neat = sorted(predators, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(len(predators) * eliteism)) + pred_pop_no_neat]
-    top_preys_no_neat = sorted(preys, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(len(preys) * eliteism)) + prey_pop_no_neat]
+        :max(1, int(prey_pop * eliteism))]
+    top_predators_no_neat = sorted(no_neat_predators, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(pred_pop_no_neat * eliteism))]
+    top_preys_no_neat = sorted(no_neat_preys, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(prey_pop_no_neat * eliteism))]
 
     # Number of offspring to create for predators and prey
     num_pred_offspring = int(pred_pop - len(top_predators))
@@ -126,15 +132,14 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.
         prey_pop_no_neat - len(top_preys_no_neat))
 
     # Breed and mutate predators and prey
-    new_predators = breed_and_mutate(config, top_predators, num_offspring=num_pred_offspring,
+    new_predators = breed_and_mutate(config, top_predators, num_offspring=num_pred_offspring, multi_model=False,
                                      bounds=constants.PRED_SPAWN_BOUNDS)
-    new_preys = breed_and_mutate(config, top_preys,  num_offspring=num_prey_offspring,
-                                 bounds=constants.PREy_SPAWN_BOUNDS)
-    if prey_pop_no_neat > 0:
-        new_no_neat_preys = breed_and_mutate(config, top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat,
+    new_preys = breed_and_mutate(config, top_preys,  num_offspring=num_prey_offspring, multi_model=False,
+                                 bounds=constants.PREY_SPAWN_BOUNDS)
+    if prey_pop_no_neat > 0 and pred_pop_no_neat > 0:
+        new_no_neat_preys = breed_and_mutate(config, top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat, multi_model=True,
                                              bounds=constants.PREY_SPAWN_BOUNDS)
-    if pred_pop_no_neat > 0:
-        new_no_neat_preds = breed_and_mutate(config, top_predators_no_neat, num_offspring=num_pred_offspring_no_neat,
+        new_no_neat_preds = breed_and_mutate(config, top_predators_no_neat, num_offspring=num_pred_offspring_no_neat, multi_model=True,
                                              bounds=constants.PRED_SPAWN_BOUNDS)
 
     # Replace the old population with the new one
@@ -177,9 +182,6 @@ def main():
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
-            # Save the average fitness of both predator and prey populations to a CSV file
-            logs.avg_agent_fitness(
-                pred_pop, prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             mutate(population, config, env, populationSize, pred_pop,
                    prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             env.reset()

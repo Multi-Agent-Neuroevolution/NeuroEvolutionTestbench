@@ -22,7 +22,7 @@ class Agent(Shape):
         move_speed (float): The speed at which the agent moves.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0):
+    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0, _neat=True):
         super().__init__(shape="agent", radius=1, width=0,
                          height=0, pos=pos, collidable=False)
         self.id = id
@@ -41,6 +41,7 @@ class Agent(Shape):
             neat_genome, neat_config)
         self.inputs = []
         self.sight = sight
+        self.neat = _neat
 
     def interact(self, obj):
         if obj in self.state.interactables:
@@ -223,11 +224,12 @@ class Predator(Agent):
         pos (np.ndarray): The initial position of the predator agent.
         neat_genome (neat.DefaultGenome): The NEAT genome for the predator agent.
         neat_config (neat.DefaultConfig): The NEAT configuration for the predator agent. Also used for non neat agents.
+        neat (bool): Whether the agent is using NEAT or not.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config):
+    def __init__(self, id, pos, neat_genome, neat_config, neat):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PRED", energy=100, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED)
+                         neat_config=neat_config, agent_type="PRED", energy=100, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, _neat=neat)
         self.prey_eaten = 0
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
@@ -269,8 +271,6 @@ class Predator(Agent):
             self.energy += constants.PRED_EAT_ENERGY_GAIN
             logger.info(
                 f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
-            print(
-                f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
             # TO DO: Share with predators around it
 
 
@@ -282,11 +282,12 @@ class Prey(Agent):
         pos (np.ndarray): The initial position of the prey agent.
         neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent. 
         neat_config (neat.DefaultConfig): The NEAT configuration for the prey agent. Also used for non neat agents.
+        neat (bool): Whether the agent is using NEAT or not.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config):
+    def __init__(self, id, pos, neat_genome, neat_config, neat):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT)
+                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, _neat=neat)
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
@@ -313,5 +314,4 @@ class Prey(Agent):
         else:
             closest_food.living = False
             self.fitness += 0.05
-            logger.info(f"Prey {self.id} chooses to eat.")
-            print(f"Prey {self.id} chooses to eat successfully.")
+            logger.info(f"Prey {self.id} eats succsefully.")

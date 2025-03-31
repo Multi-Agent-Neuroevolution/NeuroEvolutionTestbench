@@ -80,7 +80,7 @@ class Environment:
             ])
             genome = population.population[i + 1]
             agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config))
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config, neat=True))
 
         # Initialize prey
         for i in range(prey_pop):
@@ -91,7 +91,7 @@ class Environment:
             ])
             genome = population.population[i + pred_pop]
             agents.append(Prey(id=(i + pred_pop), pos=pos,
-                          neat_genome=genome, neat_config=config))
+                          neat_genome=genome, neat_config=config, neat=True))
         # Initialize pred_no_neat
         for i in range(pred_no_neat_pop):
 
@@ -101,7 +101,7 @@ class Environment:
             ])
             genome = population.population[i + 1]
             agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config))
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config, neat=False))
 
         # Initialize prey_no_neat
         for i in range(prey_no_neat_pop):
@@ -112,7 +112,7 @@ class Environment:
             ])
             genome = population.population[i + pred_pop]
             agents.append(Prey(id=(i + pred_pop), pos=pos,
-                          neat_genome=genome, neat_config=config))
+                          neat_genome=genome, neat_config=config, neat=False))
 
         self.add_agents(agents)
 
@@ -238,3 +238,8 @@ class Environment:
                 # Send data to the GUI
                 sendData = {"agents": self.agents, "shapes": self.obstacles}
                 messageChannel.put(sendData)
+                # Log the time taken for each step
+                end_time = time.time()
+                elapsed_time = (end_time - start_time) * \
+                    1000  # Convert to milliseconds
+                print("Step Time: ", elapsed_time, "ms")
