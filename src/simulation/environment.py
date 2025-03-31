@@ -32,20 +32,32 @@ class SpatialGrid:
         cell_x, cell_y = self.get_cell_coords(obj.pos)
         self.grid[(cell_x, cell_y)].append(obj)
 
+    @profile
+    # Gets objects within a certain radius of a position
     def get_nearby_objects(self, pos, radius):
         cell_x, cell_y = self.get_cell_coords(pos)
-        cells_to_check = []
+
+        # Use squared distance to avoid square root calculations
+        radius_squared = radius * radius
         radius_cells = int(radius / self.cell_size) + 1
+
+        nearby = []
 
         for dx in range(-radius_cells, radius_cells + 1):
             for dy in range(-radius_cells, radius_cells + 1):
-                cells_to_check.append((cell_x + dx, cell_y + dy))
+                cell = (cell_x + dx, cell_y + dy)
+                if cell in self.grid:  # Only check cells that exist
+                    cell_objs = self.grid[cell]
+                    for obj in cell_objs:
 
-        nearby = []
-        for cell in cells_to_check:
-            nearby.extend(self.grid[cell])
+                        dx = obj.pos[0] - pos[0]
+                        dy = obj.pos[1] - pos[1]
+                        squared_dist = dx*dx + dy*dy
 
-        return [obj for obj in nearby if np.linalg.norm(obj.pos - pos) < radius]
+                        if squared_dist < radius_squared:
+                            nearby.append((obj, squared_dist))
+
+        return [obj for obj, _ in nearby]
 
 
 class Environment:

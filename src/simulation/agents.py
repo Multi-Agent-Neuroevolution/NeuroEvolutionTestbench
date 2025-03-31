@@ -50,7 +50,6 @@ class Agent(Shape):
     def update_action(self):
         """Updates the action of the agent based on the neural network output."""
         self.get_inputs()
-        self._update_interactables()
         # IMPORTANT: The neural network is activated here
         action = self.brain.activate(self.inputs)
         action_choice = np.argmax(action)
@@ -107,47 +106,54 @@ class Agent(Shape):
 
         return closest, min_distance  # is returning min_distance necessary?
 
-    # Update the list of interactables around the agent
-    def _update_interactables(self):
-        self.state.interactables = [
-            obj for obj in self.state.objs
-            if np.linalg.norm(self.pos - obj.pos) <= 5
-        ]
+    # This function is used to get the inputs for the neural network. Faster
 
-    # TO DO: This function needs to be rewritten straight up it's too hacky
-
+    @profile
     def get_inputs(self, max_closest=5):
-        # List to store relative positions and object type
+        # Pre-calculate the squared interaction radius
+        interaction_radius_squared = 5 * 5
+
         relative_objects = []
+        self.state.interactables = []
 
-        # Collect relative positions and object types
         for obj in self.state.objs:
-            relative_pos = self.get_relative_pos(obj)
-            distance = np.linalg.norm(relative_pos)  # Euclidean distance
-            if obj.shape == "agent" and obj.living:
-                # 1 for predator, 0 for prey
-                obj_type = 1 if obj.energy > 0 else 0
-                relative_objects.append((distance, relative_pos, obj_type))
-            if obj.shape == "obstacle" and obj.interactible:
-                # 2 for food, 3 for obstacle
-                obj_type = 2 if obj.type == "food" else 3
-                relative_objects.append((distance, relative_pos, obj_type))
+            rel_x = obj.pos[0] - self.pos[0]
+            rel_y = obj.pos[1] - self.pos[1]
 
-        # Take the 5 closest objects (or fewer if there aren't 5)
+            squared_dist = rel_x*rel_x + rel_y*rel_y
+
+            if squared_dist <= interaction_radius_squared:
+                self.state.interactables.append(obj)
+
+            # Determine object type
+            obj_type = -1
+            if obj.shape == "agent" and obj.living:
+                obj_type = 1 if obj.energy > 0 else 0
+            elif obj.shape == "obstacle" and obj.interactible:
+                obj_type = 2 if obj.type == "food" else 3
+
+            # Only add objects with a valid type to the heap
+            if obj_type != -1:
+                relative_objects.append(
+                    (squared_dist, (rel_x, rel_y), obj_type))
+
+        # Get the max_closest objects
         closest_objects = heapq.nsmallest(
             max_closest, relative_objects, key=lambda x: x[0])
 
-        # Flatten inputs (distance, x, y, type for each object)
+        # Flatten Inputs
         self.inputs = []
         for _, rel_pos, obj_type in closest_objects:
-            self.inputs.append(rel_pos[0])  # x position
-            self.inputs.append(rel_pos[1])  # y position
-            self.inputs.append(obj_type)   # object type
+            self.inputs.extend([rel_pos[0], rel_pos[1], obj_type])
 
-        # Pad inputs to ensure a fixed size
-        while len(self.inputs) < (max_closest * 3):  # 3: x, y, type
-            self.inputs.append(np.nan)
-        self.inputs.append(self.energy)  # Add energy as input
+        # Padding
+        padding_needed = (max_closest * 3) - len(self.inputs)
+        if padding_needed > 0:
+            self.inputs.extend([np.nan] * padding_needed)
+
+        # Add energy as input
+        self.inputs.append(self.energy)
+
         return self.inputs
 
     def get_relative_pos(self, obj):
@@ -242,13 +248,13 @@ class Predator(Agent):
         # Deducts energy if the action is a movement, otherwise calls the eat function
         if 0 <= action_choice <= 3:
             self.energy -= self.ENERGY_COST
-            logger.info(f"Predator {self.id} chooses to move.")
+            # logger.info(f"Predator {self.id} chooses to move.")
         elif action_choice == 4:
             self._eat()
 
         if self.energy <= 0:
             self.alive = False
-            logger.info(f"Predator {self.id} has run out of energy and died.")
+            # logger.info(f"Predator {self.id} has run out of energy and died.")
 
     def _update_fitness(self):
         """Updates the fitness of the predator agent based on the number of prey eaten and current energy."""
@@ -263,14 +269,14 @@ class Predator(Agent):
 
         if closest_prey is None:
             self.energy -= constants.PRED_FAIL_ENERGY_COST
-            logger.info(
-                f"Predator {self.id} chooses to eat, but fails to find a prey.")
+            # logger.info(
+            #   f"Predator {self.id} chooses to eat, but fails to find a prey.")
         else:
             closest_prey.living = False
             self.prey_eaten += 1
             self.energy += constants.PRED_EAT_ENERGY_GAIN
-            logger.info(
-                f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
+            # logger.info(
+            #    f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
             # TO DO: Share with predators around it
 
 
@@ -292,7 +298,8 @@ class Prey(Agent):
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
         if 0 <= action_choice <= 3:
-            logger.info(f"Prey {self.id} chooses to move.")
+            # logger.info(f"Prey {self.id} chooses to move.")
+            pass
         elif action_choice == 4:
             self._eat()
 
@@ -308,10 +315,10 @@ class Prey(Agent):
         closest_food, _ = self._find_closest_target(_food_filter)
 
         if closest_food is None:
-            logger.info(
-                f"Prey {self.id} chooses to eat, but fails to find food.")
+            # logger.info(
+            #     f"Prey {self.id} chooses to eat, but fails to find food.")
             self.fitness -= 0.025
         else:
             closest_food.living = False
             self.fitness += 0.05
-            logger.info(f"Prey {self.id} eats succsefully.")
+            # logger.info(f"Prey {self.id} eats succsefully.")
