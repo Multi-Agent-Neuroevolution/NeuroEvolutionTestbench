@@ -13,9 +13,10 @@ import constants
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, multi_model=False, model_split=0.5):
     """Creates the simulation environment and initializes the NEAT population.
-    
+
     Args:
         simulation_type (str): Type of simulation to run.
         config_path (str): Path to the NEAT configuration file.
@@ -28,7 +29,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         food_respawn_rate (float): Rate at which food respawns.
         multi_model (bool): Whether to use multiple models.
         model_split (float): Percentage of agents using the NEAT model.
-    
+
     Returns:
         env (Environment): The simulation environment.
         population (neat.Population): The NEAT population.
@@ -62,7 +63,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     pred_pop = int(len(population.population.items())*pred_percent)
     prey_pop = len(population.population.items()) - pred_pop
     print("END:\tCreated {} predators and {} preys".format(pred_pop, prey_pop))
-    
+
     # Initializes the environment, whether the simulation will be run with multiple models or not
     print("START:\tInitializing environment...")
     if multi_model:
@@ -86,7 +87,8 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     # Initializes the logger
     print("INFO:\tStarting Logger...")
     logger.info(f"Starting simulation with {config.pop_size} agents...")
-    logger.info(f"Using {env.max_workers} Logical CPU cores for parallel processing")
+    logger.info(
+        f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
     return env, population, config, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
 
@@ -112,33 +114,48 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.
     top_preys = sorted(preys, key=lambda x: x.fitness, reverse=True)[
         :max(1, int(len(preys) * eliteism))]
 
+    # Sort and retain no neat population
+    top_predators_no_neat = sorted(predators, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(len(predators) * eliteism)) + pred_pop_no_neat]
+    top_preys_no_neat = sorted(preys, key=lambda x: x.fitness, reverse=True)[
+        :max(1, int(len(preys) * eliteism)) + prey_pop_no_neat]
+
     # Number of offspring to create for predators and prey
     num_pred_offspring = int(pred_pop - len(top_predators))
     num_prey_offspring = int(prey_pop - len(top_preys))
+    num_pred_offspring_no_neat = int(
+        pred_pop_no_neat - len(top_predators_no_neat))
+    num_prey_offspring_no_neat = int(
+        prey_pop_no_neat - len(top_preys_no_neat))
 
     # Breed and mutate predators and prey
-    new_predators = breed_and_mutate(config, top_predators, is_predator=True, num_offspring=num_pred_offspring,
-                                     pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
-    new_preys = breed_and_mutate(config, top_preys, is_predator=False, num_offspring=num_prey_offspring,
-                                 pred_bounds=constants.PRED_SPAWN_BOUNDS, prey_bounds=constants.PREY_SPAWN_BOUNDS)
+    new_predators = breed_and_mutate(config, top_predators, num_offspring=num_pred_offspring,
+                                     bounds=constants.PRED_SPAWN_BOUNDS)
+    new_preys = breed_and_mutate(config, top_preys,  num_offspring=num_prey_offspring,
+                                 bounds=constants.PREy_SPAWN_BOUNDS)
     if prey_pop_no_neat > 0:
-        new_preys += [Prey(id=predator.id, pos=predator.pos, neat_genome=None, neat_config=config) 
-                      for predator in predators[:prey_pop_no_neat]]
+        new_no_neat_preys = breed_and_mutate(config, top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat,
+                                             bounds=constants.PREY_SPAWN_BOUNDS)
     if pred_pop_no_neat > 0:
-        new_predators += [Predator(id=predator.id, pos=predator.pos, neat_genome=None, neat_config=config)
-                          for predator in predators[:pred_pop_no_neat]]
+        new_no_neat_preds = breed_and_mutate(config, top_predators_no_neat, num_offspring=num_pred_offspring_no_neat,
+                                             bounds=constants.PRED_SPAWN_BOUNDS)
 
     # Replace the old population with the new one
-    env.add_agents(top_predators + top_preys + new_predators + new_preys)
+    env.add_agents(top_predators + top_preys + new_predators + new_preys +
+                   new_no_neat_preys + new_no_neat_preds + top_predators_no_neat + top_preys_no_neat)
 
 # Main function, configures simulation then runs through epochs
+
+
 def main():
     try:
         # scale bounds
-        constants.BOUNDS = [bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
+        constants.BOUNDS = [
+            bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
         constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
-        for bound in constants.PREY_SPAWN_BOUNDS]
-        constants.PRED_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS]
+                                       for bound in constants.PREY_SPAWN_BOUNDS]
+        constants.PRED_SPAWN_BOUNDS = [
+            bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS]
 
         # Creates simulation environment
         print("START:\tCreating simulation environment...")
@@ -159,12 +176,13 @@ def main():
 
         # Create log for the average network size
         logs.log_avg_network_size(env.agents)
-        
+
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
             # TO DO: this can probably be moved to environment.py
-            mutate(population, config, env, populationSize, pred_pop, prey_pop, prey_pop_no_neat=0, pred_pop_no_neat=0)
+            mutate(population, config, env, populationSize, pred_pop,
+                   prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")

@@ -6,7 +6,7 @@ from agents import Predator, Prey
 # This function handles selecting parents to breed, then mutating the resultant child's genome
 
 
-def breed_and_mutate(config, parents, is_predator, num_offspring, prey_bounds, pred_bounds, multi_model=False, model_split=0.5):
+def breed_and_mutate(config, parents, num_offspring, bounds, multi_model=False, model_split=0.5):
     new_agents = []
 
     for _ in range(num_offspring):
@@ -30,17 +30,11 @@ def breed_and_mutate(config, parents, is_predator, num_offspring, prey_bounds, p
             child_genome.mutate(config.genome_config)
 
         # This determines whether the new agent is a predator or prey
-        if is_predator:
-            pos = [random.uniform(pred_bounds[0], pred_bounds[1]),
-                   random.uniform(pred_bounds[0], pred_bounds[1])]
-            new_agent = Predator(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=config)
-        else:
-            pos = [random.uniform(prey_bounds[0], prey_bounds[1]),
-                   random.uniform(prey_bounds[0], prey_bounds[1])]
-            new_agent = Prey(id=child_id, pos=pos,
+        pos = [random.uniform(bounds[0], bounds[1]),
+               random.uniform(bounds[0], bounds[1])]
+        new_agent = Predator(id=child_id, pos=pos,
                              neat_genome=child_genome, neat_config=config)
 
         new_agents.append(new_agent)
 
-    return new_agents
+        return new_agents
