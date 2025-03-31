@@ -32,7 +32,11 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model=False, 
         # This determines whether the new agent is a predator or prey
         pos = [random.uniform(bounds[0], bounds[1]),
                random.uniform(bounds[0], bounds[1])]
-        new_agent = Predator(id=child_id, pos=pos,
+        if parent1 is isinstance(Predator):
+            new_agent = Predator(id=child_id, pos=pos,
+                                 neat_genome=child_genome, neat_config=config)
+        else:
+            new_agent = Prey(id=child_id, pos=pos,
                              neat_genome=child_genome, neat_config=config)
 
         new_agents.append(new_agent)

@@ -202,8 +202,8 @@ class Agent(Shape):
                     # Move agent just outside the obstacle
                     self.pos = np.array(
                         [nearest_x, nearest_y]) + direction * self.radius
-        # This definition adjusts the agent position if it goes out of bounds
 
+    # This definition adjusts the agent position if it goes out of bounds
     def check_bounds(self, bounds):
         if self.pos[0] < bounds[0]:
             self.pos[0] = bounds[0] + 1
@@ -222,7 +222,7 @@ class Predator(Agent):
         id (int): The unique identifier for the predator agent.
         pos (np.ndarray): The initial position of the predator agent.
         neat_genome (neat.DefaultGenome): The NEAT genome for the predator agent.
-        neat_config (neat.DefaultConfig): The NEAT configuration for the predator agent.
+        neat_config (neat.DefaultConfig): The NEAT configuration for the predator agent. Also used for non neat agents.
     """
 
     def __init__(self, id, pos, neat_genome, neat_config):
@@ -280,8 +280,8 @@ class Prey(Agent):
     Args:
         id (int): The unique identifier for the prey agent.
         pos (np.ndarray): The initial position of the prey agent.
-        neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent.
-        neat_config (neat.DefaultConfig): The NEAT configuration for the prey agent.
+        neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent. 
+        neat_config (neat.DefaultConfig): The NEAT configuration for the prey agent. Also used for non neat agents.
     """
 
     def __init__(self, id, pos, neat_genome, neat_config):

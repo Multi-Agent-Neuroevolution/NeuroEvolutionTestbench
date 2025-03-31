@@ -235,20 +235,6 @@ class Environment:
 
                 # Handle food
                 self.food_handler()
-
-                # print(f"Step {_} completed")
-
-                # end_time = time.time()
-                # print(f"Time taken: {(end_time - start_time)*1000}ms")
-                # print number of prey and predatorys alive
-                num_prey_alive = len(
-                    [agent for agent in self.agents if not isinstance(agent, Predator)])
-                num_predators_alive = len(
-                    [agent for agent in self.agents if isinstance(agent, Predator)])
-
-                print(f"Number of Prey Alive: {num_prey_alive}")
-                print(f"Number of Predators Alive: {num_predators_alive}")
-                # Find the fittest predator and prey
-                # Find amount of food left
+                # Send data to the GUI
                 sendData = {"agents": self.agents, "shapes": self.obstacles}
                 messageChannel.put(sendData)

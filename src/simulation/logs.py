@@ -84,7 +84,7 @@ def log_avg_network_size(agents):
             f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
 
 
-def avg_agent_fitness(predators, preys):
+def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):
     """Saves the average fitness of the predator and prey populations to a CSV file.
 
     Args:
@@ -93,5 +93,11 @@ def avg_agent_fitness(predators, preys):
     """
     avg_pred_fitness = np.mean([predator.fitness for predator in predators])
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
+    avg_pred_fitness_no_neat = np.mean(
+        [predator.fitness for predator in no_neat_predators])
+    avg_prey_fitness_no_neat = np.mean(
+        [prey.fitness for prey in no_neat_preys])
+
     with open('./Data/fitness.csv', 'a') as f:
-        f.write(f"{avg_pred_fitness},{avg_prey_fitness}\n")
+        f.write(
+            f"{avg_pred_fitness},{avg_prey_fitness}, {avg_pred_fitness_no_neat}, {avg_prey_fitness_no_neat}\n")

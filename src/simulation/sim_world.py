@@ -105,9 +105,6 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, eliteism=0.
             # Sync agent fitness with genome fitness
             agent.neat_genome.fitness = agent.fitness
 
-    # Save the average fitness of both predator and prey populations to a CSV file
-    logs.avg_agent_fitness(predators, preys)
-
     # Sort and retain the top 10% based on fitness
     top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
         :max(1, int(len(predators) * eliteism))]
@@ -180,7 +177,9 @@ def main():
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
             env.run()
-            # TO DO: this can probably be moved to environment.py
+            # Save the average fitness of both predator and prey populations to a CSV file
+            logs.avg_agent_fitness(
+                pred_pop, prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             mutate(population, config, env, populationSize, pred_pop,
                    prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             env.reset()
