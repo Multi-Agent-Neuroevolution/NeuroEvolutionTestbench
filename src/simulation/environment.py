@@ -32,7 +32,6 @@ class SpatialGrid:
         cell_x, cell_y = self.get_cell_coords(obj.pos)
         self.grid[(cell_x, cell_y)].append(obj)
 
-    @profile
     # Gets objects within a certain radius of a position
     def get_nearby_objects(self, pos, radius):
         cell_x, cell_y = self.get_cell_coords(pos)
@@ -173,18 +172,15 @@ class Environment:
         """
         with self.agent_locks[agent]:
             # Get nearby objects
-            nearby = self.spatial_grid.get_nearby_objects(
-                agent.pos, agent.sight)
-            agent.state.objs = nearby
+
             agent.update_action()
             # Check bounds
             agent.check_bounds(self.bounds)
             # ADRIAN: should this be made into an else function for the above?
-            agent.get_collisions()
-            agent.solve_collision()
+            if agent.get_collisions():
+                agent.solve_collision()
             # If the agent is dead, it's removed from the environment
-            if not agent.living:
-                agent.fitness = -9999
+            if not agent.alive:
                 self.agents.remove(agent)  # Remove dead agent
 
             # # ADRIAN: should this be made into an else function for the above?

@@ -79,9 +79,20 @@ def log_avg_network_size(agents):
     # Log the average network size, both in console and to text file
     print(f"Average number of nodes: {avg_nodes}")
     print(f"Average number of connections: {avg_connections}")
-    with open('./Data/network_size_log.txt', 'w') as file:
+    with open('./Data/network_size_log.txt', 'a') as file:
         file.write(
             f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
+
+
+def log_alive_agents(agents):
+    """Logs the number of alive agents to a text file.
+
+    Args:
+        agents (list): A list of all agents in the simulation.
+    """
+    num_alive = len([agent for agent in agents if agent.alive])
+    with open('./Data/alive_agents_log.txt', 'a') as file:
+        file.write(f"Number of alive agents: {num_alive}\n")
 
 
 def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):

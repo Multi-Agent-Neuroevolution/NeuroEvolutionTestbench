@@ -1,1 +1,1 @@
-Avg nodes: 16.974666666666668, Avg connections: 249.39066666666668
+Avg nodes: 17.0, Avg connections: 252.0

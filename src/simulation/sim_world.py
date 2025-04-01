@@ -187,6 +187,7 @@ def main():
             env.reset()
             print(f"Epoch {i+1} completed")
             logger.info(f"Epoch {i+1} completed")
+            logs.log_alive_agents(env.agents)
 
         # Create logs for genome information
         logs.pickle_genomes(env.agents)

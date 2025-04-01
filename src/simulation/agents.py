@@ -32,7 +32,6 @@ class Agent(Shape):
         self.agent_type = agent_type
         self.energy = energy
         self.move_speed = move_speed
-        self.living = True
         self.age = 0
         self.fitness = 0
         self.state = State()
@@ -42,6 +41,7 @@ class Agent(Shape):
         self.inputs = []
         self.sight = sight
         self.neat = _neat
+        self.alive = True
 
     def interact(self, obj):
         if obj in self.state.interactables:
@@ -108,7 +108,6 @@ class Agent(Shape):
 
     # This function is used to get the inputs for the neural network. Faster
 
-    @profile
     def get_inputs(self, max_closest=5):
         # Pre-calculate the squared interaction radius
         interaction_radius_squared = 5 * 5
@@ -127,7 +126,7 @@ class Agent(Shape):
 
             # Determine object type
             obj_type = -1
-            if obj.shape == "agent" and obj.living:
+            if obj.shape == "agent" and obj.alive:
                 obj_type = 1 if obj.energy > 0 else 0
             elif obj.shape == "obstacle" and obj.interactible:
                 obj_type = 2 if obj.type == "food" else 3
@@ -149,7 +148,7 @@ class Agent(Shape):
         # Padding
         padding_needed = (max_closest * 3) - len(self.inputs)
         if padding_needed > 0:
-            self.inputs.extend([np.nan] * padding_needed)
+            self.inputs.extend([-1] * padding_needed)
 
         # Add energy as input
         self.inputs.append(self.energy)
@@ -248,6 +247,7 @@ class Predator(Agent):
         # Deducts energy if the action is a movement, otherwise calls the eat function
         if 0 <= action_choice <= 3:
             self.energy -= self.ENERGY_COST
+            self._handle_movement(action_choice)
             # logger.info(f"Predator {self.id} chooses to move.")
         elif action_choice == 4:
             self._eat()
@@ -263,7 +263,7 @@ class Predator(Agent):
     def _eat(self):
         """Handles the eating action of the predator agent, finding the closest prey object if applicable."""
         def _prey_filter(obj):
-            return obj.shape == "agent" and obj.living and isinstance(obj, Prey)
+            return obj.shape == "agent" and obj.alive and isinstance(obj, Prey)
 
         closest_prey, _ = self._find_closest_target(_prey_filter)
 
@@ -272,7 +272,7 @@ class Predator(Agent):
             # logger.info(
             #   f"Predator {self.id} chooses to eat, but fails to find a prey.")
         else:
-            closest_prey.living = False
+            closest_prey.alive = False
             self.prey_eaten += 1
             self.energy += constants.PRED_EAT_ENERGY_GAIN
             # logger.info(
@@ -294,18 +294,22 @@ class Prey(Agent):
     def __init__(self, id, pos, neat_genome, neat_config, neat):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
                          neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, _neat=neat)
+        self.spawn = pos
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
         if 0 <= action_choice <= 3:
-            # logger.info(f"Prey {self.id} chooses to move.")
-            pass
+            self._handle_movement(action_choice)
         elif action_choice == 4:
             self._eat()
 
     def _update_fitness(self):
         """Updates the fitness of the prey agent."""
         self.fitness += 0.1
+
+    def calcualte_distance_moved(self):
+        """Calculates the distance moved by the prey agent."""
+        return np.linalg.norm(self.pos - self.spawn)
 
     def _eat(self):
         """Handles the eating action of the prey agent, finding the closest food object if applicable."""
@@ -317,8 +321,8 @@ class Prey(Agent):
         if closest_food is None:
             # logger.info(
             #     f"Prey {self.id} chooses to eat, but fails to find food.")
-            self.fitness -= 0.025
+            self.fitness -= 0.25
         else:
             closest_food.living = False
-            self.fitness += 0.05
+            self.fitness += 0.5
             # logger.info(f"Prey {self.id} eats succsefully.")
