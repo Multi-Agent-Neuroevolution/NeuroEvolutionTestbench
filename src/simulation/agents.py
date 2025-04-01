@@ -53,7 +53,6 @@ class Agent(Shape):
         # IMPORTANT: The neural network is activated here
         action = self.brain.activate(self.inputs)
         action_choice = np.argmax(action)
-
         self._handle_movement(action_choice)
         self._handle_action(action_choice)
         self._update_fitness()
@@ -163,22 +162,26 @@ class Agent(Shape):
         for obj in self.state.objs:
             if not obj.collidable:
                 continue
-
             if obj.shape == "circle":
-                # Check collision with circular objects
+                # Check for circle collision
                 dist = np.linalg.norm(self.pos - obj.pos)
-                if dist <= self.radius + obj.radius:
+                if dist < (self.radius + obj.radius):
                     self.state.collisions.append(obj)
-
             elif obj.shape == "rectangle":
-                # Check collision with AABB
-                if (self.pos[0] + self.radius >= obj.pos[0] - obj.width / 2 and
-                    self.pos[0] - self.radius <= obj.pos[0] + obj.width / 2 and
-                    self.pos[1] + self.radius >= obj.pos[1] - obj.height / 2 and
-                        self.pos[1] - self.radius <= obj.pos[1] + obj.height / 2):
+                # Check for rectangle collision
+                nearest_x = np.clip(self.pos[0], obj.pos[0] - obj.width / 2,
+                                    obj.pos[0] + obj.width / 2)
+                nearest_y = np.clip(self.pos[1], obj.pos[1] - obj.height / 2,
+                                    obj.pos[1] + obj.height / 2)
+
+                dist = np.linalg.norm(
+                    self.pos - np.array([nearest_x, nearest_y]))
+                if dist < self.radius:
                     self.state.collisions.append(obj)
 
-        return self.state.collisions
+        if len(self.state.collisions) > 0:
+            return True
+        return False
 
     def solve_collision(self):
         for collision in self.state.collisions[:]:
@@ -247,8 +250,6 @@ class Predator(Agent):
         # Deducts energy if the action is a movement, otherwise calls the eat function
         if 0 <= action_choice <= 3:
             self.energy -= self.ENERGY_COST
-            self._handle_movement(action_choice)
-            # logger.info(f"Predator {self.id} chooses to move.")
         elif action_choice == 4:
             self._eat()
 
@@ -269,14 +270,14 @@ class Predator(Agent):
 
         if closest_prey is None:
             self.energy -= constants.PRED_FAIL_ENERGY_COST
-            # logger.info(
-            #   f"Predator {self.id} chooses to eat, but fails to find a prey.")
+            logger.info(
+                f"Predator {self.id} chooses to eat, but fails to find a prey.")
         else:
             closest_prey.alive = False
             self.prey_eaten += 1
             self.energy += constants.PRED_EAT_ENERGY_GAIN
-            # logger.info(
-            #    f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
+            logger.info(
+                f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
             # TO DO: Share with predators around it
 
 
@@ -298,9 +299,7 @@ class Prey(Agent):
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
-        if 0 <= action_choice <= 3:
-            self._handle_movement(action_choice)
-        elif action_choice == 4:
+        if action_choice == 4:
             self._eat()
 
     def _update_fitness(self):
@@ -325,4 +324,4 @@ class Prey(Agent):
         else:
             closest_food.living = False
             self.fitness += 0.5
-            # logger.info(f"Prey {self.id} eats succsefully.")
+            logger.info(f"Prey {self.id} eats succsefully.")

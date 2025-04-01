@@ -9,6 +9,7 @@ from utils import State
 from obstacles import Food, Wall
 from agents import Predator, Prey
 import logging
+import logs
 import copy
 from messenger import messageChannel
 
@@ -112,7 +113,7 @@ class Environment:
             ])
             genome = population.population[i + 1]
             agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config, neat=False))
+                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config, neat=False))
 
         # Initialize prey_no_neat
         for i in range(prey_no_neat_pop):
@@ -122,7 +123,7 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
             genome = population.population[i + pred_pop]
-            agents.append(Prey(id=(i + pred_pop), pos=pos,
+            agents.append(Prey(id=(i + prey_pop), pos=pos,
                           neat_genome=genome, neat_config=config, neat=False))
 
         self.add_agents(agents)
@@ -172,20 +173,17 @@ class Environment:
         """
         with self.agent_locks[agent]:
             # Get nearby objects
-
+            nearby_objects = self.spatial_grid.get_nearby_objects(
+                agent.pos, agent.sight)
+            # Update agent state
+            agent.state.objs = nearby_objects
+            # Update agent's position
             agent.update_action()
             # Check bounds
             agent.check_bounds(self.bounds)
             # ADRIAN: should this be made into an else function for the above?
             if agent.get_collisions():
                 agent.solve_collision()
-            # If the agent is dead, it's removed from the environment
-            if not agent.alive:
-                self.agents.remove(agent)  # Remove dead agent
-
-            # # ADRIAN: should this be made into an else function for the above?
-            # agent.get_collisions()
-            # agent.solve_collision()
 
     def food_handler(self):
         """Handles food-related operations, such as spawning and removal."""
@@ -201,6 +199,11 @@ class Environment:
                            np.random.uniform(self.bounds[2], self.bounds[3])])
             food = Food(pos)
             self.obstacles.append(food)
+
+    def remove_dead_agents(self):
+        """Removes dead agents from the environment."""
+        # self.agents = [agent for agent in self.agents if agent.alive]
+        pass
 
     # This definition resets all agents when the current epoch is over
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
@@ -233,21 +236,20 @@ class Environment:
         print("Running simulation...")
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             for _ in range(self.steps):
-                start_time = time.time()
-
                 # Update spatial grid
                 self.update_spatial_grid()
 
                 # Handle Agents
                 list(executor.map(self.update_agent, self.agents))
 
+                # Remove dead agents
+                self.remove_dead_agents()
+
                 # Handle food
                 self.food_handler()
+
                 # Send data to the GUI
                 sendData = {"agents": self.agents, "shapes": self.obstacles}
                 messageChannel.put(sendData)
-                # Log the time taken for each step
-                end_time = time.time()
-                elapsed_time = (end_time - start_time) * \
-                    1000  # Convert to milliseconds
-                print("Step Time: ", elapsed_time, "ms")
+                # Log agents alive
+                logs.log_alive_agents(self.agents)

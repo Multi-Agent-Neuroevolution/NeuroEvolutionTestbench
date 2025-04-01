@@ -9,6 +9,7 @@ import multiprocessing
 import logging
 import logs
 import constants
+import time
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -181,13 +182,24 @@ def main():
 
         # Run simulation, looping according to the number of epochs specified
         for i in range(constants.EPOCHS):
+            start_time = time.time()  # Start timing the epoch
             env.run()
             mutate(population, config, env, populationSize, pred_pop,
                    prey_pop, prey_pop_no_neat, pred_pop_no_neat)
             env.reset()
+            end_time = time.time()  # End timing the epoch
+
+            epoch_duration = end_time - start_time
+            remaining_epochs = constants.EPOCHS - (i + 1)
+            estimated_time_remaining = remaining_epochs * epoch_duration
+
             print(f"Epoch {i+1} completed")
-            logger.info(f"Epoch {i+1} completed")
-            logs.log_alive_agents(env.agents)
+            print(
+                f"Estimated time remaining: {estimated_time_remaining:.2f} seconds")
+            logger.info(
+                f"Epoch {i+1} completed in {epoch_duration:.2f} seconds")
+            logger.info(
+                f"Estimated time remaining: {estimated_time_remaining:.2f} seconds")
 
         # Create logs for genome information
         logs.pickle_genomes(env.agents)

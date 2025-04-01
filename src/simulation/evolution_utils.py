@@ -10,9 +10,17 @@ from agents import Predator, Prey
 def breed_and_mutate(config, parents, num_offspring, bounds, multi_model):
     new_agents = []
     configCopy = copy.deepcopy(config)
+    used_ids = set()  # HashSet to ensure unique IDs
+
+    def generate_unique_id():
+        while True:
+            child_id = random.randint(0, 100000)
+            if child_id not in used_ids:
+                used_ids.add(child_id)
+                return child_id
 
     for _ in range(num_offspring):
-        child_id = random.randint(0, 100000)
+        child_id = generate_unique_id()
         child_genome = neat.DefaultGenome(child_id)
 
         # If there are no parents available(?), a new genome is created.
