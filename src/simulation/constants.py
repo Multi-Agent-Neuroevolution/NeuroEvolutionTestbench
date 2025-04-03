@@ -2,7 +2,7 @@
 # Parameters for simulation creation
 SIMULATION_TYPE = "PRED_PREY"
 CONFIG_PATH = "./Config/neat.conf"
-STEPS = 200
+STEPS = 350
 BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 # Ratio of predators to prey higher values mean more prey than predators.
 RATIO = 0.5
@@ -26,4 +26,4 @@ MULTI_MODEL = True
 MODEL_SPLIT = 0.5  # If multi_model is true, this is the split between the two models
 
 # Parameter for number of times simulation will run
-EPOCHS = 15
+EPOCHS = 500

@@ -193,13 +193,16 @@ def main():
             remaining_epochs = constants.EPOCHS - (i + 1)
             estimated_time_remaining = remaining_epochs * epoch_duration
 
-            print(f"Epoch {i+1} completed")
             print(
-                f"Estimated time remaining: {estimated_time_remaining:.2f} seconds")
+                f"Epoch {i+1} completed, {constants.EPOCHS - i - 1} epochs remaining")
+            estimated_time_remaining_hours = estimated_time_remaining / 3600
+            epoch_duration_hours = epoch_duration / 3600
+            print(
+                f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
             logger.info(
-                f"Epoch {i+1} completed in {epoch_duration:.2f} seconds")
+                f"Epoch {i+1} completed in {epoch_duration_hours:.2f} hours")
             logger.info(
-                f"Estimated time remaining: {estimated_time_remaining:.2f} seconds")
+                f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
 
         # Create logs for genome information
         logs.pickle_genomes(env.agents)

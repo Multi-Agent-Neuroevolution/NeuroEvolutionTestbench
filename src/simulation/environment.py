@@ -202,8 +202,7 @@ class Environment:
 
     def remove_dead_agents(self):
         """Removes dead agents from the environment."""
-        # self.agents = [agent for agent in self.agents if agent.alive]
-        pass
+        self.agents = [agent for agent in self.agents if agent.alive]
 
     # This definition resets all agents when the current epoch is over
     def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
@@ -235,7 +234,9 @@ class Environment:
         """Runs the simulation for the specified number of steps."""
         print("Running simulation...")
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            for _ in range(self.steps):
+            for step in range(self.steps):
+                step_start_time = time.time()
+
                 # Update spatial grid
                 self.update_spatial_grid()
 
@@ -251,5 +252,20 @@ class Environment:
                 # Send data to the GUI
                 sendData = {"agents": self.agents, "shapes": self.obstacles}
                 messageChannel.put(sendData)
+
                 # Log agents alive
                 logs.log_alive_agents(self.agents)
+
+                # Calculate and print time taken for this step in milliseconds
+                step_time = 1000 * (time.time() - step_start_time)
+                print(
+                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms", end='\r')
+                percent_complete = (step + 1) / self.steps * 100
+                for i in range(50):
+                    if i < int(percent_complete / 2):
+                        print("█", end='')
+                    else:
+                        print(" ", end='')
+
+        # Print a newline at the end to ensure the next output starts on a fresh line
+        print()
