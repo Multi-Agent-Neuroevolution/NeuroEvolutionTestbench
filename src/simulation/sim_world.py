@@ -99,7 +99,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     return env, population, config, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
 
 
-def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, eliteism=0.1,):
+def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_spawn_bounds,  prey_spawn_bounds, eliteism=0.1, crossover_rate=0.7, torunament_size=3):
     # Create separate lists for predators and prey
     predators = [agent for agent in env.agents if isinstance(
         agent, Predator) and agent.neat == True]
@@ -134,14 +134,15 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no
 
     # Breed and mutate predators and prey
     new_predators = breed_and_mutate(config, top_predators, num_offspring=num_pred_offspring, multi_model=False,
-                                     bounds=constants.PRED_SPAWN_BOUNDS)
+                                     bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
     new_preys = breed_and_mutate(config, top_preys,  num_offspring=num_prey_offspring, multi_model=False,
-                                 bounds=constants.PREY_SPAWN_BOUNDS)
+                                 bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
+
     if prey_pop_no_neat > 0 and pred_pop_no_neat > 0:
         new_no_neat_preys = breed_and_mutate(config, top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat, multi_model=True,
-                                             bounds=constants.PREY_SPAWN_BOUNDS)
+                                             bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
         new_no_neat_preds = breed_and_mutate(config, top_predators_no_neat, num_offspring=num_pred_offspring_no_neat, multi_model=True,
-                                             bounds=constants.PRED_SPAWN_BOUNDS)
+                                             bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
 
     # Replace the old population with the new one
     env.add_agents(top_predators + top_preys + new_predators + new_preys +
@@ -181,11 +182,28 @@ def main():
         logs.log_avg_network_size(env.agents)
 
         # Run simulation, looping according to the number of epochs specified
+        eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
+        crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
+        torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
+        prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
+        pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
             env.run()
-            mutate(population, config, env, populationSize, pred_pop,
-                   prey_pop, prey_pop_no_neat, pred_pop_no_neat)
+            if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
+                mutate(population, config, env, populationSize, pred_pop,
+                       prey_pop, prey_pop_no_neat, pred_pop_no_neat, eliteism,
+                       crossover_rate=crossover_rate,
+                       torunament_size=torunament_size,
+                       pred_spawn_bounds=prey_spawn_bounds,
+                       prey_spawn_bounds=pred_spawn_bounds)
+            else:
+                mutate(population, config, env, populationSize, pred_pop,
+                       prey_pop, prey_pop_no_neat, pred_pop_no_neat, eliteism,
+                       crossover_rate=crossover_rate,
+                       torunament_size=torunament_size,
+                       pred_spawn_bounds=pred_spawn_bounds,
+                       prey_spawn_bounds=prey_spawn_bounds)
             env.reset()
             end_time = time.time()  # End timing the epoch
 

@@ -119,3 +119,27 @@ def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):
     with open('./Data/fitness.csv', 'a') as f:
         f.write(
             f"{avg_pred_fitness},{avg_prey_fitness}, {avg_pred_fitness_no_neat}, {avg_prey_fitness_no_neat}\n")
+
+
+def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
+    """Saves the fitness deviation of the predator and prey populations to a CSV file.
+
+    Args:
+        predators (list): A list of all predators in the simulation.
+        preys (list): A list of all preys in the simulation.
+    """
+    pred_fitness = np.array([predator.fitness for predator in predators])
+    prey_fitness = np.array([prey.fitness for prey in preys])
+    pred_fitness_no_neat = np.array(
+        [predator.fitness for predator in no_neat_predators])
+    prey_fitness_no_neat = np.array(
+        [prey.fitness for prey in no_neat_preys])
+
+    pred_deviation = np.std(pred_fitness)
+    prey_deviation = np.std(prey_fitness)
+    pred_deviation_no_neat = np.std(pred_fitness_no_neat)
+    prey_deviation_no_neat = np.std(prey_fitness_no_neat)
+
+    with open('./Data/fitness_deviation.csv', 'a') as f:
+        f.write(
+            f"{pred_deviation},{prey_deviation}, {pred_deviation_no_neat}, {prey_deviation_no_neat}\n")

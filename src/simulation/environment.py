@@ -198,7 +198,8 @@ class Environment:
             pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
                            np.random.uniform(self.bounds[2], self.bounds[3])])
             food = Food(pos)
-            self.obstacles.append(food)
+            if len(self.obstacles) + 1 < 5000:
+                self.obstacles.append(food)
 
     def remove_dead_agents(self):
         """Removes dead agents from the environment."""

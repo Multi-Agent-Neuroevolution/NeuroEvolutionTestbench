@@ -36,8 +36,7 @@ class Agent(Shape):
         self.fitness = 0
         self.state = State()
         self.metrics = Metrics()
-        self.brain = neat.nn.FeedForwardNetwork.create(
-            neat_genome, neat_config)
+        self.brain = neat.nn.RecurrentNetwork.create(neat_genome, neat_config)
         self.inputs = []
         self.sight = sight
         self.neat = _neat
@@ -56,6 +55,8 @@ class Agent(Shape):
         self._handle_movement(action_choice)
         self._handle_action(action_choice)
         self._update_fitness()
+        if self.alive:
+            self.age += 1
 
     def _handle_movement(self, action_choice):
         """Handles the movement of the agent based on the action choice.
@@ -259,7 +260,15 @@ class Predator(Agent):
 
     def _update_fitness(self):
         """Updates the fitness of the predator agent based on the number of prey eaten and current energy."""
-        self.fitness = (self.prey_eaten * 10) + (self.energy / 3)
+        # Eating prey is the primary goal
+        # TODO: Add these values to the constants file
+        hunt_reward = self.prey_eaten * 2.0
+        energy_reward = self.energy * 0.01
+        survival_reward = self.age * 0.001
+        self.fitness = hunt_reward + energy_reward + survival_reward
+        # Apply diminishing returns for very successful predators
+        if self.fitness > 50:
+            self.fitness = 50 + (self.fitness - 50) * 0.5
 
     def _eat(self):
         """Handles the eating action of the predator agent, finding the closest prey object if applicable."""
@@ -287,7 +296,7 @@ class Prey(Agent):
     Args:
         id (int): The unique identifier for the prey agent.
         pos (np.ndarray): The initial position of the prey agent.
-        neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent. 
+        neat_genome (neat.DefaultGenome): The NEAT genome for the prey agent.
         neat_config (neat.DefaultConfig): The NEAT configuration for the prey agent. Also used for non neat agents.
         neat (bool): Whether the agent is using NEAT or not.
     """
@@ -304,11 +313,20 @@ class Prey(Agent):
 
     def _update_fitness(self):
         """Updates the fitness of the prey agent."""
-        self.fitness += 0.1
-
-    def calcualte_distance_moved(self):
-        """Calculates the distance moved by the prey agent."""
-        return np.linalg.norm(self.pos - self.spawn)
+        # TODO: Add these values to the constants file
+        # Base survival reward
+        survival_reward = 0.01
+        distance_from_spawn = np.linalg.norm(self.pos - self.spawn)
+        distance_reward = min(distance_from_spawn * 0.001,
+                              0.1)  # Cap the distance reward
+        age_reward = min(self.age * 0.001, 0.5)  # Cap the age reward
+        # Predator avoidance reward
+        nearby_predators = sum(1 for obj in self.state.interactables
+                               if isinstance(obj, Predator) and obj.alive)
+        predator_reward = nearby_predators * 0.05
+        increment = survival_reward + distance_reward + age_reward + predator_reward
+        # Apply a sigmoidesque cap to prevent exponential growth
+        self.fitness += increment / (1 + self.fitness/1000)
 
     def _eat(self):
         """Handles the eating action of the prey agent, finding the closest food object if applicable."""
