@@ -14,7 +14,7 @@ class GenomeViewer:
         
         # Load genomes
         try:
-            with open('./Data/final_genomes.json', 'r') as file:
+            with open('./Data/initial_genomes.json', 'r') as file:
                 self.genomes = json.load(file)
             self.total_genomes = len(self.genomes)
             if self.total_genomes == 0:
@@ -326,7 +326,7 @@ class GenomeViewer:
             if data.get('enabled', True):
                 # Calculate edge width based on weight
                 weight = data.get('weight', 0.0)
-                width = 1 + abs(weight) * 2
+                width = 1 + abs(weight) * 1.25
                 
                 # Choose edge color based on weight sign
                 edge_color = 'green' if weight > 0 else 'red'

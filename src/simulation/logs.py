@@ -36,6 +36,17 @@ def save_genomes_json(agents):
     with open('./Data/final_genomes.json', 'w') as file:
         json.dump(genomes, file, indent=4)
 
+def save_initial_genomes_json(agents):
+    """Saves the initial agent genomes to a JSON file.
+
+    Args:
+        agents (list): A list of all agents in the simulation.
+    """
+    genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
+    with open('./Data/initial_genomes.json', 'w') as file:
+        json.dump(genomes, file, indent=4)
+
+
 
 def pickle_genomes(agents):
     """Saves the final agent genomes to a pickle file.

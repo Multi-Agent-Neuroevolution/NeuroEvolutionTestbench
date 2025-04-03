@@ -187,6 +187,7 @@ def main():
         torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
         prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
         pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
+        logs.save_initial_genomes_json(env.agents)
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
             env.run()
