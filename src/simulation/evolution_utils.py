@@ -21,38 +21,20 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
 
     for _ in range(num_offspring):
         child_id = generate_unique_id()
+
+        # Create a new genome and mutate it
         child_genome = neat.DefaultGenome(child_id)
 
-        # If there are no parents available(?), a new genome is created.
-        # Otherwise, two parents are selected to breed and the child genome is created by crossover, then mutated
-        if multi_model == True:
-            configCopy.genome_config.__dict__['conn_add_prob'] = 0
-            configCopy.genome_config.__dict__['conn_delete_prob'] = 0
-            configCopy.genome_config.__dict__['node_add_prob'] = 0
-            configCopy.genome_config.__dict__['node_delete_prob'] = 0
-
-            if random.random() > crossover_rate or len(parents) < 2:
-                # Clone a parent with mutation only
-                parent = random.choice(parents)
-                child_genome = neat.DefaultGenome(child_id)
-                child_genome.configure_crossover(
-                    parent.neat_genome, parent.neat_genome, config)  # Self-crossover is cloning
-            else:
-                # Normal crossover
-                parent1 = select_parent(parents, torunament_size)
-                parent2 = select_parent(parents, torunament_size)
-                child_genome = neat.DefaultGenome(child_id)
-                child_genome.configure_crossover(
-                    parent1.neat_genome, parent2.neat_genome, config)
-
-            # Always mutate
+        if not parents:
+            # EXTINCTION: Create and mutate a new genome from scratch
+            child_genome.configure_new(config.genome_config)
             child_genome.mutate(config.genome_config)
 
-            # This determines whether the new agent is a predator or prey
             pos = [random.uniform(bounds[0], bounds[1]),
                    random.uniform(bounds[0], bounds[1])]
 
-            if isinstance(parents[0], Predator):
+            # Randomly decide whether it's a predator or prey
+            if random.random() < 0.5:
                 new_agent = Predator(id=child_id, pos=pos,
                                      neat_genome=child_genome, neat_config=configCopy, neat=False)
             else:
@@ -60,36 +42,39 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
                                  neat_genome=child_genome, neat_config=configCopy, neat=False)
 
             new_agents.append(new_agent)
+            continue
+
+        if multi_model:
+            configCopy.genome_config.__dict__['conn_add_prob'] = 0
+            configCopy.genome_config.__dict__['conn_delete_prob'] = 0
+            configCopy.genome_config.__dict__['node_add_prob'] = 0
+            configCopy.genome_config.__dict__['node_delete_prob'] = 0
+
+        # Either clone a parent or perform crossover
+        if random.random() > crossover_rate or len(parents) < 2:
+            parent = random.choice(parents)
+            child_genome.configure_crossover(
+                parent.neat_genome, parent.neat_genome, config)
         else:
-            if random.random() > crossover_rate or len(parents) < 2:
-                # Clone a parent with mutation only
-                parent = random.choice(parents)
-                child_genome = neat.DefaultGenome(child_id)
-                child_genome.configure_crossover(
-                    parent.neat_genome, parent.neat_genome, config)  # Self-crossover is cloning
-            else:
-                # Normal crossover
-                parent1 = select_parent(parents, torunament_size)
-                parent2 = select_parent(parents, torunament_size)
-                child_genome = neat.DefaultGenome(child_id)
-                child_genome.configure_crossover(
-                    parent1.neat_genome, parent2.neat_genome, config)
+            parent1 = select_parent(parents, torunament_size)
+            parent2 = select_parent(parents, torunament_size)
+            child_genome.configure_crossover(
+                parent1.neat_genome, parent2.neat_genome, config)
 
-            # Always mutate
-            child_genome.mutate(config.genome_config)
+        child_genome.mutate(config.genome_config)
 
-            # This determines whether the new agent is a predator or prey
-            pos = [random.uniform(bounds[0], bounds[1]),
-                   random.uniform(bounds[0], bounds[1])]
+        pos = [random.uniform(bounds[0], bounds[1]),
+               random.uniform(bounds[0], bounds[1])]
 
-            if isinstance(parents[0], Predator):
-                new_agent = Predator(id=child_id, pos=pos,
-                                     neat_genome=child_genome, neat_config=config, neat=True)
-            else:
-                new_agent = Prey(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=config, neat=True)
+        if isinstance(parents[0], Predator):
+            new_agent = Predator(id=child_id, pos=pos,
+                                 neat_genome=child_genome, neat_config=configCopy if multi_model else config, neat=not multi_model)
+        else:
+            new_agent = Prey(id=child_id, pos=pos,
+                             neat_genome=child_genome, neat_config=configCopy if multi_model else config, neat=not multi_model)
 
-            new_agents.append(new_agent)
+        new_agents.append(new_agent)
+
     return new_agents
 
 
