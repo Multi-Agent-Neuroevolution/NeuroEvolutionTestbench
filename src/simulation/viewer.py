@@ -14,7 +14,7 @@ class GenomeViewer:
         
         # Load genomes
         try:
-            with open('./Data/initial_genomes.json', 'r') as file:
+            with open('./Data/final_genomes.json', 'r') as file:
                 self.genomes = json.load(file)
             self.total_genomes = len(self.genomes)
             if self.total_genomes == 0:

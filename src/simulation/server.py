@@ -24,6 +24,7 @@ class CommunicationService(comms_pb2_grpc.CommunicationServicer):
     def FetchEnvironmentStream(self, request, context):
         while messageChannel.empty == False:
             data = messageChannel.get()
+            print("{data}")
             try:
                 json_str = json.dumps(data)
                 yield comms_pb2.JSONData(
