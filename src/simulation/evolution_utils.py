@@ -52,7 +52,7 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             pos = [random.uniform(bounds[0], bounds[1]),
                    random.uniform(bounds[0], bounds[1])]
 
-            if isinstance(parents[1], Predator):
+            if isinstance(parents[0], Predator):
                 new_agent = Predator(id=child_id, pos=pos,
                                      neat_genome=child_genome, neat_config=configCopy, neat=False)
             else:
@@ -82,7 +82,7 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             pos = [random.uniform(bounds[0], bounds[1]),
                    random.uniform(bounds[0], bounds[1])]
 
-            if isinstance(parents[1], Predator):
+            if isinstance(parents[0], Predator):
                 new_agent = Predator(id=child_id, pos=pos,
                                      neat_genome=child_genome, neat_config=config, neat=True)
             else:
