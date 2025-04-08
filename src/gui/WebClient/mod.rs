@@ -10,8 +10,9 @@ pub mod comms {
     tonic::include_proto!("comms");
 }
 pub async fn getConnection()->Result<CommunicationClient<Channel>,tonic::transport::Error>{
-    let client = CommunicationClient::connect("http://[::1]:50051").await;
-    client
+    let client = CommunicationClient::connect("http://[::1]:50051").await?;
+    println!("Successful connection");
+    Ok(client)
 }
 //@TODO change the return type to the correct return type
 /*async fn startSim() ->Result<(),Box<dyn std::error::Error>>{
@@ -27,8 +28,11 @@ pub async fn getSimStream(mut connection:CommunicationClient<Channel>,sender:Sen
     let request = Request::new(Command{
        r#in:"start".into(),
     });
+    println!("fetching stream");
     let mut stream = connection.fetch_environment_stream(request).await.unwrap().into_inner();
+    println!("stream fetched");
     while let Some(data) = stream.next().await{
+        println!("got data");
         let data = data?;
         sender.send(data).await?;
     }

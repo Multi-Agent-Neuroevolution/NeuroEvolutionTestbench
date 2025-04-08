@@ -25,7 +25,7 @@ if _version_not_supported:
     )
 
 
-class NeuroEvolutionStub(object):
+class CommunicationStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -35,13 +35,18 @@ class NeuroEvolutionStub(object):
             channel: A grpc.Channel.
         """
         self.FetchEnvironmentStream = channel.unary_stream(
-                '/comms.NeuroEvolution/FetchEnvironmentStream',
+                '/comms.Communication/FetchEnvironmentStream',
                 request_serializer=comms__pb2.Command.SerializeToString,
-                response_deserializer=comms__pb2.Environment.FromString,
+                response_deserializer=comms__pb2.JSONData.FromString,
+                _registered_method=True)
+        self.FetchNeuralNet = channel.unary_unary(
+                '/comms.Communication/FetchNeuralNet',
+                request_serializer=comms__pb2.ID.SerializeToString,
+                response_deserializer=comms__pb2.JSONData.FromString,
                 _registered_method=True)
 
 
-class NeuroEvolutionServicer(object):
+class CommunicationServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def FetchEnvironmentStream(self, request, context):
@@ -50,23 +55,34 @@ class NeuroEvolutionServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def FetchNeuralNet(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-def add_NeuroEvolutionServicer_to_server(servicer, server):
+
+def add_CommunicationServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'FetchEnvironmentStream': grpc.unary_stream_rpc_method_handler(
                     servicer.FetchEnvironmentStream,
                     request_deserializer=comms__pb2.Command.FromString,
-                    response_serializer=comms__pb2.Environment.SerializeToString,
+                    response_serializer=comms__pb2.JSONData.SerializeToString,
+            ),
+            'FetchNeuralNet': grpc.unary_unary_rpc_method_handler(
+                    servicer.FetchNeuralNet,
+                    request_deserializer=comms__pb2.ID.FromString,
+                    response_serializer=comms__pb2.JSONData.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'comms.NeuroEvolution', rpc_method_handlers)
+            'comms.Communication', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('comms.NeuroEvolution', rpc_method_handlers)
+    server.add_registered_method_handlers('comms.Communication', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class NeuroEvolution(object):
+class Communication(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -83,9 +99,36 @@ class NeuroEvolution(object):
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/comms.NeuroEvolution/FetchEnvironmentStream',
+            '/comms.Communication/FetchEnvironmentStream',
             comms__pb2.Command.SerializeToString,
-            comms__pb2.Environment.FromString,
+            comms__pb2.JSONData.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FetchNeuralNet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/comms.Communication/FetchNeuralNet',
+            comms__pb2.ID.SerializeToString,
+            comms__pb2.JSONData.FromString,
             options,
             channel_credentials,
             insecure,

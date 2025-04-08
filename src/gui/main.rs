@@ -87,6 +87,7 @@ pub fn main() -> iced::Result {
 }
 impl View {
     fn new() -> Self {
+        println!("new construction");
         let (send, recv) = mpsc::channel::<JsonData>(100000000000000);
         let rt = Runtime::new().unwrap();
         let conn = rt.block_on(getConnection()).unwrap();
@@ -149,12 +150,27 @@ impl View {
             }
             Message::SimStart => {
                 let rt = Runtime::new().unwrap();
-                let cloneConn = self.connection.as_mut().unwrap().clone();
-                let cloneSend = self.sender.as_mut().unwrap().clone();
-                rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend); });
-                for _i in 0..999{
-                    self.get_simulation_data();
-                }
+                let cloneConn = match self.connection.as_mut(){
+                    Some(conn)=>{
+                        conn.clone()
+                    },
+                    None=>{
+                       rt.block_on(getConnection()).unwrap()
+                    },
+                };
+                //let cloneConn = self.connection.as_mut().unwrap().clone();
+                let cloneSend = match self.sender.as_mut(){
+                    Some(send)=>send.clone(),
+                    None=>{
+                        let (send, recv) = mpsc::channel::<JsonData>(100000000000000);
+                        self.sender=Some(send.clone());
+                        self.receiver=Some(recv);
+                        send
+                    },
+                };
+                rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend).await; });
+                let simulation_data = self.get_simulation_data();
+                self.update_simulation_data(simulation_data);
             }
             Message::SimPause => {}
             Message::SimEnd => {}
@@ -162,148 +178,10 @@ impl View {
         if self.speed < 1 {
             self.speed = 1;
         }
-        // let simulation_data = self.get_simulation_data();
-        // self.update_simulation_data(simulation_data);
     }
     fn get_simulation_data(&mut self) -> SimulationData {
-        //In the future this will be replaced with a function that gets the data from the simulation over a web socket
-        /*let json_data = r#"
-        {
-            "agents": [
-                {
-                    "id": 1,
-                    "x": 0.0,
-                    "y": 0.0,
-                    "color": "white"
-
-                },
-                {
-                    "id": 2,
-                    "x": 1.0,
-                    "y": 1.0,
-                    "color": "blue"
-                }
-            ],
-            "shapes": [
-                {
-                    "type": "Circle",
-                    "x": 350.0,
-                    "y": 450.0,
-                    "radius": 50.0,
-                    "color": "purple"
-                },
-                {
-                    "type": "Rectangle",
-                    "x": 0.0,
-                    "y": 0.0,
-                    "width": 50.0,
-                    "height": 5000.0,
-                    "color": "white"
-                },
-                {
-                    "type": "Rectangle",
-                    "x": 100.0,
-                    "y": 100.0,
-                    "width": 50.0,
-                    "height": 50.0,
-                    "color": "red"
-                },
-                {
-                    "type": "Triangle",
-                    "x1": 50.0,
-                    "y1": 50.0,
-                    "x2": 100.0,
-                    "y2": 85.0,
-                    "x3": 50.0,
-                    "y3": 120.0,
-                    "color": "blue"
-                },
-                {
-                    "type": "Line",
-                    "x1": 450.0,
-                    "y1": 250.0,
-                    "x2": 200.0,
-                    "y2": 100.0,
-                    "color": "green"
-
-                }
-            ],
-        "layers": [
-        {
-                "nodes": [
-                        {
-                                "value": 3.4,
-                                "weights": [0.74, 3.34, 9.50, 0.1]
-                        },
-                        {
-                                "value": 0.004,
-                                "weights": [0.074, 5.34, 1.50, 4.1]
-                        }
-
-                    ]
-            },
-            {
-                "nodes": [
-                        {
-                                "value": 3.4,
-                                "weights": [0.74, 3.34, 9.50, 0.1]
-                        },
-                        {
-                                "value": 47.2,
-                                "weights": [0.89, 0.16, 6.7, 0.01]
-                        },
-                        {
-                                "value": 33.9,
-                                "weights": [6.9, 5.26, 2.91, 1.43]
-                        },
-                        {
-                                "value": 2.9,
-                                "weights": [69, 1.1, 3.11, 200]
-                        }
-                    ]
-            },
-            {
-                "nodes": [
-                        {
-                                "value": 3.4,
-                                "weights": [0.74, 3.34, 9.50]
-                        },
-                        {
-                                "value": 47.2,
-                                "weights": [0.89, 0.16, 6.7]
-                        },
-                        {
-                                "value": 33.9,
-                                "weights": [6.9, 5.26, 2.91]
-                        },
-                        {
-                                "value": 2.9,
-                                "weights": [69, 1.1, 3.11]
-                        }
-                    ]
-            },
-            {
-                    "nodes": [
-                        {
-                                "value": 22.1
-                        },
-                        {
-                                "value": 6.4
-                        },
-                        {
-                                "value": 1.1
-                        }
-                    ]
-            }
-        ]
-        }
-        "#;*/
-
-        /*let json_data: SimulationData =
-            serde_json::from_str(&self.receiver.as_mut().unwrap().recv().unwrap().json_data)
-                .expect("Failed to parse JSON");*/
-        //let simulation_data = self.get_simulation_data();
         let received = &self.receiver.as_mut().unwrap().blocking_recv().unwrap().json_data;
+        println!("received freaky: {}",received);
         let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
         self.update_simulation_data(json_data.clone());
         json_data
