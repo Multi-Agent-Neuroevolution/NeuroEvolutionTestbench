@@ -193,18 +193,16 @@ def main():
             env.run()
             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
                 mutate(population, config, env, populationSize, pred_pop,
-                       prey_pop, prey_pop_no_neat, pred_pop_no_neat, eliteism,
-                       crossover_rate=crossover_rate,
-                       torunament_size=torunament_size,
-                       pred_spawn_bounds=prey_spawn_bounds,
-                       prey_spawn_bounds=pred_spawn_bounds)
+                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
+                       prey_spawn_bounds, pred_spawn_bounds,
+                       eliteism, crossover_rate=crossover_rate,
+                       torunament_size=torunament_size)
             else:
                 mutate(population, config, env, populationSize, pred_pop,
-                       prey_pop, prey_pop_no_neat, pred_pop_no_neat, eliteism,
-                       crossover_rate=crossover_rate,
-                       torunament_size=torunament_size,
-                       pred_spawn_bounds=pred_spawn_bounds,
-                       prey_spawn_bounds=prey_spawn_bounds)
+                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
+                       pred_spawn_bounds, prey_spawn_bounds,
+                       eliteism, crossover_rate=crossover_rate,
+                       torunament_size=torunament_size)
             env.reset()
             end_time = time.time()  # End timing the epoch
 
