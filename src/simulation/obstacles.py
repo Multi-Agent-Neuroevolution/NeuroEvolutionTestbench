@@ -12,12 +12,18 @@ class Obstacle(Shape):
     
     def get_class(self):
         return self.__class__.__name__
+    def to_dict(self):
+        return {}
 
 class Food(Obstacle):
     def __init__(self, pos):
         super().__init__(pos=pos, shape="circle", radius=1, width=0, height=0, color="green", interactible=True, collidable=False, goal_obstacle=False)
+    def to_dict(self):
+        return {"type":self.shape,"x":self.pos[0],"y":self.pos[1],"radius":self.radius,"color":self.color}
 
 class Wall(Obstacle):
     def __init__(self, pos, width, height):
         super().__init__(pos=pos, shape="rectangle", radius=0, width=width, height=height, color="red", interactible=False, collidable=True, goal_obstacle=False)
         # Note to self: may want to make goal_obstacle a parameter in the future depending on ideas
+    def to_dict(self):
+        return {"type":self.shape,"x":self.pos[0],"y":self.pos[1],"width":self.width,"height":self.height,"color":self.color}

@@ -251,7 +251,7 @@ class Environment:
                 self.food_handler()
 
                 # Send data to the GUI
-                sendData = {"agents": self.agents, "shapes": self.obstacles}
+                sendData = {"agents": [agent.to_dict() for agent in self.agents], "shapes": [obstacle.to_dict() for obstacle in self.obstacles]}
                 messageChannel.put(sendData)
 
                 # Log agents alive
