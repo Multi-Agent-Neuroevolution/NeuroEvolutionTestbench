@@ -252,15 +252,7 @@ class Environment:
                 self.food_handler()
 
                 # Send data to the GUI
-                # Convert self.obstacles to a dict to then pass to sendData
-                try:
-                    obstacle_dict = [obs.to_dict() for obs in self.obstacles]
-                except AttributeError as e:
-                    print(
-                        f"Error converting obstacles to dict: {e}")
-
-                sendData = {"agents": self.agents, "shapes": obstacle_dict}
-                print(sendData)
+                sendData = {"agents": [agent.to_dict() for agent in self.agents], "shapes": [obstacle.to_dict() for obstacle in self.obstacles]}
                 messageChannel.put(sendData)
 
                 # Log agents alive

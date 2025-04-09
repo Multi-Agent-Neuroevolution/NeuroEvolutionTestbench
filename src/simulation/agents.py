@@ -46,6 +46,9 @@ class Agent(Shape):
         if obj in self.state.interactables:
             obj.interact(self)
 
+    def to_dict(self):
+        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"white"}
+
     def update_action(self):
         """Updates the action of the agent based on the neural network output."""
         self.get_inputs()
@@ -242,6 +245,8 @@ class Predator(Agent):
         self.prey_eaten = 0
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
+    def to_dict(self):
+        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"red"}
     def _handle_action(self, action_choice):
         """Handles the action of the predator agent based on the action choice.
 
@@ -306,6 +311,8 @@ class Prey(Agent):
                          neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, _neat=neat)
         self.spawn = pos
 
+    def to_dict(self):
+        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"green"}
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
         if action_choice == 4:
