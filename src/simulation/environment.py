@@ -236,6 +236,7 @@ class Environment:
         print("Running simulation...")
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             for step in range(self.steps):
+                obstacle_dict = []
                 step_start_time = time.time()
 
                 # Update spatial grid
@@ -251,7 +252,15 @@ class Environment:
                 self.food_handler()
 
                 # Send data to the GUI
-                sendData = {"agents": self.agents, "shapes": self.obstacles}
+                # Convert self.obstacles to a dict to then pass to sendData
+                try:
+                    obstacle_dict = [obs.to_dict() for obs in self.obstacles]
+                except AttributeError as e:
+                    print(
+                        f"Error converting obstacles to dict: {e}")
+
+                sendData = {"agents": self.agents, "shapes": obstacle_dict}
+                print(sendData)
                 messageChannel.put(sendData)
 
                 # Log agents alive
