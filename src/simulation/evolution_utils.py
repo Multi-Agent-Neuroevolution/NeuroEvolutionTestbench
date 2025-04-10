@@ -12,6 +12,11 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
     configCopy = copy.deepcopy(config)
     used_ids = set()  # HashSet to ensure unique IDs
 
+    if multi_model:
+        type = 0
+    else:
+        type = 1
+
     def generate_unique_id():
         while True:
             child_id = random.randint(0, 100000)
@@ -36,10 +41,10 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             # Randomly decide whether it's a predator or prey
             if random.random() < 0.5:
                 new_agent = Predator(id=child_id, pos=pos,
-                                     neat_genome=child_genome, neat_config=configCopy, neat=False)
+                                     neat_genome=child_genome, neat_config=configCopy, type=type)
             else:
                 new_agent = Prey(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=configCopy, neat=False)
+                                 neat_genome=child_genome, neat_config=configCopy, type=type)
 
             new_agents.append(new_agent)
             continue
@@ -68,10 +73,10 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
 
         if isinstance(parents[0], Predator):
             new_agent = Predator(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=configCopy if multi_model else config, neat=not multi_model)
+                                 neat_genome=child_genome, neat_config=configCopy if multi_model else config, type=type)
         else:
             new_agent = Prey(id=child_id, pos=pos,
-                             neat_genome=child_genome, neat_config=configCopy if multi_model else config, neat=not multi_model)
+                             neat_genome=child_genome, neat_config=configCopy if multi_model else config, type=type)
 
         new_agents.append(new_agent)
 

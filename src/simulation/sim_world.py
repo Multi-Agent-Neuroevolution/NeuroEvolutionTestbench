@@ -102,13 +102,13 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
 def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_spawn_bounds,  prey_spawn_bounds, eliteism=0.1, crossover_rate=0.7, torunament_size=3):
     # Create separate lists for predators and prey
     predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.neat == True]
+        agent, Predator) and agent.type == 1]
     preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.neat == True]
+        agent, Prey) and agent.type == 1]
     no_neat_predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.neat == False]
+        agent, Predator) and agent.type == 0]
     no_neat_preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.neat == False]
+        agent, Prey) and agent.type == 0]
     logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
     for agent in env.agents:
         if agent.neat_genome:
@@ -177,7 +177,7 @@ def main():
             model_split=constants.MODEL_SPLIT
         )
         print("Starting amount of Predators/Prey")
-        
+
         print("END:\tSimulation environment created")
         # Create log for the average network size
 
@@ -189,12 +189,9 @@ def main():
         pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
         logs.save_initial_genomes_json(env.agents)
 
-       
-
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
             env.run()
-            
 
             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
                 mutate(population, config, env, populationSize, pred_pop,
@@ -208,15 +205,13 @@ def main():
                        pred_spawn_bounds, prey_spawn_bounds,
                        eliteism, crossover_rate=crossover_rate,
                        torunament_size=torunament_size)
-            
+
             env.reset()
             end_time = time.time()  # End timing the epoch
 
             epoch_duration = end_time - start_time
             remaining_epochs = constants.EPOCHS - (i + 1)
             estimated_time_remaining = remaining_epochs * epoch_duration
-
-            
 
             print(
                 f"Epoch {i+1} completed, {constants.EPOCHS - i - 1} epochs remaining")

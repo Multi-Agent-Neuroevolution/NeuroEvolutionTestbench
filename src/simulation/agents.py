@@ -22,7 +22,7 @@ class Agent(Shape):
         move_speed (float): The speed at which the agent moves.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0, _neat=True):
+    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0, type=0):
         super().__init__(shape="agent", radius=1, width=0,
                          height=0, pos=pos, collidable=False)
         self.id = id
@@ -39,7 +39,7 @@ class Agent(Shape):
         self.brain = neat.nn.RecurrentNetwork.create(neat_genome, neat_config)
         self.inputs = []
         self.sight = sight
-        self.neat = _neat
+        self.type = type
         self.alive = True
 
     def interact(self, obj):
@@ -47,7 +47,7 @@ class Agent(Shape):
             obj.interact(self)
 
     def to_dict(self):
-        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"white"}
+        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "white"}
 
     def update_action(self):
         """Updates the action of the agent based on the neural network output."""
@@ -239,14 +239,15 @@ class Predator(Agent):
         neat (bool): Whether the agent is using NEAT or not.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config, neat):
+    def __init__(self, id, pos, neat_genome, neat_config, type):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PRED", energy=100, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, _neat=neat)
+                         neat_config=neat_config, agent_type="PRED", energy=100, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, type=type)
         self.prey_eaten = 0
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
     def to_dict(self):
-        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"red"}
+        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "red"}
+
     def _handle_action(self, action_choice):
         """Handles the action of the predator agent based on the action choice.
 
@@ -306,13 +307,14 @@ class Prey(Agent):
         neat (bool): Whether the agent is using NEAT or not.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config, neat):
+    def __init__(self, id, pos, neat_genome, neat_config, type):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, _neat=neat)
+                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, type=type)
         self.spawn = pos
 
     def to_dict(self):
-        return {"id":self.id,"x":self.pos[0],"y":self.pos[1],"color":"green"}
+        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "green"}
+
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
         if action_choice == 4:

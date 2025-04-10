@@ -92,7 +92,7 @@ class Environment:
             ])
             genome = population.population[i + 1]
             agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config, neat=True))
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config, type=1))
 
         # Initialize prey
         for i in range(prey_pop):
@@ -103,7 +103,7 @@ class Environment:
             ])
             genome = population.population[i + pred_pop]
             agents.append(Prey(id=(i + pred_pop), pos=pos,
-                          neat_genome=genome, neat_config=config, neat=True))
+                          neat_genome=genome, neat_config=config, type=1))
         # Initialize pred_no_neat
         for i in range(pred_no_neat_pop):
 
@@ -113,7 +113,7 @@ class Environment:
             ])
             genome = population.population[i + 1]
             agents.append(
-                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config, neat=False))
+                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config, type=0))
 
         # Initialize prey_no_neat
         for i in range(prey_no_neat_pop):
@@ -124,7 +124,7 @@ class Environment:
             ])
             genome = population.population[i + pred_pop]
             agents.append(Prey(id=(i + prey_pop), pos=pos,
-                          neat_genome=genome, neat_config=config, neat=False))
+                          neat_genome=genome, neat_config=config, type=0))
 
         self.add_agents(agents)
 
@@ -252,18 +252,21 @@ class Environment:
                 self.food_handler()
 
                 # Send data to the GUI
-                sendData = {"agents": [agent.to_dict() for agent in self.agents], "shapes": [obstacle.to_dict() for obstacle in self.obstacles]}
+                sendData = {"agents": [agent.to_dict() for agent in self.agents], "shapes": [
+                    obstacle.to_dict() for obstacle in self.obstacles]}
                 messageChannel.put(sendData)
 
                 # Log agents alive
                 logs.log_alive_agents(self.agents)
-                num_pred = logs.pass_predator_log(self.agents)
-                num_prey = logs.pass_prey_log(self.agents)
+                num_pred_stand, num_pred_neat, num_pred_hyper = logs.pass_predator_log(
+                    self.agents)
+                um_prey_stand, num_prey_neat, num_prey_hyper = logs.pass_prey_log(
+                    self.agents)
 
                 # Calculate and print time taken for this `step in milliseconds
                 step_time = 1000 * (time.time() - step_start_time)
                 print(
-                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms Prey: {num_prey}, Predators: {num_pred}       ", end='\r')
+                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms Prey(: Neat:{num_prey_neat}, Stand:{um_prey_stand}, Hyper:{num_prey_hyper} ), Predators(: Neat: {num_pred_neat}, {num_pred_stand}, {num_pred_hyper} )     ", end='\r')
                 percent_complete = (step + 1) / self.steps * 100
                 for i in range(50):
                     if i < int(percent_complete / 2):
