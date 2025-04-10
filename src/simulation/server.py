@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 
 class CommunicationService(comms_pb2_grpc.CommunicationServicer):
     def FetchEnvironmentStream(self, request, context):
-        while messageChannel.empty == False:
+        while messageChannel.empty() == False:
             data = messageChannel.get()
-            print("{data}")
             try:
+                print("trying json")
                 json_str = json.dumps(data)
+                print(f"{json_str}")
                 yield comms_pb2.JSONData(
                     json_data=json_str,
                     success=True,
@@ -151,6 +152,9 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no
     for agent in env.agents:
         if agent.neat_genome:
             agent.neat_genome.fitness = agent.fitness
+
+    # Save the average fitness of both predator and prey populations to a CSV file
+    logs.avg_agent_fitness(predators, preys, )
 
     # Sort and retain the top 10% based on fitness
     top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[

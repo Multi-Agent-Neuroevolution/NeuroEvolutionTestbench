@@ -236,6 +236,7 @@ class Environment:
         print("Running simulation...")
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             for step in range(self.steps):
+                obstacle_dict = []
                 step_start_time = time.time()
 
                 # Update spatial grid
@@ -251,7 +252,7 @@ class Environment:
                 self.food_handler()
 
                 # Send data to the GUI
-                sendData = {"agents": self.agents, "shapes": self.obstacles}
+                sendData = {"agents": [agent.to_dict() for agent in self.agents], "shapes": [obstacle.to_dict() for obstacle in self.obstacles]}
                 messageChannel.put(sendData)
 
                 # Log agents alive
