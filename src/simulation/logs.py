@@ -112,6 +112,21 @@ def log_alive_agents(agents):
             f"Predators alive: {num_predators}, Preys alive: {num_preys}\n"
         )
 
+def pass_prey_log(agents):
+
+    num_preys = len(
+        [agent for agent in agents if isinstance(agent, Prey) and agent.alive])
+    
+    return num_preys
+
+def pass_predator_log(agents):
+
+    num_predators = len(
+        [agent for agent in agents if isinstance(agent, Predator) and agent.alive])
+    
+    return num_predators        
+
+
 
 def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):
     """Saves the average fitness of the predator and prey populations to a CSV file.

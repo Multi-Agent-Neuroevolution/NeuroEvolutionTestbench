@@ -256,11 +256,13 @@ class Environment:
 
                 # Log agents alive
                 logs.log_alive_agents(self.agents)
+                num_pred = logs.pass_predator_log(self.agents)
+                num_prey = logs.pass_prey_log(self.agents)
 
-                # Calculate and print time taken for this step in milliseconds
+                # Calculate and print time taken for this `step in milliseconds
                 step_time = 1000 * (time.time() - step_start_time)
                 print(
-                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms", end='\r')
+                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms Prey: {num_prey}, Predators: {num_pred}       ", end='\r')
                 percent_complete = (step + 1) / self.steps * 100
                 for i in range(50):
                     if i < int(percent_complete / 2):

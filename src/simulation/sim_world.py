@@ -176,10 +176,10 @@ def main():
             multi_model=constants.MULTI_MODEL,
             model_split=constants.MODEL_SPLIT
         )
+        print("Starting amount of Predators/Prey")
+        
         print("END:\tSimulation environment created")
-
         # Create log for the average network size
-        logs.log_avg_network_size(env.agents)
 
         # Run simulation, looping according to the number of epochs specified
         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
@@ -188,9 +188,14 @@ def main():
         prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
         pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
         logs.save_initial_genomes_json(env.agents)
+
+       
+
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
             env.run()
+            
+
             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
                 mutate(population, config, env, populationSize, pred_pop,
                        prey_pop, pred_pop_no_neat, prey_pop_no_neat,
@@ -203,12 +208,15 @@ def main():
                        pred_spawn_bounds, prey_spawn_bounds,
                        eliteism, crossover_rate=crossover_rate,
                        torunament_size=torunament_size)
+            
             env.reset()
             end_time = time.time()  # End timing the epoch
 
             epoch_duration = end_time - start_time
             remaining_epochs = constants.EPOCHS - (i + 1)
             estimated_time_remaining = remaining_epochs * epoch_duration
+
+            
 
             print(
                 f"Epoch {i+1} completed, {constants.EPOCHS - i - 1} epochs remaining")
