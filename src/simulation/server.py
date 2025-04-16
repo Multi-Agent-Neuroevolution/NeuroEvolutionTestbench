@@ -50,6 +50,144 @@ class CommunicationService(comms_pb2_grpc.CommunicationServicer):
                 
             time.sleep(1)   # I moved this outside of the try-except since it seemed like it would always run anyway
 
+class Simulation:
+    def __init__(self, simulation_type="PRED_PREY", steps=1000, bounds=[-200, 200, -200, 200], multi_model=False, food_amount=None, food_respawn_rate=None):
+        self.simulation_type = simulation_type
+        self.steps = steps
+        self.bounds = bounds
+        self.multi_model = multi_model
+        self.food_amount = food_amount
+        self.food_respawn_rate = food_respawn_rate
+        self.config_path = constants.CONFIG_PATH
+        self.environment = None
+        self.pred_percent = None
+    
+    def _generate_configs(self, configs):
+        for config in configs:
+            configs[config] = neat.Config(
+                neat.DefaultGenome,
+                neat.DefaultReproduction,
+                neat.DefaultSpeciesSet,
+                neat.DefaultStagnation,
+                self.config_path
+            )
+
+            if self.multi_model and "std" in config:
+                configs[config].genome_config.__dict__['conn_add_prob'] = 0
+                configs[config].genome_config.__dict__['conn_delete_prob'] = 0
+                configs[config].genome_config.__dict__['node_add_prob'] = 0
+                configs[config].genome_config.__dict__['node_delete_prob'] = 0
+        
+        return configs
+    
+    def _generate_populations(self, population):
+        if self.simulation_type == "PRED_PREY":
+            agent_populations = {"pred_pop_neat": [], "prey_pop_neat": []}
+            for agent in population.population.items():
+                if len(agent_populations["pred_pop_neat"]) < int(len(population.population.items()) * self.pred_percent):
+                    agent_populations["pred_pop_neat"].append(agent)
+                else:
+                    agent_populations["prey_pop_neat"].append(agent)
+            
+            # Print number of entries in agent_populatoins
+            print(f"INFO:\tSize of population: {sum(len(population) for population in agent_populations.values())}")
+
+        return agent_populations
+    
+    def _mutate(self):
+        if self.simulation_type == "PRED_PREY":
+            predators_neat = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 1]
+            preys_neat = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 1]
+            predators_std = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 0]
+            preys_std = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 0]
+            
+            logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
+            for agent in self.environment.agents:
+                if agent.neat_genome:
+                    agent.neat_genome.fitness = agent.fitness
+            logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
+
+            top_predators_neat = sorted(predators_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop * constants.CUT_OFF))]
+            top_preys_neat = sorted(preys_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop * constants.CUT_OFF))]
+            top_predators_std = sorted(predators_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop_no_neat * constants.CUT_OFF))]
+            top_preys_std = sorted(preys_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop_no_neat * constants.CUT_OFF))]
+
+            num_offspring_predators_neat = int(self.environment.pred_pop - len(top_predators_neat))
+            num_offspring_preys_neat = int(self.environment.prey_pop - len(top_preys_neat))
+            num_offspring_predators_std = int(self.environment.pred_pop_no_neat - len(top_predators_std))
+            num_offspring_preys_std = int(self.environment.prey_pop_no_neat - len(top_preys_std))
+
+            new_predators_neat = breed_and_mutate(self.environment.configs["pred_neat"], top_predators_neat, num_offspring=num_offspring_predators_neat, multi_model=False, bounds=constants.PRED_SPAWN_BOUNDS)
+            new_preys_neat = breed_and_mutate(self.environment.configs["prey_neat"], top_preys_neat, num_offspring=num_offspring_preys_neat, multi_model=False, bounds=constants.PREY_SPAWN_BOUNDS)
+            if self.multi_model:
+                new_predators_std = breed_and_mutate(self.environment.configs["pred_std"], top_predators_std, num_offspring=num_offspring_predators_std, multi_model=True, bounds=constants.PRED_SPAWN_BOUNDS)
+                new_preys_std = breed_and_mutate(self.environment.configs["prey_std"], top_preys_std, num_offspring=num_offspring_preys_std, multi_model=True, bounds=constants.PREY_SPAWN_BOUNDS)
+
+            # Replace the old population with the new one
+            self.environment.add_agents(top_predators_neat + top_preys_neat + new_predators_neat + new_preys_neat + new_predators_std + new_preys_std + top_predators_std + top_preys_std)
+
+    def create_simulation(self):
+        num_cores = multiprocessing.cpu_count()
+
+        if self.simulation_type == "PRED_PREY":
+            self.pred_percent = constants.PRED_PERCENT
+            self.food_amount = constants.FOOD_AMOUNT
+            self.food_respawn_rate = constants.FOOD_RESPAWN_RATE
+
+            self.environment = Environment(self.simulation_type, self.steps, self.bounds, self.food_respawn_rate)
+            self.environment.max_workers = max(1, num_cores - 1)
+            print(f"INFO:\tUsing {self.environment.max_workers} workers for parallel processing.")
+            
+            # First, generate configs
+            print("START:\tCreating NEAT config...")
+            configs = {
+                "generic": None,
+                "pred_std": None,
+                "pred_neat": None,
+                "pred_hypr": None,
+                "prey_std": None,
+                "prey_neat": None,
+                "prey_hypr": None
+            }
+            configs = self._generate_configs(configs)
+            print("END:\tCreated configs.")
+
+            # Next, generate agent populations
+            print("START:\tCreating agent populations...")
+            population = neat.Population(configs["generic"])
+            agent_populations = self._generate_populations(population)
+            print("END:\tCreated agent populations.")
+
+            print("START:\tInitializing environment...")
+            print(" length of agent_populations: ", sum(len(population ) for population in agent_populations.values()))
+            self.environment.initialize_environment(
+                config=configs,
+                simulation_type=self.simulation_type,
+                population=population,
+                agent_populations=agent_populations,
+                pred_spawn_bounds=constants.PRED_SPAWN_BOUNDS,
+                prey_spawn_bounds=constants.PREY_SPAWN_BOUNDS,
+                food_amount=self.food_amount,
+                multi_model=self.multi_model
+            )
+            print("END:\tEnvironment initialized.")
+
+            print("INFO:\tStarting Logger...")
+            logger.info(f"Starting simulation with {configs['generic'].pop_size} agents...")
+            logger.info(f"Using {self.environment.max_workers} Logical CPU cores for parallel processing.")
+
+    def run_simulation(self):
+        for i in range(constants.EPOCHS):
+            start_time = time.time()
+            self.environment.run()
+            # if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
+            #     self._mutate()
+            # else:
+            #     self._mutate()
+            self.environment.reset()
+            end_time = time.time()
+            _update_progress_bar(i, start_time, end_time)
+        
 
 def serve():
     """Starts the gRPC server and adds the CommunicationService to it."""
@@ -61,160 +199,9 @@ def serve():
     print("Server started on port 50051")
     server.wait_for_termination()
 
-def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, multi_model=False, model_split=0.5):
-    """Creates the simulation environment and initializes the NEAT population.
-
-    Args:
-        simulation_type (str): Type of simulation to run.
-        config_path (str): Path to the NEAT configuration file.
-        steps (int): Number of steps to run the simulation.
-        bounds (list): Bounds for the simulation environment.
-        pred_percent (float): Percentage of predators in the population.
-        food_amount (int): Amount of food in the environment.
-        prey_spawn_bounds (list): Spawn bounds for prey.
-        pred_spawn_bounds (list): Spawn bounds for predators.
-        food_respawn_rate (float): Rate at which food respawns.
-        multi_model (bool): Whether to use multiple models.
-        model_split (float): Percentage of agents using the NEAT model.
-
-    Returns:
-        env (Environment): The simulation environment.
-        population (neat.Population): The NEAT population.
-        config (neat.Config): The NEAT configuration.
-        populationSize (int): Size of the population.
-        pred_pop (int): Number of predators in the population.
-        prey_pop (int): Number of prey in the population.
-        pred_pop_no_neat (int): Number of predators not using NEAT.
-        prey_pop_no_neat (int): Number of prey not using NEAT.
-    """
-    # Create the environment with optimal number of workers
-    num_cores = multiprocessing.cpu_count()
-    env = Environment(simulation_type, steps, bounds, food_respawn_rate)
-    env.max_workers = max(1, num_cores - 1)
-    print(f"INFO:\tUsing {env.max_workers} workers for parallel processing")
-
-    # Loads config data to be used in simulation
-    print("START:\tCreating NEAT config...")
-    # Create a copy of the config for each agent subtype
-    defConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predStdConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predNeatConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predHyprConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyStdConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyNeatConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyHyprConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    if multi_model:  # Zero out mutation rates for non-neat agents
-        predStdConfig.genome_config.__dict__['conn_add_prob'] = 0
-        predStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
-        predStdConfig.genome_config.__dict__['node_add_prob'] = 0
-        predStdConfig.genome_config.__dict__['node_delete_prob'] = 0
-
-        preyStdConfig.genome_config.__dict__['conn_add_prob'] = 0
-        preyStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
-        preyStdConfig.genome_config.__dict__['node_add_prob'] = 0
-        preyStdConfig.genome_config.__dict__['node_delete_prob'] = 0
-
-    # Add these configs to list
-    configList = [defConfig, predStdConfig, predNeatConfig,
-                  predHyprConfig, preyStdConfig, preyNeatConfig, preyHyprConfig]
-
-    print("END:\tCreated configs")
-
-    # Generates all relevant agent populations
-    print("START:\tCreating NEAT population...")
-    population = neat.Population(defConfig)
-    pred_pop = int(len(population.population.items())*pred_percent)
-    prey_pop = len(population.population.items()) - pred_pop
-    if multi_model:
-        pred_pop_no_neat = int(pred_pop * model_split)
-        prey_pop_no_neat = int(prey_pop * model_split)
-    else:
-        pred_pop_no_neat = prey_pop_no_neat = 0
-    print("END:\tCreated NEAT population")
-    print(f"INFO:\tPredator population: {pred_pop}")
-    print(f"INFO:\tPrey population: {prey_pop}")
-    print(f"INFO:\tPredator population no neat: {pred_pop_no_neat}")
-    print(f"INFO:\tPrey population no neat: {prey_pop_no_neat}")
-
-    # Initializes the environment, whether the simulation will be run with multiple models or not
-    print("START:\tInitializing environment...")
-
-    env.initialize_environment(
-        config=configList,
-        population=population,
-        pred_pop=pred_pop,
-        prey_pop=prey_pop,
-        prey_pop_no_neat=prey_pop_no_neat,
-        pred_pop_no_neat=pred_pop_no_neat,
-        pred_spawn_bounds=pred_spawn_bounds,
-        prey_spawn_bounds=prey_spawn_bounds,
-        food_amount=food_amount
-    )
-    print("END:\tEnvironment initialized")
-
-    # Initializes the logger
-    print("INFO:\tStarting Logger...")
-    logger.info(f"Starting simulation with {configList[0].pop_size} agents...")
-    logger.info(
-        f"Using {env.max_workers} Logical CPU cores for parallel processing")
-
-    return env, population, configList, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
-
 
 def mutate(genome, configList, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_spawn_bounds,  prey_spawn_bounds, eliteism=0.1, crossover_rate=0.7, torunament_size=3):
     # Create separate lists for predators and prey
-<<<<<<< HEAD
-    predators = [agent for agent in env.agents
-                 if isinstance(agent, Predator) and agent.neat == True]
-    preys = [agent for agent in env.agents
-             if isinstance(agent, Prey) and agent.neat == True]
-    no_neat_predators = [agent for agent in env.agents
-                         if isinstance(agent, Predator) and agent.neat == False]
-    no_neat_preys = [agent for agent in env.agents
-                     if isinstance(agent, Prey) and agent.neat == False]
-=======
     predators = [agent for agent in env.agents if isinstance(
         agent, Predator) and agent.type == 1]
     preys = [agent for agent in env.agents if isinstance(
@@ -223,18 +210,14 @@ def mutate(genome, configList, env, population_size, pred_pop, prey_pop, pred_po
         agent, Predator) and agent.type == 0]
     no_neat_preys = [agent for agent in env.agents if isinstance(
         agent, Prey) and agent.type == 0]
->>>>>>> origin/feature-hyperneat
     logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
     for agent in env.agents:
         if agent.neat_genome:
             agent.neat_genome.fitness = agent.fitness
 
-<<<<<<< HEAD
     # Save the average fitness of both predator and prey populations to a CSV file
     logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
 
-=======
->>>>>>> origin/feature-hyperneat
     # Sort and retain the top 10% based on fitness
     top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
         :max(1, int(pred_pop * eliteism))]
@@ -267,7 +250,6 @@ def mutate(genome, configList, env, population_size, pred_pop, prey_pop, pred_po
     env.add_agents(top_predators + top_preys + new_predators + new_preys +
                    new_no_neat_preys + new_no_neat_preds + top_predators_no_neat + top_preys_no_neat)
 
-<<<<<<< HEAD
 def _update_progress_bar(i, start_time, end_time):
     epoch_duration = end_time - start_time
     remaining_epochs = constants.EPOCHS - (i + 1)
@@ -280,83 +262,102 @@ def _update_progress_bar(i, start_time, end_time):
     print(f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
     logger.info(f"Epoch {i+1} completed in {epoch_duration_hours:.2f} hours")
     logger.info(f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
-=======
-# Main function, configures simulation then runs through epochs
 
->>>>>>> origin/feature-hyperneat
+# def main():
+#     # Start the gRPC server in a separate thread
+#     serverThread = threading.Thread(target=serve, daemon=True)
+#     serverThread.start()
 
-def main():
+#     try:
+#         # scale bounds
+#         constants.BOUNDS = [bound * constants.SCALE_FACTOR
+#                             for bound in constants.BOUNDS]
+#         constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
+#                                        for bound in constants.PREY_SPAWN_BOUNDS]
+#         constants.PRED_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
+#                                        for bound in constants.PRED_SPAWN_BOUNDS]
+
+#         # Creates simulation environment
+#         print("START:\tCreating simulation environment...")
+#         env, population, configList, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat = create_simulation(
+#             simulation_type=constants.SIMULATION_TYPE,
+#             config_path=constants.CONFIG_PATH,
+#             steps=constants.STEPS,
+#             bounds=constants.BOUNDS,
+#             pred_percent=constants.PRED_PERCENT,
+#             food_amount=constants.FOOD_AMOUNT,
+#             prey_spawn_bounds=constants.PREY_SPAWN_BOUNDS,
+#             pred_spawn_bounds=constants.PRED_SPAWN_BOUNDS,
+#             food_respawn_rate=constants.FOOD_RESPAWN_RATE,
+#             multi_model=constants.MULTI_MODEL,
+#             model_split=constants.MODEL_SPLIT
+#         )
+#         print("END:\tSimulation environment created")
+
+#         # Create log for the average network size
+#         logs.log_avg_network_size(env.agents)
+
+#         # Run simulation, looping according to the number of epochs specified
+#         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
+#         crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
+#         torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
+#         prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
+#         pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
+#         logs.save_initial_genomes_json(env.agents)
+#         for i in range(constants.EPOCHS):
+#             start_time = time.time()  # Start timing the epoch
+#             env.run()
+#             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
+#                 mutate(population, configList, env, populationSize, pred_pop,
+#                        prey_pop, pred_pop_no_neat, prey_pop_no_neat,
+#                        prey_spawn_bounds, pred_spawn_bounds,
+#                        eliteism, crossover_rate=crossover_rate,
+#                        torunament_size=torunament_size)
+#             else:
+#                 mutate(population, configList, env, populationSize, pred_pop,
+#                        prey_pop, pred_pop_no_neat, prey_pop_no_neat,
+#                        pred_spawn_bounds, prey_spawn_bounds,
+#                        eliteism, crossover_rate=crossover_rate,
+#                        torunament_size=torunament_size)
+#             env.reset()
+#             end_time = time.time()  # End timing the epoch
+#             _update_progress_bar(i, start_time, end_time)
+
+#         # Create logs for genome information
+#         logs.pickle_genomes(env.agents)
+#         logs.save_genomes_json(env.agents)
+#         logs.log_avg_network_size(env.agents)
+
+#     # Error-handling for if the user manually stops the simulation or if an error occurs
+#     except KeyboardInterrupt:
+#         logger.info("\nSimulation terminated by user")
+#     except Exception as e:
+#         logger.info(f"Error during simulation: {str(e)}")
+#         raise
+
+def main2():
     # Start the gRPC server in a separate thread
     serverThread = threading.Thread(target=serve, daemon=True)
     serverThread.start()
 
     try:
-        # scale bounds
-        constants.BOUNDS = [bound * constants.SCALE_FACTOR
-                            for bound in constants.BOUNDS]
-        constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
-                                       for bound in constants.PREY_SPAWN_BOUNDS]
-        constants.PRED_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
-                                       for bound in constants.PRED_SPAWN_BOUNDS]
+        sim = Simulation()
+        sim.create_simulation()
+        logs.log_avg_network_size(sim.environment.agents)
+        logs.save_initial_genomes_json(sim.environment.agents)
 
-        # Creates simulation environment
-        print("START:\tCreating simulation environment...")
-        env, population, configList, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat = create_simulation(
-            simulation_type=constants.SIMULATION_TYPE,
-            config_path=constants.CONFIG_PATH,
-            steps=constants.STEPS,
-            bounds=constants.BOUNDS,
-            pred_percent=constants.PRED_PERCENT,
-            food_amount=constants.FOOD_AMOUNT,
-            prey_spawn_bounds=constants.PREY_SPAWN_BOUNDS,
-            pred_spawn_bounds=constants.PRED_SPAWN_BOUNDS,
-            food_respawn_rate=constants.FOOD_RESPAWN_RATE,
-            multi_model=constants.MULTI_MODEL,
-            model_split=constants.MODEL_SPLIT
-        )
-        print("END:\tSimulation environment created")
-
-        # Create log for the average network size
-        logs.log_avg_network_size(env.agents)
-
-        # Run simulation, looping according to the number of epochs specified
-        eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
-        crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
-        torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
-        prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
-        pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
-        logs.save_initial_genomes_json(env.agents)
-        for i in range(constants.EPOCHS):
-            start_time = time.time()  # Start timing the epoch
-            env.run()
-            if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
-                mutate(population, configList, env, populationSize, pred_pop,
-                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
-                       prey_spawn_bounds, pred_spawn_bounds,
-                       eliteism, crossover_rate=crossover_rate,
-                       torunament_size=torunament_size)
-            else:
-                mutate(population, configList, env, populationSize, pred_pop,
-                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
-                       pred_spawn_bounds, prey_spawn_bounds,
-                       eliteism, crossover_rate=crossover_rate,
-                       torunament_size=torunament_size)
-            env.reset()
-            end_time = time.time()  # End timing the epoch
-            _update_progress_bar(i, start_time, end_time)
+        sim.run_simulation()
 
         # Create logs for genome information
-        logs.pickle_genomes(env.agents)
-        logs.save_genomes_json(env.agents)
-        logs.log_avg_network_size(env.agents)
+        logs.pickle_genomes(sim.environment.agents)
+        logs.save_genomes_json(sim.environment.agents)
+        logs.log_avg_network_size(sim.environment.agents)
 
-    # Error-handling for if the user manually stops the simulation or if an error occurs
     except KeyboardInterrupt:
         logger.info("\nSimulation terminated by user")
     except Exception as e:
         logger.info(f"Error during simulation: {str(e)}")
         raise
-
 
 if __name__ == "__main__":
     formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
@@ -366,17 +367,9 @@ if __name__ == "__main__":
     info_handler.setLevel(logging.INFO)
     info_handler.setFormatter(formatter)
 
-    # # Comment this out when debugging log is unnecessary
-    # debug_handler = logging.FileHandler('./Logs/debug.log')
-    # debug_handler.setLevel(logging.DEBUG)
-    # debug_handler.setFormatter(formatter)
-
     # Configure root logger
     root_logger = logging.getLogger()
-    # Set to lowest level you want to capture
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.DEBUG)  # Set to lowest level you want to capture
     root_logger.addHandler(info_handler)
-    # root_logger.addHandler(debug_handler) # Comment this out when debugging log is unnecessary
 
-    logger.info('started')
-    main()
+    main2()

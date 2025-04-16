@@ -63,6 +63,7 @@ class SpatialGrid:
 class Environment:
     def __init__(self, type, steps=500, bounds=(-200, 200, -200, 200), food_spawn_rate=0.1):
         self.agents = []
+        self.agent_populations = {}
         self.bounds = bounds
         self.obstacles = []
         self.type = type
@@ -76,55 +77,86 @@ class Environment:
         self.max_workers = 8
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
-    def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount, prey_pop_no_neat=0, pred_pop_no_neat=0):
+    def initialize_environment(self, config, simulation_type, population, agent_populations, pred_spawn_bounds, prey_spawn_bounds, food_amount, multi_model):
         self._initialize_agents(
-            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=pred_pop_no_neat, prey_no_neat_pop=prey_pop_no_neat)
+            config, simulation_type, population, agent_populations, pred_spawn_bounds, prey_spawn_bounds, multi_model=multi_model)
         self._initialize_obstacles(food_amount)
 
-    def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=0, prey_no_neat_pop=0):
+    def _initialize_agents(self, config, simulation_type, population, agent_populations, pred_spawn_bounds, prey_spawn_bounds, multi_model):
         agents = []
-        # Initialize predators
-        for i in range(pred_pop):
+        self.agent_populations = agent_populations
+        print("again, length of agents: ", sum(len(population) for population in agent_populations.values()))
 
-            pos = np.array([
-                np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
-                np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
-            ])
-            genome = population.population[i + 1]
-            agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config[2], type=1))
+        for population_key, population in self.agent_populations.items():
+            for agent in population:
+                pos = np.array([
+                    np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+                    np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
+                ])
+                genome = agent[1] # agent[1] is the agent's genome
 
-        # Initialize prey
-        for i in range(prey_pop):
+                if simulation_type == "PRED_PREY":
+                    if "pred" in population_key:
+                        if "std" in population_key:
+                            agents.append(Predator(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["pred_std"], type=0))
+                        elif "neat" in population_key:
+                            agents.append(Predator(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["pred_neat"], type=1))
+                        elif "hyper" in population_key:
+                            agents.append(Predator(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["pred_hypr"], type=2))
+                    elif "prey" in population_key:
+                        if "std" in population_key:
+                            agents.append(Prey(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["prey_std"], type=0))
+                        elif "neat" in population_key:
+                            agents.append(Prey(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["prey_neat"], type=1))
+                        elif "hyper" in population_key:
+                            agents.append(Prey(id=agent[0], pos=pos, neat_genome=genome, neat_config=config["prey_hypr"], type=2))
 
-            pos = np.array([
-                np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
-                np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
-            ])
-            genome = population.population[i + pred_pop]
-            agents.append(Prey(id=(i + pred_pop), pos=pos,
-                          neat_genome=genome, neat_config=config[5], type=1))
-        # Initialize pred_no_neat
-        for i in range(pred_no_neat_pop):
 
-            pos = np.array([
-                np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
-                np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
-            ])
-            genome = population.population[i + 1]
-            agents.append(
-                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config[1], type=0))
+        # # Initialize predators
+        # for i in range(pred_pop):
 
-        # Initialize prey_no_neat
-        for i in range(prey_no_neat_pop):
+        #     pos = np.array([
+        #         np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+        #         np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
+        #     ])
+        #     genome = population.population[i + 1]
+        #     agents.append(
+        #         Predator(id=i, pos=pos, neat_genome=genome, neat_config=config["pred_neat"], type=1))
+        # print("Predators initialized, population size: ", agents)
+        # print("Pred population: ", pred_pop)
 
-            pos = np.array([
-                np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
-                np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
-            ])
-            genome = population.population[i + pred_pop]
-            agents.append(Prey(id=(i + prey_pop), pos=pos,
-                          neat_genome=genome, neat_config=config[4], type=0))
+        # # Initialize prey
+        # for i in range(prey_pop):
+
+        #     pos = np.array([
+        #         np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
+        #         np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
+        #     ])
+        #     genome = population.population[i + pred_pop]
+        #     agents.append(Prey(id=(i + pred_pop), pos=pos,
+        #                   neat_genome=genome, neat_config=config["prey_neat"], type=1))
+        # if multi_model:
+        #     # Initialize pred_no_neat
+        #     for i in range(pred_no_neat_pop):
+
+        #         pos = np.array([
+        #             np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+        #             np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
+        #         ])
+        #         genome = population.population[i + 1]
+        #         agents.append(
+        #             Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config["pred_std"], type=0))
+
+        #     # Initialize prey_no_neat
+        #     for i in range(prey_no_neat_pop):
+
+        #         pos = np.array([
+        #             np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
+        #             np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
+        #         ])
+        #         genome = population.population[i + pred_pop]
+        #         agents.append(Prey(id=(i + prey_pop), pos=pos,
+        #                     neat_genome=genome, neat_config=config["prey_std"], type=0))
 
         self.add_agents(agents)
 
