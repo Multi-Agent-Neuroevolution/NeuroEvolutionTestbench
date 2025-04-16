@@ -1,11 +1,11 @@
-"""logs.py is where the logging functions are defined.
+"""logs.py is where the logging methods are defined.
 
-These functions are used to log data about the simulation, such as:
+These methods are used to log data about the simulation, such as:
 - the average network size of the agents
 - the average fitness of the predator and prey populations
 - and the final agent genomes. 
 
-The functions are called from sim_world.py to log data at different stages of the simulation.
+The methods are called to log data at different stages of the simulation.
 """
 from agents import Predator, Prey
 import numpy as np
@@ -15,7 +15,7 @@ import pickle
 # GENOME-RELATED LOGS
 
 def genome_to_dict(genome):
-    """Converts a genome to a dictionary, used in tandem with the save_genomes_json function.
+    """Converts a genome to a dictionary, used in tandem with the save_genomes_json method.
 
     Args:
         genome (neat.genome.DefaultGenome): The genome to convert to a dictionary.
@@ -39,7 +39,9 @@ def save_genomes_json(agents):
     """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
     with open('./Data/final_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent = 4)
+        json.dump(genomes, file, indent=4)
+
+
 
 def save_initial_genomes_json(agents):
     """Saves the initial agent genomes to a JSON file.
@@ -49,7 +51,8 @@ def save_initial_genomes_json(agents):
     """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
     with open('./Data/initial_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent = 4)
+        json.dump(genomes, file, indent=4)
+
 
 def pickle_genomes(agents):
     """Saves the final agent genomes to a pickle file.
@@ -110,6 +113,30 @@ def log_alive_agents(agents):
 
     with open('./Data/alive_agents_log.txt', 'a') as file:
         file.write(f"Predators alive: {num_predators}, Preys alive: {num_preys}\n")
+
+
+def pass_prey_log(agents):
+
+    num_preys_stand = len(
+        [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 0])
+    num_preys_neat = len(
+        [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 1])
+    num_preys_hyper = len(
+        [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 2])
+
+    return num_preys_stand, num_preys_neat, num_preys_hyper
+
+
+def pass_predator_log(agents):
+
+    num_predators_stand = len(
+        [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 0])
+    num_predators_neat = len(
+        [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 1])
+    num_predators_hyper = len(
+        [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 2])
+
+    return num_predators_stand, num_predators_neat, num_predators_hyper
 
 ### FITNESS-RELATED LOGS
 

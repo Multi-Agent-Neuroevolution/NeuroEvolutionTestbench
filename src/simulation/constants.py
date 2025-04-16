@@ -2,7 +2,7 @@
 # Parameters for simulation creation
 SIMULATION_TYPE = "PRED_PREY"
 CONFIG_PATH = "./Config/neat.conf"
-STEPS = 700
+STEPS = 200
 BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 
 # Parameters for agents
