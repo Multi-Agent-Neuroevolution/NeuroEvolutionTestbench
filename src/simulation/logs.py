@@ -1,11 +1,11 @@
-"""logs.py is where the logging functions are defined.
+"""logs.py is where the logging methods are defined.
 
-These functions are used to log data about the simulation, such as:
+These methods are used to log data about the simulation, such as:
 - the average network size of the agents
 - the average fitness of the predator and prey populations
 - and the final agent genomes. 
 
-The functions are called from sim_world.py to log data at different stages of the simulation.
+The methods are called to log data at different stages of the simulation.
 """
 from agents import Predator, Prey
 import numpy as np
@@ -14,7 +14,7 @@ import pickle
 
 
 def genome_to_dict(genome):
-    """Converts a genome to a dictionary, used in tandem with the save_genomes_json function.
+    """Converts a genome to a dictionary, used in tandem with the save_genomes_json method.
 
     Args:
         genome (neat.genome.DefaultGenome): The genome to convert to a dictionary.

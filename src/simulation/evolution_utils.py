@@ -9,7 +9,6 @@ from agents import Predator, Prey
 
 def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crossover_rate=0.7, torunament_size=3):
     new_agents = []
-    configCopy = copy.deepcopy(config)
     used_ids = set()  # HashSet to ensure unique IDs
 
     if multi_model:
@@ -41,19 +40,13 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             # Randomly decide whether it's a predator or prey
             if random.random() < 0.5:
                 new_agent = Predator(id=child_id, pos=pos,
-                                     neat_genome=child_genome, neat_config=configCopy, type=type)
+                                     neat_genome=child_genome, neat_config=config, type=type)
             else:
                 new_agent = Prey(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=configCopy, type=type)
+                                 neat_genome=child_genome, neat_config=config, type=type)
 
             new_agents.append(new_agent)
             continue
-
-        if multi_model:
-            configCopy.genome_config.__dict__['conn_add_prob'] = 0
-            configCopy.genome_config.__dict__['conn_delete_prob'] = 0
-            configCopy.genome_config.__dict__['node_add_prob'] = 0
-            configCopy.genome_config.__dict__['node_delete_prob'] = 0
 
         # Either clone a parent or perform crossover
         if random.random() > crossover_rate or len(parents) < 2:
@@ -73,10 +66,10 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
 
         if isinstance(parents[0], Predator):
             new_agent = Predator(id=child_id, pos=pos,
-                                 neat_genome=child_genome, neat_config=configCopy if multi_model else config, type=type)
+                                 neat_genome=child_genome, neat_config=config if multi_model else config, type=type)
         else:
             new_agent = Prey(id=child_id, pos=pos,
-                             neat_genome=child_genome, neat_config=configCopy if multi_model else config, type=type)
+                             neat_genome=child_genome, neat_config=config if multi_model else config, type=type)
 
         new_agents.append(new_agent)
 
