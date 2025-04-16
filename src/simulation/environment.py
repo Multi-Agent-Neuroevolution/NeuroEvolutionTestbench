@@ -260,8 +260,7 @@ class Environment:
 
                 # Calculate and print time taken for this step in milliseconds
                 step_time = 1000 * (time.time() - step_start_time)
-                print(
-                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms", end='\r')
+                print(f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms", end='\r')
                 percent_complete = (step + 1) / self.steps * 100
                 for i in range(50):
                     if i < int(percent_complete / 2):

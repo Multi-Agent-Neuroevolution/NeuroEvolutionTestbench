@@ -12,7 +12,6 @@ import logs
 from environment import Environment
 from agents import Predator, Prey
 from evolution_utils import breed_and_mutate
-# from .generated import comms_pb2, comms_pb2_grpc
 from messenger import messageChannel
 import comms_pb2
 import comms_pb2_grpc
@@ -20,39 +19,47 @@ import comms_pb2_grpc
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-
 class CommunicationService(comms_pb2_grpc.CommunicationServicer):
+    """This class implements the gRPC service for communication.
+    
+    Args:
+        comms_pb2_grpc.CommunicationServicer: The gRPC service class.
+    """
     def FetchEnvironmentStream(self, request, context):
+        """Pulls data from the message channel and sends it to the client as JSON data.
+        
+        Args:
+            request: The request object from the client.
+            context: The gRPC context object.
+    
+        Yields:
+            comms_pb2.JSONData: The JSON data to be sent to the client.
+        """
         while messageChannel.empty() == False:
             data = messageChannel.get()
+
             try:
                 print("trying json")
                 json_str = json.dumps(data)
                 print(f"{json_str}")
-                yield comms_pb2.JSONData(
-                    json_data=json_str,
-                    success=True,
-                    message="Data sent successfully"
-                )
-                time.sleep(1)
+                yield comms_pb2.JSONData(json_data=json_str, success=True,
+                                         message="Data sent successfully")
             except Exception as e:
-                yield comms_pb2.JSONData(
-                    json_data="",
-                    success=False,
-                    message=f"Error processing data: {str(e)}"
-                )
-                time.sleep(1)
+                yield comms_pb2.JSONData(json_data="", success=False,
+                                        message=f"Error processing data: {str(e)}")
+                
+            time.sleep(1)   # I moved this outside of the try-except since it seemed like it would always run anyway
 
 
 def serve():
+    """Starts the gRPC server and adds the CommunicationService to it."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    comms_pb2_grpc.add_CommunicationServicer_to_server(
-        CommunicationService(), server)
+    comms_pb2_grpc.add_CommunicationServicer_to_server(CommunicationService(), server)
+    
     server.add_insecure_port('[::1]:50051')
     server.start()
     print("Server started on port 50051")
     server.wait_for_termination()
-
 
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, multi_model=False, model_split=0.5):
     """Creates the simulation environment and initializes the NEAT population.
@@ -140,21 +147,21 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
 
 def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_spawn_bounds,  prey_spawn_bounds, eliteism=0.1, crossover_rate=0.7, torunament_size=3):
     # Create separate lists for predators and prey
-    predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.neat == True]
-    preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.neat == True]
-    no_neat_predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.neat == False]
-    no_neat_preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.neat == False]
+    predators = [agent for agent in env.agents
+                 if isinstance(agent, Predator) and agent.neat == True]
+    preys = [agent for agent in env.agents
+             if isinstance(agent, Prey) and agent.neat == True]
+    no_neat_predators = [agent for agent in env.agents
+                         if isinstance(agent, Predator) and agent.neat == False]
+    no_neat_preys = [agent for agent in env.agents
+                     if isinstance(agent, Prey) and agent.neat == False]
     logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
     for agent in env.agents:
         if agent.neat_genome:
             agent.neat_genome.fitness = agent.fitness
 
     # Save the average fitness of both predator and prey populations to a CSV file
-    logs.avg_agent_fitness(predators, preys, )
+    logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
 
     # Sort and retain the top 10% based on fitness
     top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
@@ -169,10 +176,8 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no
     # Number of offspring to create for predators and prey
     num_pred_offspring = int(pred_pop - len(top_predators))
     num_prey_offspring = int(prey_pop - len(top_preys))
-    num_pred_offspring_no_neat = int(
-        pred_pop_no_neat - len(top_predators_no_neat))
-    num_prey_offspring_no_neat = int(
-        prey_pop_no_neat - len(top_preys_no_neat))
+    num_pred_offspring_no_neat = int(pred_pop_no_neat - len(top_predators_no_neat))
+    num_prey_offspring_no_neat = int(prey_pop_no_neat - len(top_preys_no_neat))
 
     # Breed and mutate predators and prey
     new_predators = breed_and_mutate(config, top_predators, num_offspring=num_pred_offspring, multi_model=False,
@@ -190,20 +195,32 @@ def mutate(genome, config, env, population_size, pred_pop, prey_pop, pred_pop_no
     env.add_agents(top_predators + top_preys + new_predators + new_preys +
                    new_no_neat_preys + new_no_neat_preds + top_predators_no_neat + top_preys_no_neat)
 
+def _update_progress_bar(i, start_time, end_time):
+    epoch_duration = end_time - start_time
+    remaining_epochs = constants.EPOCHS - (i + 1)
+    estimated_time_remaining = remaining_epochs * epoch_duration
+    estimated_time_remaining_hours = estimated_time_remaining / 3600
+    epoch_duration_hours = epoch_duration / 3600
+
+    # Print statements to show the progress bar while epochs complete
+    print(f"Epoch {i+1} completed, {constants.EPOCHS - i - 1} epochs remaining")
+    print(f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
+    logger.info(f"Epoch {i+1} completed in {epoch_duration_hours:.2f} hours")
+    logger.info(f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
 
 def main():
-
+    # Start the gRPC server in a separate thread
     serverThread = threading.Thread(target=serve, daemon=True)
     serverThread.start()
 
     try:
         # scale bounds
-        constants.BOUNDS = [
-            bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
+        constants.BOUNDS = [bound * constants.SCALE_FACTOR
+                            for bound in constants.BOUNDS]
         constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
                                        for bound in constants.PREY_SPAWN_BOUNDS]
-        constants.PRED_SPAWN_BOUNDS = [
-            bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS]
+        constants.PRED_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
+                                       for bound in constants.PRED_SPAWN_BOUNDS]
 
         # Creates simulation environment
         print("START:\tCreating simulation environment...")
@@ -249,21 +266,7 @@ def main():
                        torunament_size=torunament_size)
             env.reset()
             end_time = time.time()  # End timing the epoch
-
-            epoch_duration = end_time - start_time
-            remaining_epochs = constants.EPOCHS - (i + 1)
-            estimated_time_remaining = remaining_epochs * epoch_duration
-
-            print(
-                f"Epoch {i+1} completed, {constants.EPOCHS - i - 1} epochs remaining")
-            estimated_time_remaining_hours = estimated_time_remaining / 3600
-            epoch_duration_hours = epoch_duration / 3600
-            print(
-                f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
-            logger.info(
-                f"Epoch {i+1} completed in {epoch_duration_hours:.2f} hours")
-            logger.info(
-                f"Estimated time remaining: {estimated_time_remaining_hours:.2f} hours")
+            _update_progress_bar(i, start_time, end_time)
 
         # Create logs for genome information
         logs.pickle_genomes(env.agents)

@@ -12,6 +12,7 @@ import numpy as np
 import json
 import pickle
 
+# GENOME-RELATED LOGS
 
 def genome_to_dict(genome):
     """Converts a genome to a dictionary, used in tandem with the save_genomes_json function.
@@ -23,8 +24,12 @@ def genome_to_dict(genome):
         dict: A dictionary representation of the genome.
     """
     connections = {str(k): vars(v) for k, v in genome.connections.items()}
-    return {'key': genome.key, 'fitness': genome.fitness, 'nodes': {k: vars(v) for k, v in genome.nodes.items()}, 'connections': connections}
-
+    return {
+        'key': genome.key, 
+        'fitness': genome.fitness,
+        'nodes': {k: vars(v) for k, v in genome.nodes.items()},
+        'connections': connections
+    }
 
 def save_genomes_json(agents):
     """Saves the final agent genomes to a JSON file.
@@ -34,7 +39,7 @@ def save_genomes_json(agents):
     """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
     with open('./Data/final_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent=4)
+        json.dump(genomes, file, indent = 4)
 
 def save_initial_genomes_json(agents):
     """Saves the initial agent genomes to a JSON file.
@@ -44,9 +49,7 @@ def save_initial_genomes_json(agents):
     """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
     with open('./Data/initial_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent=4)
-
-
+        json.dump(genomes, file, indent = 4)
 
 def pickle_genomes(agents):
     """Saves the final agent genomes to a pickle file.
@@ -56,14 +59,13 @@ def pickle_genomes(agents):
     """
     # Genomes from predators
     with open('./Data/pred_genomes.pkl', 'wb') as f:
-        pickle.dump(
-            [agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
+        pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
 
     # Genomes from preys
     with open('./Data/prey_genomes.pkl', 'wb') as f:
-        pickle.dump(
-            [agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
+        pickle.dump([agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
 
+### NETWORK-RELATED LOGS
 
 def log_avg_network_size(agents):
     """Logs the average network size of the agents to a text file.
@@ -91,8 +93,7 @@ def log_avg_network_size(agents):
     print(f"Average number of nodes: {avg_nodes}")
     print(f"Average number of connections: {avg_connections}")
     with open('./Data/network_size_log.txt', 'a') as file:
-        file.write(
-            f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
+        file.write(f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
 
 
 def log_alive_agents(agents):
@@ -108,10 +109,9 @@ def log_alive_agents(agents):
         [agent for agent in agents if isinstance(agent, Prey) and agent.alive])
 
     with open('./Data/alive_agents_log.txt', 'a') as file:
-        file.write(
-            f"Predators alive: {num_predators}, Preys alive: {num_preys}\n"
-        )
+        file.write(f"Predators alive: {num_predators}, Preys alive: {num_preys}\n")
 
+### FITNESS-RELATED LOGS
 
 def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):
     """Saves the average fitness of the predator and prey populations to a CSV file.
@@ -141,10 +141,8 @@ def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
     """
     pred_fitness = np.array([predator.fitness for predator in predators])
     prey_fitness = np.array([prey.fitness for prey in preys])
-    pred_fitness_no_neat = np.array(
-        [predator.fitness for predator in no_neat_predators])
-    prey_fitness_no_neat = np.array(
-        [prey.fitness for prey in no_neat_preys])
+    pred_fitness_no_neat = np.array([predator.fitness for predator in no_neat_predators])
+    prey_fitness_no_neat = np.array([prey.fitness for prey in no_neat_preys])
 
     pred_deviation = np.std(pred_fitness)
     prey_deviation = np.std(prey_fitness)
@@ -152,5 +150,4 @@ def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
     prey_deviation_no_neat = np.std(prey_fitness_no_neat)
 
     with open('./Data/fitness_deviation.csv', 'a') as f:
-        f.write(
-            f"{pred_deviation},{prey_deviation}, {pred_deviation_no_neat}, {prey_deviation_no_neat}\n")
+        f.write(f"{pred_deviation},{prey_deviation}, {pred_deviation_no_neat}, {prey_deviation_no_neat}\n")
