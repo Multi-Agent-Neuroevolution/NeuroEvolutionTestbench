@@ -90,7 +90,7 @@ class Environment:
                 np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
             ])
-            genome = population.population[i + 1]
+            genome = copy.deepcopy(population.population[i + 1])
             agents.append(
                 Predator(id=i, pos=pos, neat_genome=genome, neat_config=config[2], type=1))
 
@@ -101,7 +101,7 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
-            genome = population.population[i + pred_pop]
+            genome = copy.deepcopy(population.population[i + pred_pop])
             agents.append(Prey(id=(i + pred_pop), pos=pos,
                           neat_genome=genome, neat_config=config[5], type=1))
         # Initialize pred_no_neat
@@ -111,7 +111,7 @@ class Environment:
                 np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
             ])
-            genome = population.population[i + 1]
+            genome = copy.deepcopy(population.population[i + 1])
             agents.append(
                 Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config[1], type=0))
 
@@ -122,7 +122,7 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
-            genome = population.population[i + pred_pop]
+            genome = copy.deepcopy(population.population[i + pred_pop])
             agents.append(Prey(id=(i + prey_pop), pos=pos,
                           neat_genome=genome, neat_config=config[4], type=0))
 

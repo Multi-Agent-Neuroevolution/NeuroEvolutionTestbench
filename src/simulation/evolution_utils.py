@@ -59,7 +59,12 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             child_genome.configure_crossover(
                 parent1.neat_genome, parent2.neat_genome, config)
 
-        child_genome.mutate(config.genome_config)
+        # Mutate the child genome. This sometimes fails so we need to catch the exception. This is a band-aid solution
+        try:
+            child_genome.mutate(config.genome_config)
+        except Exception as e:
+            print(f"Error during mutation of agent type: {type},  {e}")
+            continue
 
         pos = [random.uniform(bounds[0], bounds[1]),
                random.uniform(bounds[0], bounds[1])]
