@@ -231,19 +231,19 @@ def mutate(genome, configList, env, population_size, pred_pop, prey_pop, pred_po
 
     # Breed and mutate predators and prey
     new_predators = breed_and_mutate(configList[2], top_predators, num_offspring=num_pred_offspring, multi_model=False,
-                                     bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
+                                     bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="predator")
     new_preys = breed_and_mutate(configList[5], top_preys,  num_offspring=num_prey_offspring, multi_model=False,
-                                 bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
-
+                                 bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="prey")
     if prey_pop_no_neat > 0 and pred_pop_no_neat > 0:
         new_no_neat_preys = breed_and_mutate(configList[4], top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat, multi_model=True,
-                                             bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
+                                             bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="prey")
         new_no_neat_preds = breed_and_mutate(configList[1], top_predators_no_neat, num_offspring=num_pred_offspring_no_neat, multi_model=True,
-                                             bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size)
+                                             bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="predator")
 
     # Replace the old population with the new one
     env.add_agents(top_predators + top_preys + new_predators + new_preys +
                    new_no_neat_preys + new_no_neat_preds + top_predators_no_neat + top_preys_no_neat)
+
 
 # Main function, configures simulation then runs through epochs
 
@@ -304,7 +304,8 @@ def main():
                        pred_spawn_bounds, prey_spawn_bounds,
                        eliteism, crossover_rate=crossover_rate,
                        torunament_size=torunament_size)
-            env.reset()
+            env.reset(constants.PRED_START_ENERGY, constants.PREY_START_ENERGY,
+                      prey_spawn_bounds, pred_spawn_bounds)
             end_time = time.time()  # End timing the epoch
 
             epoch_duration = end_time - start_time

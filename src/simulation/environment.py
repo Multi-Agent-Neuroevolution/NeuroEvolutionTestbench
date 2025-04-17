@@ -11,6 +11,7 @@ from agents import Predator, Prey
 import logging
 import logs
 import copy
+import constants
 from messenger import messageChannel
 
 logger = logging.getLogger(__name__)
@@ -206,7 +207,7 @@ class Environment:
         self.agents = [agent for agent in self.agents if agent.alive]
 
     # This definition resets all agents when the current epoch is over
-    def reset(self, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
+    def reset(self, pred_energy, prey_energy, prey_bound=[-150, 150, 50, 150], predator_bound=[-150, 150, -150, -50]):
         """Resets the environment by reinitializing all agents.
 
         Args:
@@ -219,13 +220,15 @@ class Environment:
                 pos = np.array([np.random.uniform(predator_bound[0], predator_bound[1]), np.random.uniform(
                     predator_bound[2], predator_bound[3])])
                 agent.pos = pos
-                agent.energy = 100
+                agent.energy = pred_energy
                 agent.prey_eaten = 0
+                agent.alive = True
             else:
                 pos = np.array([np.random.uniform(
                     prey_bound[0], prey_bound[1]), np.random.uniform(prey_bound[2], prey_bound[3])])
                 agent.pos = pos
-                agent.energy = 0
+                agent.energy = prey_energy
+                agent.alive = True
 
             agent.fitness = 0
             agent.state = State()
@@ -266,7 +269,7 @@ class Environment:
                 # Calculate and print time taken for this `step in milliseconds
                 step_time = 1000 * (time.time() - step_start_time)
                 print(
-                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms Prey(: Neat:{num_prey_neat}, Stand:{um_prey_stand}, Hyper:{num_prey_hyper} ), Predators(: Neat: {num_pred_neat}, {num_pred_stand}, {num_pred_hyper} )     ", end='\r')
+                    f"Step {step+1}/{self.steps}, Time/step: {step_time:.4f}ms Prey(: Neat:{num_prey_neat}, Stand:{um_prey_stand}, Hyper:{num_prey_hyper} ), Predators(: Neat: {num_pred_neat}, Stand: {num_pred_stand}, Hyper: {num_pred_hyper} )     ", end='\r')
                 percent_complete = (step + 1) / self.steps * 100
                 for i in range(50):
                     if i < int(percent_complete / 2):

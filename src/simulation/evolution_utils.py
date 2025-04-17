@@ -7,7 +7,7 @@ from agents import Predator, Prey
 # This function handles selecting parents to breed, then mutating the resultant child's genome
 
 
-def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crossover_rate=0.7, torunament_size=3):
+def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crossover_rate=0.7, torunament_size=3, subclass=None):
     new_agents = []
     used_ids = set()  # HashSet to ensure unique IDs
 
@@ -18,7 +18,16 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
 
     def generate_unique_id():
         while True:
-            child_id = random.randint(0, 100000)
+            if subclass == "predator":
+                if type := 0:
+                    child_id = random.randint(50001, 100000)
+                else:
+                    child_id = random.randint(0, 50000)
+            if subclass == "prey":
+                if type := 0:
+                    child_id = random.randint(150001, 200000)
+                else:
+                    child_id = random.randint(100001, 150000)
             if child_id not in used_ids:
                 used_ids.add(child_id)
                 return child_id
@@ -38,10 +47,10 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
                    random.uniform(bounds[0], bounds[1])]
 
             # Randomly decide whether it's a predator or prey
-            if random.random() < 0.5:
+            if subclass == "predator":
                 new_agent = Predator(id=child_id, pos=pos,
                                      neat_genome=child_genome, neat_config=config, type=type)
-            else:
+            if subclass == "prey":
                 new_agent = Prey(id=child_id, pos=pos,
                                  neat_genome=child_genome, neat_config=config, type=type)
 
@@ -69,10 +78,10 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
         pos = [random.uniform(bounds[0], bounds[1]),
                random.uniform(bounds[0], bounds[1])]
 
-        if isinstance(parents[0], Predator):
+        if subclass == "predator":
             new_agent = Predator(id=child_id, pos=pos,
                                  neat_genome=child_genome, neat_config=config if multi_model else config, type=type)
-        else:
+        if subclass == "prey":
             new_agent = Prey(id=child_id, pos=pos,
                              neat_genome=child_genome, neat_config=config if multi_model else config, type=type)
 

@@ -11,6 +11,7 @@ from agents import Predator, Prey
 import numpy as np
 import json
 import pickle
+import os
 
 
 def genome_to_dict(genome):
@@ -26,15 +27,32 @@ def genome_to_dict(genome):
     return {'key': genome.key, 'fitness': genome.fitness, 'nodes': {k: vars(v) for k, v in genome.nodes.items()}, 'connections': connections}
 
 
-def save_genomes_json(agents):
-    """Saves the final agent genomes to a JSON file.
+def save_genomes_json(agents, out_dir='./Data'):
+    """Saves the final agent genomes to JSON files, one per agent.type."""
+    # Ensure output directory exists
+    os.makedirs(out_dir, exist_ok=True)
 
-    Args:
-        agents (list): A list of all agents in the simulation.
-    """
-    genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
-    with open('./Data/final_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent=4)
+    genomes_by_cls_type = {}
+
+    for agent in agents:
+        # determine the class prefix
+        if isinstance(agent, Predator):
+            cls = 'pred'
+        elif isinstance(agent, Prey):
+            cls = 'prey'
+        else:
+            cls = 'agent'
+        # combine with the agent's type
+        key = f"{cls}_{agent.type}"
+        genomes_by_cls_type.setdefault(key, []).append(
+            genome_to_dict(agent.neat_genome)
+        )
+
+    # write one JSON per class‐type
+    for key, genomes in genomes_by_cls_type.items():
+        filename = os.path.join(out_dir, f"final_genomes_{key}.json")
+        with open(filename, 'w') as f:
+            json.dump(genomes, f, indent=4)
 
 
 def save_initial_genomes_json(agents):

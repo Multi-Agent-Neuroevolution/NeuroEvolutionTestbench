@@ -151,7 +151,8 @@ class Agent(Shape):
         # Padding
         padding_needed = (max_closest * 3) - len(self.inputs)
         if padding_needed > 0:
-            self.inputs.extend([-1] * padding_needed)
+            # Impossible for object to be in this position
+            self.inputs.extend([-999] * padding_needed)
 
         # Add energy as input
         self.inputs.append(self.energy)
@@ -241,7 +242,7 @@ class Predator(Agent):
 
     def __init__(self, id, pos, neat_genome, neat_config, type):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PRED", energy=100, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, type=type)
+                         neat_config=neat_config, agent_type="PRED", energy=constants.PRED_START_ENERGY, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, type=type)
         self.prey_eaten = 0
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
@@ -308,7 +309,7 @@ class Prey(Agent):
     """
 
     def __init__(self, id, pos, neat_genome, neat_config, type):
-        super().__init__(id=id, pos=pos, neat_genome=neat_genome,
+        super().__init__(id=id, pos=pos, neat_genome=neat_genome, energy=constants.PREY_START_ENERGY,
                          neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, type=type)
         self.spawn = pos
 
@@ -317,8 +318,12 @@ class Prey(Agent):
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""
-        if action_choice == 4:
+        if 0 <= action_choice <= 3:
+            self.energy -= constants.PREY_MOVE_COST
+        elif action_choice == 4:
             self._eat()
+        if self.energy <= 0:
+            self.alive = False
 
     def _update_fitness(self):
         """Updates the fitness of the prey agent."""
@@ -347,8 +352,8 @@ class Prey(Agent):
         if closest_food is None:
             # logger.info(
             #     f"Prey {self.id} chooses to eat, but fails to find food.")
-            self.fitness -= 0.25
+            self.energy -= constants.PREY_FAIL_ENERGY_COST
         else:
             closest_food.living = False
-            self.fitness += 0.5
+            self.energy += constants.PREY_EAT_ENERGY_GAIN
             logger.info(f"Prey {self.id} eats succsefully.")

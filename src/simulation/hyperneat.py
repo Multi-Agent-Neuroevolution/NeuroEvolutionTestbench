@@ -29,15 +29,16 @@ class Hyper_model(self):
         Creates the HyperNEAT model.
         """
         self.hypergenomes = neat.Population(self.hyperConfig)
+        pass
 
-        def hypermutate(self):
-            """
-        Mutates the hyper-parameters of the agent's model. 
+    def hypermutate(self):
+        """
+        Mutates the hyper-parameters of the agent's model.
         Returns a dictionary of the mutated hyper-parameters.
         """
         pass
 
-        def breed(self):
+    def breed(self):
         """
         Breeds/trains the hyperNEAT model.
         """
