@@ -15,6 +15,7 @@ from evolution_utils import breed_and_mutate
 from messenger import messageChannel
 import comms_pb2
 import comms_pb2_grpc
+from collections import defaultdict
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class CommunicationService(comms_pb2_grpc.CommunicationServicer):
             time.sleep(1)   # I moved this outside of the try-except since it seemed like it would always run anyway
 
 class Simulation:
-    def __init__(self, simulation_type="PRED_PREY", steps=1000, bounds=[-200, 200, -200, 200], multi_model=False, food_amount=None, food_respawn_rate=None):
+    def __init__(self, simulation_type="PRED_PREY", steps=200, bounds=[-200, 200, -200, 200], multi_model=False, food_amount=None, food_respawn_rate=None):
         self.simulation_type = simulation_type
         self.steps = steps
         self.bounds = bounds
@@ -63,6 +64,14 @@ class Simulation:
         self.pred_percent = None
     
     def _generate_configs(self, configs):
+        """Generates NEAT configurations for each config-type specified prior
+        
+        Args:
+            configs (dict): A dictionary of config names and their corresponding NEAT configurations.
+
+        Returns:
+            dict: A dictionary of NEAT configurations for each config-type.
+        """
         for config in configs:
             configs[config] = neat.Config(
                 neat.DefaultGenome,
@@ -81,6 +90,14 @@ class Simulation:
         return configs
     
     def _generate_populations(self, population):
+        """Generates populations of agents based on the specified simulation type.
+        
+        Args:
+            population (neat.Population): The NEAT population object.
+            
+        Returns:
+            dict: A dictionary containing the populations of predators and prey.
+        """
         if self.simulation_type == "PRED_PREY":
             agent_populations = {"pred_pop_neat": [], "prey_pop_neat": []}
             for agent in population.population.items():
@@ -94,37 +111,63 @@ class Simulation:
 
         return agent_populations
     
+    # 
     def _mutate(self):
         if self.simulation_type == "PRED_PREY":
-            predators_neat = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 1]
-            preys_neat = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 1]
-            predators_std = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 0]
-            preys_std = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 0]
-            
-            logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
+            agent_groups = defaultdict(list)
+
             for agent in self.environment.agents:
-                if agent.neat_genome:
-                    agent.neat_genome.fitness = agent.fitness
-            logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
+                pop_key = (agent.__class__.__name__, agent.type)
+                agent_groups[pop_key].append(agent)
+            print(agent_groups)
 
-            top_predators_neat = sorted(predators_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop * constants.CUT_OFF))]
-            top_preys_neat = sorted(preys_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop * constants.CUT_OFF))]
-            top_predators_std = sorted(predators_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop_no_neat * constants.CUT_OFF))]
-            top_preys_std = sorted(preys_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop_no_neat * constants.CUT_OFF))]
+            top_agents = {}
+            new_agents = {}
+            for key, agents in agent_groups.items():
+                if key[0] == "Predator":
+                    bounds = constants.PRED_SPAWN_BOUNDS
+                elif key[0] == "Prey":
+                    bounds = constants.PREY_SPAWN_BOUNDS
+                
+                if self.multi_model:
+                    multi_model = True
+                else:
+                    multi_model = False
+                top_agents[key] = sorted(agents, key=lambda x: x.fitness, reverse=True)[:max(1, int(len(agents) * constants.CUT_OFF))]
+                num_offspring = int(len(agents) - len(top_agents[key]))
+                new_agents[key] = breed_and_mutate(self.environment.configs[key[0]], top_agents[key], num_offspring=num_offspring, multi_model=multi_model, bounds=bounds)
 
-            num_offspring_predators_neat = int(self.environment.pred_pop - len(top_predators_neat))
-            num_offspring_preys_neat = int(self.environment.prey_pop - len(top_preys_neat))
-            num_offspring_predators_std = int(self.environment.pred_pop_no_neat - len(top_predators_std))
-            num_offspring_preys_std = int(self.environment.prey_pop_no_neat - len(top_preys_std))
+            self.environment.add_agents(top_agents + new_agents)
+            # predators_neat = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 1]
+            # preys_neat = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 1]
+            # predators_std = [agent for agent in self.environment.agents if isinstance(agent, Predator) and agent.type == 0]
+            # preys_std = [agent for agent in self.environment.agents if isinstance(agent, Prey) and agent.type == 0]
+            
+            # logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
+            # for agent in self.environment.agents:
+            #     if agent.neat_genome:
+            #         agent.neat_genome.fitness = agent.fitness
+            # logs.avg_agent_fitness(predators_neat, preys_neat, predators_std, preys_std)
 
-            new_predators_neat = breed_and_mutate(self.environment.configs["pred_neat"], top_predators_neat, num_offspring=num_offspring_predators_neat, multi_model=False, bounds=constants.PRED_SPAWN_BOUNDS)
-            new_preys_neat = breed_and_mutate(self.environment.configs["prey_neat"], top_preys_neat, num_offspring=num_offspring_preys_neat, multi_model=False, bounds=constants.PREY_SPAWN_BOUNDS)
-            if self.multi_model:
-                new_predators_std = breed_and_mutate(self.environment.configs["pred_std"], top_predators_std, num_offspring=num_offspring_predators_std, multi_model=True, bounds=constants.PRED_SPAWN_BOUNDS)
-                new_preys_std = breed_and_mutate(self.environment.configs["prey_std"], top_preys_std, num_offspring=num_offspring_preys_std, multi_model=True, bounds=constants.PREY_SPAWN_BOUNDS)
+            # top_predators_neat = sorted(predators_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop * constants.CUT_OFF))]
+            # top_preys_neat = sorted(preys_neat, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop * constants.CUT_OFF))]
+            # top_predators_std = sorted(predators_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.pred_pop_no_neat * constants.CUT_OFF))]
+            # top_preys_std = sorted(preys_std, key=lambda x: x.fitness, reverse=True)[:max(1, int(self.environment.prey_pop_no_neat * constants.CUT_OFF))]
+
+            # num_offspring_predators_neat = int(self.environment.pred_pop - len(top_predators_neat))
+            # num_offspring_preys_neat = int(self.environment.prey_pop - len(top_preys_neat))
+            # num_offspring_predators_std = int(self.environment.pred_pop_no_neat - len(top_predators_std))
+            # num_offspring_preys_std = int(self.environment.prey_pop_no_neat - len(top_preys_std))
+
+            # new_predators_neat = breed_and_mutate(self.environment.configs["pred_neat"], top_predators_neat, num_offspring=num_offspring_predators_neat, multi_model=False, bounds=constants.PRED_SPAWN_BOUNDS)
+            # new_preys_neat = breed_and_mutate(self.environment.configs["prey_neat"], top_preys_neat, num_offspring=num_offspring_preys_neat, multi_model=False, bounds=constants.PREY_SPAWN_BOUNDS)
+            # if self.multi_model:
+            #     new_predators_std = breed_and_mutate(self.environment.configs["pred_std"], top_predators_std, num_offspring=num_offspring_predators_std, multi_model=True, bounds=constants.PRED_SPAWN_BOUNDS)
+            #     new_preys_std = breed_and_mutate(self.environment.configs["prey_std"], top_preys_std, num_offspring=num_offspring_preys_std, multi_model=True, bounds=constants.PREY_SPAWN_BOUNDS)
 
             # Replace the old population with the new one
-            self.environment.add_agents(top_predators_neat + top_preys_neat + new_predators_neat + new_preys_neat + new_predators_std + new_preys_std + top_predators_std + top_preys_std)
+            # Rework to use top_agents and new_agents dictionaries
+            # self.environment.add_agents(top_predators_neat + top_preys_neat + new_predators_neat + new_preys_neat + new_predators_std + new_preys_std + top_predators_std + top_preys_std)
 
     def create_simulation(self):
         num_cores = multiprocessing.cpu_count()
@@ -179,11 +222,12 @@ class Simulation:
     def run_simulation(self):
         for i in range(constants.EPOCHS):
             start_time = time.time()
+            print(self.environment.agents)
             self.environment.run()
-            # if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
-            #     self._mutate()
-            # else:
-            #     self._mutate()
+            if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
+                self._mutate()
+            else:
+                self._mutate()
             self.environment.reset()
             end_time = time.time()
             _update_progress_bar(i, start_time, end_time)
