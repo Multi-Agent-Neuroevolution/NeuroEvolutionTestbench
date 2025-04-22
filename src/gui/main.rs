@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use sim_view::{Shape, Simulation};
 use std::future::IntoFuture;
+use std::thread::sleep;
 use std::time::Duration;
 use tonic::transport::Channel;
 
@@ -33,7 +34,8 @@ struct View {
     simulation_data: SimulationData,
     receiver: Option<Receiver<JsonData>>,
     sender: Option<Sender<JsonData>>,
-    connection: Option<CommunicationClient<Channel>>
+    connection: Option<CommunicationClient<Channel>>,
+    isRunning: bool
 }
 #[derive(Default, Clone)]
 struct SimulationView {
@@ -74,7 +76,6 @@ struct Agent {
 struct SimulationData {
     agents: Vec<Agent>,
     shapes: Vec<Shape>,
-    layers: Vec<Layer>,
 }
 
 pub fn main() -> iced::Result {
@@ -99,7 +100,8 @@ impl View {
             simulation_data: SimulationData::default(),
             receiver: Some(recv),
             sender: Some(send),
-            connection: Some(conn)
+            connection: Some(conn),
+            isRunning: false
         }
     }
     fn view(&self) -> Column<Message> {
@@ -147,6 +149,7 @@ impl View {
             Message::IncrementPressedx10 => self.speed += 10,
             Message::DecrementPressedx10 => self.speed = self.speed.saturating_sub(10),
             Message::Tick => {
+                self.get_simulation_data();
             }
             Message::SimStart => {
                 let rt = Runtime::new().unwrap();
@@ -169,8 +172,8 @@ impl View {
                     },
                 };
                 rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend).await; });
-                let simulation_data = self.get_simulation_data();
-                self.update_simulation_data(simulation_data);
+                sleep(Duration::from_millis(1000));
+                self.isRunning = true;
             }
             Message::SimPause => {}
             Message::SimEnd => {}
@@ -179,21 +182,26 @@ impl View {
             self.speed = 1;
         }
     }
-    fn get_simulation_data(&mut self) -> SimulationData {
-        let received = &self.receiver.as_mut().unwrap().blocking_recv().unwrap().json_data;
-        println!("received freaky: {}",received);
+    fn get_simulation_data(&mut self) {
+        let sentData = self.receiver.as_mut().unwrap().blocking_recv().unwrap();
+        let received = &sentData.json_data;
+        println!("{received}");
         let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
         self.update_simulation_data(json_data.clone());
-        json_data
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
         self.simulation_data = simulation_data;
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
-        self.nn_view.update_network(&self.simulation_data.layers);
+        //self.nn_view.update_network(&self.simulation_data.layers);
         self.sim_view.update_sim(&self.simulation_data.shapes);
     }
     fn subscription(&self) -> Subscription<Message> {
-        time::every(Duration::from_millis(16)).map(|_| Message::Tick)
+        if(self.isRunning){
+            time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
+        }else{
+            Subscription::none()
+        }
+
     }
 }
 

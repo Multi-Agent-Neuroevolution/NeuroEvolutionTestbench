@@ -11,6 +11,7 @@ message Command{
 message ID{
     int32 id =1;
 }
+
 message JSONData{
     string json_data=1;
     bool success=2;

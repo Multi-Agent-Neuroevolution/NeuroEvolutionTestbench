@@ -1,4 +1,3 @@
-use iced::futures::StreamExt;
 use tonic::{Request, Status};
 use comms::communication_client::CommunicationClient;
 use comms::Command;
@@ -6,6 +5,7 @@ use comms::JsonData;
 use comms::Id;
 use tokio::sync::mpsc::Sender;
 use tonic::transport::Channel;
+use tokio_stream::{Stream,StreamExt};
 pub mod comms {
     tonic::include_proto!("comms");
 }
@@ -36,6 +36,7 @@ pub async fn getSimStream(mut connection:CommunicationClient<Channel>,sender:Sen
         let data = data?;
         sender.send(data).await?;
     }
+    println!("stream over");
     Ok(())
 }
 

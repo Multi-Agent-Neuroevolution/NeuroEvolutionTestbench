@@ -167,12 +167,12 @@ class Agent(Shape):
         for obj in self.state.objs:
             if not obj.collidable:
                 continue
-            if obj.shape == "circle":
+            if obj.shape == "Circle":
                 # Check for circle collision
                 dist = np.linalg.norm(self.pos - obj.pos)
                 if dist < (self.radius + obj.radius):
                     self.state.collisions.append(obj)
-            elif obj.shape == "rectangle":
+            elif obj.shape == "Rectangle":
                 # Check for rectangle collision
                 nearest_x = np.clip(self.pos[0], obj.pos[0] - obj.width / 2,
                                     obj.pos[0] + obj.width / 2)
@@ -190,7 +190,7 @@ class Agent(Shape):
 
     def solve_collision(self):
         for collision in self.state.collisions[:]:
-            if collision.shape == "circle":
+            if collision.shape == "Circle":
                 # Compute vector from obstacle to agent
                 direction = self.pos - collision.pos
                 norm = np.linalg.norm(direction)
@@ -200,7 +200,7 @@ class Agent(Shape):
                     self.pos = collision.pos + direction * \
                         (collision.radius + self.radius)
 
-            elif collision.shape == "rectangle":
+            elif collision.shape == "Rectangle":
                 # Get the nearest valid position outside the rectangle
                 nearest_x = np.clip(self.pos[0], collision.pos[0] - collision.width /
                                     2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)

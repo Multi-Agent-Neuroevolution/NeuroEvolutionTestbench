@@ -1,6 +1,6 @@
 """obstacles.py holds the Obstacle() class and its subclasses."""
 from utils import Shape
-
+import numpy as np
 # Handles the creation of obstacles in the environment
 class Obstacle(Shape):
     def __init__(self, pos, shape, radius, width, height, color, interactible, collidable, goal_obstacle):
@@ -19,7 +19,7 @@ class Obstacle(Shape):
 
 class Food(Obstacle):
     def __init__(self, pos):
-        super().__init__(pos=pos, shape="circle", radius=1, width=0, height=0, color="green", interactible=True, collidable=False, goal_obstacle=False)
+        super().__init__(pos=pos, shape="Circle", radius=1, width=0, height=0, color="green", interactible=True, collidable=False, goal_obstacle=False)
     
     def to_dict(self):
         return {
@@ -27,12 +27,12 @@ class Food(Obstacle):
             "x": float(self.pos[0]),
             "y": float(self.pos[1]),
             "radius": self.radius,
-            "color": self.color,
+            "color": "purple",
         }
 
 class Wall(Obstacle):
     def __init__(self, pos, width, height):
-        super().__init__(pos=pos, shape="rectangle", radius=0, width=width, height=height, color="red", interactible=False, collidable=True, goal_obstacle=False)
+        super().__init__(pos=pos, shape="Rectangle", radius=0, width=width, height=height, color="red", interactible=False, collidable=True, goal_obstacle=False)
         # Note to self: may want to make goal_obstacle a parameter in the future depending on ideas
     
     def to_dict(self):
@@ -42,5 +42,5 @@ class Wall(Obstacle):
             "y": float(self.pos[1]),
             "width": self.width,
             "height": self.height,
-            "color": self.color,
+            "color": "blue",
         }
