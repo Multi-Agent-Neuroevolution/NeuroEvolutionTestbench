@@ -31,6 +31,7 @@ class CommunicationService(comms_pb2_grpc.CommunicationServicer):
                 success=True,
                 message="Data sent successfully"
             )
+        print("Data done sending")
 
 
 def serve():

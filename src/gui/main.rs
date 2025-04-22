@@ -68,8 +68,9 @@ enum Message {
 #[derive(Deserialize, Clone, Default)]
 struct Agent {
     id: usize,
-    x: f64,
-    y: f64,
+    x: f32,
+    y: f32,
+    color: String,
 }
 
 #[derive(Deserialize, Clone, Default)]
@@ -185,7 +186,6 @@ impl View {
     fn get_simulation_data(&mut self) {
         let sentData = self.receiver.as_mut().unwrap().blocking_recv().unwrap();
         let received = &sentData.json_data;
-        println!("{received}");
         let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
         self.update_simulation_data(json_data.clone());
     }
@@ -193,7 +193,7 @@ impl View {
         self.simulation_data = simulation_data;
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
         //self.nn_view.update_network(&self.simulation_data.layers);
-        self.sim_view.update_sim(&self.simulation_data.shapes);
+        self.sim_view.update_sim(&self.simulation_data.shapes,&self.simulation_data.agents);
     }
     fn subscription(&self) -> Subscription<Message> {
         if(self.isRunning){
@@ -258,8 +258,9 @@ impl SimulationView {
             simulation: Simulation::new(),
         }
     }
-    pub fn update_sim(&mut self, shapes: &Vec<Shape>) {
+    pub fn update_sim(&mut self, shapes: &Vec<Shape>,agents: &Vec<Agent>) {
         self.simulation.add_shapes(shapes);
+        self.simulation.add_agents(agents)
     }
     pub fn draw(&self) -> Column<Message> {
         let sim_view = Canvas::new(self).width(Length::Fill).height(Length::Fill);
