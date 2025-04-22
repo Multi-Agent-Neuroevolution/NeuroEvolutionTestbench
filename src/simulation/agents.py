@@ -247,7 +247,7 @@ class Predator(Agent):
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
     def to_dict(self):
-        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "red"}
+        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "yellow"}
 
     def _handle_action(self, action_choice):
         """Handles the action of the predator agent based on the action choice.

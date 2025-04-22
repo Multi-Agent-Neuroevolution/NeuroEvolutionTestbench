@@ -27,7 +27,7 @@ class Food(Obstacle):
             "x": float(self.pos[0]),
             "y": float(self.pos[1]),
             "radius": self.radius,
-            "color": "purple",
+            "color": "red",
         }
 
 class Wall(Obstacle):

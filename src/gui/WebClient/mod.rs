@@ -3,7 +3,7 @@ use comms::communication_client::CommunicationClient;
 use comms::Command;
 use comms::JsonData;
 use comms::Id;
-use tokio::sync::mpsc::Sender;
+use std::sync::mpsc::Sender;
 use tonic::transport::Channel;
 use tokio_stream::{Stream,StreamExt};
 pub mod comms {
@@ -34,7 +34,7 @@ pub async fn getSimStream(mut connection:CommunicationClient<Channel>,sender:Sen
     while let Some(data) = stream.next().await{
         println!("got data");
         let data = data?;
-        sender.send(data).await?;
+        sender.send(data)?;
     }
     println!("stream over");
     Ok(())

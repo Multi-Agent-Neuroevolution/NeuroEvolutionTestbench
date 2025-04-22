@@ -3,14 +3,14 @@
 
 use crate::WebClient::comms::communication_client::CommunicationClient;
 use crate::WebClient::comms::JsonData;
-use iced::Executor;
-use tokio::runtime::Runtime;
-use tonic::{Request, Status};
 use iced::widget::canvas::{Canvas, Fill, Frame, Geometry, Path};
 use iced::widget::{button, canvas, column, row, text, Column, Row};
+use iced::Executor;
 use iced::{mouse, Color, Length, Point, Rectangle, Renderer, Size, Subscription, Theme};
+use std::sync::mpsc::{Receiver, Sender};
+use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tonic::{Request, Status};
 use WebClient::getConnection;
 mod WebClient;
 mod neural_net;
@@ -25,6 +25,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use tonic::transport::Channel;
 
+
 #[derive(Default)]
 struct View {
     speed: i32,
@@ -35,7 +36,8 @@ struct View {
     receiver: Option<Receiver<JsonData>>,
     sender: Option<Sender<JsonData>>,
     connection: Option<CommunicationClient<Channel>>,
-    isRunning: bool
+    rt: Option<Runtime>,
+    isRunning: bool,
 }
 #[derive(Default, Clone)]
 struct SimulationView {
@@ -89,8 +91,7 @@ pub fn main() -> iced::Result {
 }
 impl View {
     fn new() -> Self {
-        println!("new construction");
-        let (send, recv) = mpsc::channel::<JsonData>(100000000000000);
+        let (send, recv) = std::sync::mpsc::channel::<JsonData>();
         let rt = Runtime::new().unwrap();
         let conn = rt.block_on(getConnection()).unwrap();
         Self {
@@ -102,7 +103,8 @@ impl View {
             receiver: Some(recv),
             sender: Some(send),
             connection: Some(conn),
-            isRunning: false
+            rt: Some(rt),
+            isRunning: false,
         }
     }
     fn view(&self) -> Column<Message> {
@@ -153,27 +155,31 @@ impl View {
                 self.get_simulation_data();
             }
             Message::SimStart => {
-                let rt = Runtime::new().unwrap();
-                let cloneConn = match self.connection.as_mut(){
-                    Some(conn)=>{
-                        conn.clone()
-                    },
-                    None=>{
-                       rt.block_on(getConnection()).unwrap()
+                let cloneConn = match self.connection.as_mut() {
+                    Some(conn) => conn.clone(),
+                    None => match self.rt.as_mut(){
+                        Some(rt)=>{
+                            rt.block_on(getConnection()).unwrap()
+                        },
+                        None=>{
+                            self.rt = Some(Runtime::new().unwrap());
+                            self.rt.as_mut().unwrap().block_on(getConnection()).unwrap()
+                        },
                     },
                 };
                 //let cloneConn = self.connection.as_mut().unwrap().clone();
-                let cloneSend = match self.sender.as_mut(){
-                    Some(send)=>send.clone(),
-                    None=>{
-                        let (send, recv) = mpsc::channel::<JsonData>(100000000000000);
-                        self.sender=Some(send.clone());
-                        self.receiver=Some(recv);
+                let cloneSend = match self.sender.as_mut() {
+                    Some(send) => send.clone(),
+                    None => {
+                        let (send, recv) = std::sync::mpsc::channel::<JsonData>();
+                        self.sender = Some(send.clone());
+                        self.receiver = Some(recv);
                         send
-                    },
+                    }
                 };
-                rt.spawn(async { WebClient::getSimStream(cloneConn, cloneSend).await; });
-                sleep(Duration::from_millis(1000));
+                self.rt.as_mut().unwrap().spawn(async move {
+                    WebClient::getSimStream(cloneConn, cloneSend).await;
+                });
                 self.isRunning = true;
             }
             Message::SimPause => {}
@@ -184,24 +190,38 @@ impl View {
         }
     }
     fn get_simulation_data(&mut self) {
-        let sentData = self.receiver.as_mut().unwrap().blocking_recv().unwrap();
-        let received = &sentData.json_data;
-        let json_data: SimulationData = serde_json::from_str(&received).expect("Failed to parse JSON");
-        self.update_simulation_data(json_data.clone());
+        if let Some(receiver) = &mut self.receiver {
+            match receiver.try_recv() {
+                Ok(sentData) => {
+                    let received = &sentData.json_data;
+                    match serde_json::from_str::<SimulationData>(&received) {
+                        Ok(json_data) => self.update_simulation_data(json_data),
+                        Err(e) => println!("Failed to parse JSON: {}", e),
+                    }
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    // No data available, that's fine
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    println!("Channel disconnected");
+                    self.isRunning = false;
+                }
+            }
+        }
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
         self.simulation_data = simulation_data;
         self.agent_view.color = Color::from_rgb(0.0, 1.0, 0.0);
         //self.nn_view.update_network(&self.simulation_data.layers);
-        self.sim_view.update_sim(&self.simulation_data.shapes,&self.simulation_data.agents);
+        self.sim_view
+            .update_sim(&self.simulation_data.shapes, &self.simulation_data.agents);
     }
     fn subscription(&self) -> Subscription<Message> {
-        if(self.isRunning){
-            time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
-        }else{
+        if (self.isRunning) {
+            time::every(Duration::from_millis(1)).map(|_| Message::Tick)
+        } else {
             Subscription::none()
         }
-
     }
 }
 
@@ -258,7 +278,7 @@ impl SimulationView {
             simulation: Simulation::new(),
         }
     }
-    pub fn update_sim(&mut self, shapes: &Vec<Shape>,agents: &Vec<Agent>) {
+    pub fn update_sim(&mut self, shapes: &Vec<Shape>, agents: &Vec<Agent>) {
         self.simulation.add_shapes(shapes);
         self.simulation.add_agents(agents)
     }

@@ -11,6 +11,7 @@ tokio = {version = "1.41.0", features = ["sync"]}
 tokio-stream = {version="*"}
 tonic = "0.12.3"
 prost = "0.13"
+lazy_static = "*"
 [build-dependencies]
 tonic-build = "*"
 

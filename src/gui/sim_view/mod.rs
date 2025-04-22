@@ -158,6 +158,7 @@ fn get_color(str: String) -> Color {
         "black" => Color::from_rgb(0.0, 0.0, 0.0),
         "white" => Color::from_rgb(1.0, 1.0, 1.0),
         "purple" => Color::from_rgb(0.5, 0.0, 0.5),
+        "yellow" => Color::from_rgb(0.0, 1.0, 1.0),
         _ => Color::from_rgb(0.0, 0.0, 0.0),
     }
 }

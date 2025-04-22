@@ -24,14 +24,12 @@ logger = logging.getLogger(__name__)
 class CommunicationService(comms_pb2_grpc.CommunicationServicer):
     def FetchEnvironmentStream(self, request, context):
         for data in iter(messageChannel.get,None):
-            print(f"THIS IS THE SIZE: {messageChannel.qsize()}")
             json_str = json.dumps(data)
             yield comms_pb2.JSONData(
                 json_data=json_str,
                 success=True,
                 message="Data sent successfully"
             )
-        print("Data done sending")
 
 
 def serve():
