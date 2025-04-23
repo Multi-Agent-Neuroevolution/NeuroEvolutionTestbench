@@ -7,9 +7,9 @@ BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 
 # Parameters for agents
 # Ratio of predators to prey higher values mean more prey than predators.
-RATIO = 0.90
+RATIO = 0.75
 PRED_PERCENT = 1 - RATIO
-FOOD_AMOUNT = 500  # Amount of food in the environment for prey to eat
+FOOD_AMOUNT = 100  # Amount of food in the environment for prey to eat
 PREY_SPAWN_BOUNDS = [-150, 150, 150, 50]
 PRED_SPAWN_BOUNDS = [150, -150, -150, -50]
 # Causes the predator and prey spawn bounds to be swapped at the halfway point of the simulation
@@ -21,6 +21,8 @@ SCALE_FACTOR = 1.0  # Scale factor used for uniformly scaling bounds of environm
 # Parameters for Agents
 PREY_SIGHT = 15     # Prey sight radius
 PRED_SIGHT = 12     # Predator sight radius
+PRED_INTERACTION_RADIUS = 5  # Predator interaction radius
+PREY_INTERACTION_RADIUS = 5  # Prey interaction radius
 PREY_SPEED = 1.5    # Speed of prey
 PRED_SPEED = 1      # Speed of predator
 

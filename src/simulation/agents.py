@@ -22,7 +22,7 @@ class Agent(Shape):
         move_speed (float): The speed at which the agent moves.
     """
 
-    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0, type=0):
+    def __init__(self, id, pos, neat_genome, neat_config, sight, agent_type="agent", energy=0, move_speed=1.0, type=0, range=5):
         super().__init__(shape="agent", radius=1, width=0,
                          height=0, pos=pos, collidable=False)
         self.id = id
@@ -41,6 +41,7 @@ class Agent(Shape):
         self.sight = sight
         self.type = type
         self.alive = True
+        self.interactionRange = range
 
     def interact(self, obj):
         if obj in self.state.interactables:
@@ -109,55 +110,78 @@ class Agent(Shape):
 
         return closest, min_distance  # is returning min_distance necessary?
 
-    # This function is used to get the inputs for the neural network. Faster
-
-    def get_inputs(self, max_closest=5):
-        # Pre-calculate the squared interaction radius
-        interaction_radius_squared = 5 * 5
-
-        relative_objects = []
-        self.state.interactables = []
-
+    def get_interactables(self, interaction_range):
+        """Populate state.interactables with objects closer than interaction_range."""
+        self.state.interactables.clear()
         for obj in self.state.objs:
-            rel_x = obj.pos[0] - self.pos[0]
-            rel_y = obj.pos[1] - self.pos[1]
-
-            squared_dist = rel_x*rel_x + rel_y*rel_y
-
-            if squared_dist <= interaction_radius_squared:
+            dist = np.linalg.norm(self.pos - obj.pos)
+            if dist < interaction_range:
                 self.state.interactables.append(obj)
 
-            # Determine object type
-            obj_type = -1
-            if obj.shape == "agent" and obj.alive:
-                obj_type = 1 if obj.energy > 0 else 0
-            elif obj.shape == "obstacle" and obj.interactible:
-                obj_type = 2 if obj.type == "food" else 3
+    def get_inputs(self, max_closest=5):
+        """
+        Build a fixed-length input vector for the NN:
+        For each of the N = max_closest nearest objects:
+            [ dx, dy, is_pred, is_prey, is_food, in_bite_range, present ]
+        plus [ energy_norm ] at the end.
+        Total inputs = N*7 + 1
+        """
+        self.get_interactables(self.interactionRange)
+        # 1) Gather all objects in sight
+        sight = self.sight
+        # state.objs was populated from the spatial grid already
+        candidates = []
+        for obj in self.state.objs:
+            # normalized relative position
+            dx = (obj.pos[0] - self.pos[0]) / sight
+            dy = (obj.pos[1] - self.pos[1]) / sight
 
-            # Only add objects with a valid type to the heap
-            if obj_type != -1:
-                relative_objects.append(
-                    (squared_dist, (rel_x, rel_y), obj_type))
+            # one‑hot type
+            if isinstance(obj, Predator):
+                type_vec = [1.0, 0.0, 0.0]
+            elif isinstance(obj, Prey):
+                type_vec = [0.0, 1.0, 0.0]
+            elif isinstance(obj, Food):
+                type_vec = [0.0, 0.0, 1.0]
+            else:
+                continue  # skip any other shapes
 
-        # Get the max_closest objects
-        closest_objects = heapq.nsmallest(
-            max_closest, relative_objects, key=lambda x: x[0])
+            # bite‑range flag
+            in_bite = 1.0 if obj in self.state.interactables else 0.0
 
-        # Flatten Inputs
-        self.inputs = []
-        for _, rel_pos, obj_type in closest_objects:
-            self.inputs.extend([rel_pos[0], rel_pos[1], obj_type])
+            # distance squared for sorting
+            dist_sq = dx*dx + dy*dy
 
-        # Padding
-        padding_needed = (max_closest * 3) - len(self.inputs)
-        if padding_needed > 0:
-            # Impossible for object to be in this position
-            self.inputs.extend([-999] * padding_needed)
+            candidates.append((dist_sq, dx, dy, type_vec, in_bite))
 
-        # Add energy as input
-        self.inputs.append(self.energy)
+        # 2) Pick the N nearest
+        closest = heapq.nsmallest(max_closest, candidates, key=lambda x: x[0])
 
-        return self.inputs
+        # 3) Flatten into input list
+        inputs = []
+        for _, dx, dy, type_vec, in_bite in closest:
+            # [dx, dy] + [is_pred, is_prey, is_food] + [in_bite, present=1]
+            inputs.extend([dx, dy] + type_vec + [in_bite, 1.0])
+
+        # 4) Pad empty slots with sentinel + zeros + present=0
+        num_missing = max_closest - len(closest)
+        for _ in range(num_missing):
+            inputs.extend([
+                2.0, 2.0,        # dx, dy sentinel outside [-1,1]
+                0.0, 0.0, 0.0,   # one‑hot all zero
+                0.0,             # in_bite_range
+                0.0              # present flag
+            ])
+
+        # 5) Append normalized energy
+        max_e = constants.PRED_START_ENERGY if isinstance(
+            self, Predator) else constants.PREY_START_ENERGY
+        energy_norm = self.energy / max_e
+        inputs.append(energy_norm)
+
+        # 6) Save & return
+        self.inputs = inputs
+        return inputs
 
     def get_relative_pos(self, obj):
         return self.pos - obj.pos
@@ -242,7 +266,7 @@ class Predator(Agent):
 
     def __init__(self, id, pos, neat_genome, neat_config, type):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome,
-                         neat_config=neat_config, agent_type="PRED", energy=constants.PRED_START_ENERGY, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, type=type)
+                         neat_config=neat_config, agent_type="PRED", energy=constants.PRED_START_ENERGY, sight=constants.PRED_SIGHT, move_speed=constants.PRED_SPEED, type=type, range=constants.PRED_INTERACTION_RADIUS)
         self.prey_eaten = 0
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
@@ -310,7 +334,7 @@ class Prey(Agent):
 
     def __init__(self, id, pos, neat_genome, neat_config, type):
         super().__init__(id=id, pos=pos, neat_genome=neat_genome, energy=constants.PREY_START_ENERGY,
-                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, type=type)
+                         neat_config=neat_config, agent_type="PREY", move_speed=constants.PREY_SPEED, sight=constants.PREY_SIGHT, type=type, range=constants.PREY_INTERACTION_RADIUS)
         self.spawn = pos
 
     def to_dict(self):

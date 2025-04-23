@@ -11,6 +11,7 @@ from agents import Predator, Prey
 import logging
 import logs
 import copy
+import math
 import constants
 from messenger import messageChannel
 
@@ -18,46 +19,77 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialGrid:
+    """
+    Uniform grid for spatial partitioning of objects.
+
+    Attributes:
+        bounds (tuple): (min_x, max_x, min_y, max_y) of the world.
+        cell_size (float): Side length of each grid cell.
+        width (int): Number of cells horizontally.
+        height (int): Number of cells vertically.
+        grid (defaultdict): Maps (cell_x, cell_y) to list of objects.
+    """
+
     def __init__(self, bounds, cell_size=10):
-        self.cell_size = cell_size
         self.bounds = bounds
-        self.width = int((bounds[1] - bounds[0]) / cell_size)
-        self.height = int((bounds[3] - bounds[2]) / cell_size)
+        self.cell_size = cell_size
+        # Use ceil to cover entire bounding box
+        self.width = math.ceil((bounds[1] - bounds[0]) / cell_size)
+        self.height = math.ceil((bounds[3] - bounds[2]) / cell_size)
         self.grid = defaultdict(list)
 
     def get_cell_coords(self, pos):
+        """
+        Convert world position to grid cell indices, clamped to valid range.
+        """
         x = int((pos[0] - self.bounds[0]) / self.cell_size)
         y = int((pos[1] - self.bounds[2]) / self.cell_size)
+        # Clamp to [0, width-1] and [0, height-1]
+        x = max(0, min(self.width - 1, x))
+        y = max(0, min(self.height - 1, y))
         return x, y
 
     def insert(self, obj):
-        cell_x, cell_y = self.get_cell_coords(obj.pos)
-        self.grid[(cell_x, cell_y)].append(obj)
+        """
+        Insert an object into the grid based on its current position.
+        """
+        cell = self.get_cell_coords(obj.pos)
+        self.grid[cell].append(obj)
 
-    # Gets objects within a certain radius of a position
+    def rebuild(self, objects):
+        """
+        Clear and rebuild the entire grid from a list of objects.
+        Useful if objects move every step.
+        """
+        self.grid.clear()
+        for obj in objects:
+            self.insert(obj)
+
     def get_nearby_objects(self, pos, radius):
+        """
+        Return a list of objects within `radius` of `pos`, sorted by distance.
+        """
         cell_x, cell_y = self.get_cell_coords(pos)
-
-        # Use squared distance to avoid square root calculations
         radius_squared = radius * radius
+        # Number of cells to search in each direction
         radius_cells = int(radius / self.cell_size) + 1
 
-        nearby = []
-
-        for dx in range(-radius_cells, radius_cells + 1):
-            for dy in range(-radius_cells, radius_cells + 1):
-                cell = (cell_x + dx, cell_y + dy)
-                if cell in self.grid:  # Only check cells that exist
-                    cell_objs = self.grid[cell]
-                    for obj in cell_objs:
-
-                        dx = obj.pos[0] - pos[0]
-                        dy = obj.pos[1] - pos[1]
-                        squared_dist = dx*dx + dy*dy
-
-                        if squared_dist < radius_squared:
-                            nearby.append((obj, squared_dist))
-
+        nearby = []  # will hold (obj, squared_distance)
+        for off_x in range(-radius_cells, radius_cells + 1):
+            for off_y in range(-radius_cells, radius_cells + 1):
+                cx = cell_x + off_x
+                cy = cell_y + off_y
+                # Skip out-of-range cells
+                if not (0 <= cx < self.width and 0 <= cy < self.height):
+                    continue
+                for obj in self.grid.get((cx, cy), []):
+                    delta_x = obj.pos[0] - pos[0]
+                    delta_y = obj.pos[1] - pos[1]
+                    dist_sq = delta_x * delta_x + delta_y * delta_y
+                    if dist_sq < radius_squared:
+                        nearby.append((obj, dist_sq))
+        # Sort by distance ascending
+        nearby.sort(key=lambda item: item[1])
         return [obj for obj, _ in nearby]
 
 
@@ -141,8 +173,6 @@ class Environment:
             obstacles.append(Food(pos))
 
         # Temporary, but initialize wall at the center
-        obstacles.append(Wall(pos=np.array([0, 0]), width=100, height=45))
-
         self.add_obstacles(obstacles)
 
     # This definition handles adding agents to the environment
@@ -160,7 +190,7 @@ class Environment:
         self.obstacles = obstacles
 
     def update_spatial_grid(self):
-        self.spatial_grid = SpatialGrid(self.bounds)
+        self.spatial_grid.rebuild(self.agents + self.obstacles)
         for agent in self.agents:
             self.spatial_grid.insert(agent)
         for obstacle in self.obstacles:
@@ -189,10 +219,8 @@ class Environment:
     def food_handler(self):
         """Handles food-related operations, such as spawning and removal."""
         # This segment checks food is "living" (in other words, not eaten) and removes it if it's not
-        for obs in self.obstacles:
-            if isinstance(obs, Food):
-                if obs.living == False:
-                    self.obstacles.remove(obs)
+        self.obstacles = [o for o in self.obstacles if not (
+            isinstance(o, Food) and not o.living)]
 
         # This segment handles the spawning of food
         if np.random.rand() < self.food_spawn_rate:
