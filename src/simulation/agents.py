@@ -108,7 +108,7 @@ class Agent(Shape):
                     closest = obj
                     min_distance = distance
 
-        return closest, min_distance  # is returning min_distance necessary?
+        return closest  # is returning min_distance necessary?
 
     def get_interactables(self, interaction_range):
         """Populate state.interactables with objects closer than interaction_range."""
@@ -241,7 +241,7 @@ class Agent(Shape):
                     self.pos = np.array(
                         [nearest_x, nearest_y]) + direction * self.radius
 
-    # This definition adjusts the agent position if it goes out of bounds
+    # This method adjusts the agent position if it goes out of bounds
     def check_bounds(self, bounds):
         if self.pos[0] < bounds[0]:
             self.pos[0] = bounds[0] + 1
@@ -293,9 +293,9 @@ class Predator(Agent):
         """Updates the fitness of the predator agent based on the number of prey eaten and current energy."""
         # Eating prey is the primary goal
         # TODO: Add these values to the constants file
-        hunt_reward = self.prey_eaten * 2.0
-        energy_reward = self.energy * 0.01
-        survival_reward = self.age * 0.001
+        hunt_reward = self.prey_eaten * 5.0
+        energy_reward = self.energy * 0.005
+        survival_reward = self.age * 0.01
         self.fitness = hunt_reward + energy_reward + survival_reward
         # Apply diminishing returns for very successful predators
         if self.fitness > 50:
@@ -306,7 +306,7 @@ class Predator(Agent):
         def _prey_filter(obj):
             return obj.shape == "agent" and obj.alive and isinstance(obj, Prey)
 
-        closest_prey, _ = self._find_closest_target(_prey_filter)
+        closest_prey = self._find_closest_target(_prey_filter)
 
         if closest_prey is None:
             self.energy -= constants.PRED_FAIL_ENERGY_COST
@@ -361,8 +361,8 @@ class Prey(Agent):
         # Predator avoidance reward
         nearby_predators = sum(1 for obj in self.state.interactables
                                if isinstance(obj, Predator) and obj.alive)
-        predator_reward = nearby_predators * 0.05
-        increment = survival_reward + distance_reward + age_reward + predator_reward
+        predator_pen = nearby_predators * 0.05
+        increment = survival_reward + distance_reward + age_reward - predator_pen
         # Apply a sigmoidesque cap to prevent exponential growth
         self.fitness += increment / (1 + self.fitness/1000)
 
@@ -371,7 +371,7 @@ class Prey(Agent):
         def _food_filter(obj):
             return isinstance(obj, Food)
 
-        closest_food, _ = self._find_closest_target(_food_filter)
+        closest_food = self._find_closest_target(_food_filter)
 
         if closest_food is None:
             # logger.info(

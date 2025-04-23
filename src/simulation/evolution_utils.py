@@ -19,12 +19,12 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
     def generate_unique_id():
         while True:
             if subclass == "predator":
-                if type := 0:
+                if type == 0:
                     child_id = random.randint(50001, 100000)
                 else:
                     child_id = random.randint(0, 50000)
             if subclass == "prey":
-                if type := 0:
+                if type == 0:
                     child_id = random.randint(150001, 200000)
                 else:
                     child_id = random.randint(100001, 150000)
@@ -58,7 +58,7 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
             continue
 
         # Either clone a parent or perform crossover
-        if random.random() > crossover_rate or len(parents) < 2:
+        if random.random() > (min(0.0, (1 - crossover_rate))) or len(parents) < 2:
             parent = random.choice(parents)
             child_genome.configure_crossover(
                 parent.neat_genome, parent.neat_genome, config)
@@ -69,6 +69,7 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
                 parent1.neat_genome, parent2.neat_genome, config)
 
         # Mutate the child genome. This sometimes fails so we need to catch the exception. This is a band-aid solution
+        # TODO: Find out whats causing the mutation to fail and fix it
         try:
             child_genome.mutate(config.genome_config)
         except Exception as e:

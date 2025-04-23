@@ -1,9 +1,11 @@
 """utils.py holds various utility classes and functions for the simulation."""
 import numpy as np
 import logging
+import neat
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
+
 
 class Metrics:
     def __init__(self):
@@ -28,6 +30,8 @@ class Metrics:
         self._metrics.clear()
 
 # Class used for creating obstacles in the environment
+
+
 class Shape:
     def __init__(self, shape, radius, width, height, pos, collidable):
         self.shape = shape
@@ -38,6 +42,8 @@ class Shape:
         self.collidable = collidable
 
 # Used to determine the state of the agent, and what is happening around it. Updated every tick
+
+
 class State:
     def __init__(self):
         self.vel = 0
@@ -49,3 +55,104 @@ class State:
         # These are pre-allocated for performance reasons
         self.pos_array = np.zeros(2)
         self.direction = np.zeros(2)
+
+
+class FitnessHelper:
+    def __init__(self):
+        self.avg_fitness = 0.0
+        self.min_fitness = float('inf')
+        self.max_fitness = float('-inf')
+        self.std_dev_fitness = 0.0
+        self.percent_alive = 0.0
+        self.num_alive = 0
+
+    def calculate_hyperneat_stats(agents, population_size):
+        """Calculate the hyperneat stats for the given agents."""
+        fitness_helper = FitnessHelper()
+        fitness_helper.avg_fitness_rel = np.mean(
+            [agent.fitness for agent in agents])
+        fitness_helper.min_fitness = np.min(
+            [agent.fitness for agent in agents])
+        fitness_helper.max_fitness = np.max(
+            [agent.fitness for agent in agents])
+        fitness_helper.std_dev_fitness = np.std(
+            [agent.fitness for agent in agents])
+        fitness_helper.percent_alive = len(
+            [agent for agent in agents if agent.alive]) / population_size
+        fitness_helper.num_alive = len(
+            [agent for agent in agents if agent.alive])
+        return fitness_helper
+
+
+def build_configs(config_path):
+    """Build the configs for the simulation.
+    returns a dictionary of configs."""
+    # Create a copy of the config for each agent subtype
+    defConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    predStdConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    predNeatConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    predHyprConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    preyStdConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    preyNeatConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+    preyHyprConfig = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+
+    predStdConfig.genome_config.__dict__['conn_add_prob'] = 0
+    predStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
+    predStdConfig.genome_config.__dict__['node_add_prob'] = 0
+    predStdConfig.genome_config.__dict__['node_delete_prob'] = 0
+    preyStdConfig.genome_config.__dict__['conn_add_prob'] = 0
+    preyStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
+    preyStdConfig.genome_config.__dict__['node_add_prob'] = 0
+    preyStdConfig.genome_config.__dict__['node_delete_prob'] = 0
+
+    return {
+        'defConfig': defConfig,
+        'predStdConfig': predStdConfig,
+        'predNeatConfig': predNeatConfig,
+        'predHyprConfig': predHyprConfig,
+        'preyStdConfig': preyStdConfig,
+        'preyNeatConfig': preyNeatConfig,
+        'preyHyprConfig': preyHyprConfig
+    }

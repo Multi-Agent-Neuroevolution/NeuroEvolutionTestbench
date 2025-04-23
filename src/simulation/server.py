@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import random
 import neat
 import multiprocessing
 import grpc
@@ -16,14 +17,15 @@ from evolution_utils import breed_and_mutate
 from messenger import messageChannel
 import comms_pb2
 import comms_pb2_grpc
-
+from utils import FitnessHelper, build_configs
+import copy
 # Initialize logger
 logger = logging.getLogger(__name__)
 
 
 class CommunicationService(comms_pb2_grpc.CommunicationServicer):
     def FetchEnvironmentStream(self, request, context):
-        for data in iter(messageChannel.get,None):
+        for data in iter(messageChannel.get, None):
             json_str = json.dumps(data)
             yield comms_pb2.JSONData(
                 json_data=json_str,
@@ -76,76 +78,13 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
 
     # Loads config data to be used in simulation
     print("START:\tCreating NEAT config...")
-    # Create a copy of the config for each agent subtype
-    defConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predStdConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predNeatConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    predHyprConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyStdConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyNeatConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    preyHyprConfig = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        config_path
-    )
-    if multi_model:  # Zero out mutation rates for non-neat agents
-        predStdConfig.genome_config.__dict__['conn_add_prob'] = 0
-        predStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
-        predStdConfig.genome_config.__dict__['node_add_prob'] = 0
-        predStdConfig.genome_config.__dict__['node_delete_prob'] = 0
 
-        preyStdConfig.genome_config.__dict__['conn_add_prob'] = 0
-        preyStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
-        preyStdConfig.genome_config.__dict__['node_add_prob'] = 0
-        preyStdConfig.genome_config.__dict__['node_delete_prob'] = 0
-
-    # Add these configs to list
-    configList = [defConfig, predStdConfig, predNeatConfig,
-                  predHyprConfig, preyStdConfig, preyNeatConfig, preyHyprConfig]
-
+    configDict = build_configs(config_path=config_path)
     print("END:\tCreated configs")
 
     # Generates all relevant agent populations
     print("START:\tCreating NEAT population...")
-    population = neat.Population(defConfig)
+    population = neat.Population(configDict["defConfig"])
     pred_pop = int(len(population.population.items())*pred_percent)
     prey_pop = len(population.population.items()) - pred_pop
     if multi_model:
@@ -153,6 +92,8 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
         prey_pop_no_neat = int(prey_pop * model_split)
     else:
         pred_pop_no_neat = prey_pop_no_neat = 0
+    pred_pop = pred_pop - pred_pop_no_neat
+    prey_pop = prey_pop - prey_pop_no_neat
     print("END:\tCreated NEAT population")
     print(f"INFO:\tPredator population: {pred_pop}")
     print(f"INFO:\tPrey population: {prey_pop}")
@@ -163,7 +104,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     print("START:\tInitializing environment...")
 
     env.initialize_environment(
-        config=configList,
+        config=configDict,
         population=population,
         pred_pop=pred_pop,
         prey_pop=prey_pop,
@@ -177,63 +118,96 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
 
     # Initializes the logger
     print("INFO:\tStarting Logger...")
-    logger.info(f"Starting simulation with {configList[0].pop_size} agents...")
+    logger.info(
+        f"Starting simulation with {configDict["defConfig"].pop_size} agents...")
     logger.info(
         f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
-    return env, population, configList, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
+    return env, population, configDict, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
 
 
-def mutate(genome, configList, env, population_size, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_spawn_bounds,  prey_spawn_bounds, eliteism=0.1, crossover_rate=0.7, torunament_size=3):
-    # Create separate lists for predators and prey
-    predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.type == 1]
-    preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.type == 1]
-    no_neat_predators = [agent for agent in env.agents if isinstance(
-        agent, Predator) and agent.type == 0]
-    no_neat_preys = [agent for agent in env.agents if isinstance(
-        agent, Prey) and agent.type == 0]
-    logs.avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys)
-    for agent in env.agents:
-        if agent.neat_genome:
-            agent.neat_genome.fitness = agent.fitness
-
-    # Save the average fitness of both predator and prey populations to a CSV file
-    logs.avg_agent_fitness(predators, preys, no_neat_predators,no_neat_preys )
-
-    # Sort and retain the top 10% based on fitness
-    top_predators = sorted(predators, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(pred_pop * eliteism))]
-    top_preys = sorted(preys, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(prey_pop * eliteism))]
-    top_predators_no_neat = sorted(no_neat_predators, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(pred_pop_no_neat * eliteism))]
-    top_preys_no_neat = sorted(no_neat_preys, key=lambda x: x.fitness, reverse=True)[
-        :max(1, int(prey_pop_no_neat * eliteism))]
-
-    # Number of offspring to create for predators and prey
-    num_pred_offspring = int(pred_pop - len(top_predators))
-    num_prey_offspring = int(prey_pop - len(top_preys))
-    num_pred_offspring_no_neat = int(
-        pred_pop_no_neat - len(top_predators_no_neat))
-    num_prey_offspring_no_neat = int(
-        prey_pop_no_neat - len(top_preys_no_neat))
-
-    # Breed and mutate predators and prey
-    new_predators = breed_and_mutate(configList[2], top_predators, num_offspring=num_pred_offspring, multi_model=False,
-                                     bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="predator")
-    new_preys = breed_and_mutate(configList[5], top_preys,  num_offspring=num_prey_offspring, multi_model=False,
-                                 bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="prey")
-    if prey_pop_no_neat > 0 and pred_pop_no_neat > 0:
-        new_no_neat_preys = breed_and_mutate(configList[4], top_preys_no_neat,  num_offspring=num_prey_offspring_no_neat, multi_model=True,
-                                             bounds=prey_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="prey")
-        new_no_neat_preds = breed_and_mutate(configList[1], top_predators_no_neat, num_offspring=num_pred_offspring_no_neat, multi_model=True,
-                                             bounds=pred_spawn_bounds, crossover_rate=crossover_rate, torunament_size=torunament_size, subclass="predator")
-
-    # Replace the old population with the new one
-    env.add_agents(top_predators + top_preys + new_predators + new_preys +
-                   new_no_neat_preys + new_no_neat_preds + top_predators_no_neat + top_preys_no_neat)
+def evolve_all(
+    configList, env,
+    pred_pop, prey_pop,
+    pred_pop_no_neat, prey_pop_no_neat,
+    pred_pop_hyper, prey_pop_hyper,
+    pred_spawn_bounds, prey_spawn_bounds,
+    eliteism=0.1, crossover_rate=0.7, tournament_size=3
+):
+    """
+    Evolve all agent groups manually without NEAT speciation
+    ConfigList indices: 1=pred_no_neat, 2=pred_neat, 3=pred_hyper,
+                        4=prey_no_neat, 5=prey_neat, 6=prey_hyper
+    """
+    all_new_agents = []
+    # Define groups: (Class, type_flag, cfg, pop_size, bounds, subclass)
+    groups = [
+        (Predator, 1, configList["predNeatConfig"], pred_pop,
+         pred_spawn_bounds, "predator"),
+        (Prey,     1, configList["preyNeatConfig"],
+         prey_pop,      prey_spawn_bounds, "prey"),
+        (Predator, 0, configList["predStdConfig"], pred_pop_no_neat,
+         pred_spawn_bounds, "predator"),
+        (Prey,     0, configList["preyStdConfig"], prey_pop_no_neat,
+         prey_spawn_bounds, "prey"),
+        # hyperNEAT stubs if you ever implement them
+        (Predator, 2, configList["predHyprConfig"], pred_pop_hyper,
+         pred_spawn_bounds, "predator"),
+        (Prey,     2, configList["preyHyprConfig"],
+            prey_pop_hyper, prey_spawn_bounds, "prey"),
+    ]
+    for AgentCls, flag, cfg, size, bounds, subclass in groups:
+        # Gather survivors
+        survivors = [a for a in env.agents if isinstance(
+            a, AgentCls) and a.type == flag]
+        # Save fitness
+        for agent in survivors:
+            if agent.neat_genome:
+                agent.neat_genome.fitness = agent.fitness
+        # Select elites
+        num_elites = max(1, int(size * eliteism))
+        elites = sorted(survivors, key=lambda a: a.fitness,
+                        reverse=True)[:num_elites]
+        num_offspring = size - len(elites)
+        # Breed offspring using existing helper
+        offspring = []
+        if flag in (0, 1):
+            offspring = breed_and_mutate(
+                cfg,
+                elites,
+                num_offspring,
+                bounds,
+                multi_model=(flag == 0),
+                crossover_rate=crossover_rate,
+                torunament_size=tournament_size,
+                subclass=subclass
+            )
+        else:
+            # HyperNEAT stub: clone/mutate elites
+            # offspring = generate_hyperneat_offspring(
+            #     hyperneat_cfg=cfg,
+            #     num_offspring=num_offspring,
+            #     bounds=bounds,
+            #     substrate_schema=HYPERNEAT_SUBSTRATE_SCHEMA
+            # )
+            pass
+        # Combine
+        new_group = elites + offspring
+        # Sanity fill if mismatch
+        while len(new_group) < size:
+            # fallback random new genome
+            genome = neat.DefaultGenome(random.randint(0, 1_000_000))
+            genome.configure_new(cfg.genome_config)
+            genome.mutate(cfg.genome_config)
+            pos = [random.uniform(bounds[0], bounds[1]),
+                   random.uniform(bounds[2], bounds[3])]
+            new_group.append(AgentCls(id=genome.key, pos=pos,
+                             neat_genome=genome, neat_config=cfg, type=flag))
+        assert len(
+            new_group) == size, f"Group {AgentCls.__name__} flag={flag} expected {size}, got {len(new_group)}"
+        all_new_agents.extend(new_group)
+    # Replace all agents
+    env.add_agents(all_new_agents)
 
 
 # Main function, configures simulation then runs through epochs
@@ -246,11 +220,11 @@ def main():
 
     try:
         # scale bounds
-        constants.BOUNDS = [
+        bounds = [
             bound * constants.SCALE_FACTOR for bound in constants.BOUNDS]
-        constants.PREY_SPAWN_BOUNDS = [bound * constants.SCALE_FACTOR
-                                       for bound in constants.PREY_SPAWN_BOUNDS]
-        constants.PRED_SPAWN_BOUNDS = [
+        prey_spawn = [
+            bound * constants.SCALE_FACTOR for bound in constants.PREY_SPAWN_BOUNDS]
+        pred_spawn = [
             bound * constants.SCALE_FACTOR for bound in constants.PRED_SPAWN_BOUNDS]
 
         # Creates simulation environment
@@ -259,11 +233,11 @@ def main():
             simulation_type=constants.SIMULATION_TYPE,
             config_path=constants.CONFIG_PATH,
             steps=constants.STEPS,
-            bounds=constants.BOUNDS,
+            bounds=bounds,
             pred_percent=constants.PRED_PERCENT,
             food_amount=constants.FOOD_AMOUNT,
-            prey_spawn_bounds=constants.PREY_SPAWN_BOUNDS,
-            pred_spawn_bounds=constants.PRED_SPAWN_BOUNDS,
+            prey_spawn_bounds=prey_spawn,
+            pred_spawn_bounds=pred_spawn,
             food_respawn_rate=constants.FOOD_RESPAWN_RATE,
             multi_model=constants.MULTI_MODEL,
             model_split=constants.MODEL_SPLIT
@@ -277,26 +251,32 @@ def main():
         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
         crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
         torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
-        prey_spawn_bounds = constants.PREY_SPAWN_BOUNDS  # Spawn bounds for prey
-        pred_spawn_bounds = constants.PRED_SPAWN_BOUNDS  # Spawn bounds for predators
         logs.save_initial_genomes_json(env.agents)
+
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
             env.run()
             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
-                mutate(population, configList, env, populationSize, pred_pop,
-                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
-                       prey_spawn_bounds, pred_spawn_bounds,
-                       eliteism, crossover_rate=crossover_rate,
-                       torunament_size=torunament_size)
+                pred_bounds = prey_spawn
+                prey_bounds = pred_spawn
             else:
-                mutate(population, configList, env, populationSize, pred_pop,
-                       prey_pop, pred_pop_no_neat, prey_pop_no_neat,
-                       pred_spawn_bounds, prey_spawn_bounds,
-                       eliteism, crossover_rate=crossover_rate,
-                       torunament_size=torunament_size)
+                pred_bounds = pred_spawn
+                prey_bounds = prey_spawn
+
+            evolve_all(
+                configList,
+                env,
+                pred_pop,            # # of neat predators
+                prey_pop,            # # of neat prey
+                pred_pop_no_neat,    # # of non‑neat predators
+                prey_pop_no_neat,    # # of non‑neat prey
+                0,                   # # of hyper‑neat predators
+                0,                   # # of hyper‑neat prey
+                pred_bounds,         # spawn bounds for predators this epoch
+                prey_bounds          # spawn bounds for prey this epoch
+            )
             env.reset(constants.PRED_START_ENERGY, constants.PREY_START_ENERGY,
-                      prey_spawn_bounds, pred_spawn_bounds)
+                      prey_spawn, pred_spawn)
             end_time = time.time()  # End timing the epoch
 
             epoch_duration = end_time - start_time

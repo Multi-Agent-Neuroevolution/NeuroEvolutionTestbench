@@ -125,7 +125,7 @@ class Environment:
             ])
             genome = copy.deepcopy(population.population[i + 1])
             agents.append(
-                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config[2], type=1))
+                Predator(id=i, pos=pos, neat_genome=genome, neat_config=config["predNeatConfig"], type=1))
 
         # Initialize prey
         for i in range(prey_pop):
@@ -136,7 +136,7 @@ class Environment:
             ])
             genome = copy.deepcopy(population.population[i + pred_pop])
             agents.append(Prey(id=(i + pred_pop), pos=pos,
-                          neat_genome=genome, neat_config=config[5], type=1))
+                          neat_genome=genome, neat_config=config["preyNeatConfig"], type=1))
         # Initialize pred_no_neat
         for i in range(pred_no_neat_pop):
 
@@ -146,7 +146,7 @@ class Environment:
             ])
             genome = copy.deepcopy(population.population[i + 1])
             agents.append(
-                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config[1], type=0))
+                Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config["predStdConfig"], type=0))
 
         # Initialize prey_no_neat
         for i in range(prey_no_neat_pop):
@@ -157,7 +157,7 @@ class Environment:
             ])
             genome = copy.deepcopy(population.population[i + pred_pop])
             agents.append(Prey(id=(i + prey_pop), pos=pos,
-                          neat_genome=genome, neat_config=config[4], type=0))
+                          neat_genome=genome, neat_config=config["preyStdConfig"], type=0))
 
         self.add_agents(agents)
 

@@ -2,6 +2,7 @@
 # Parameters for simulation creation
 SIMULATION_TYPE = "PRED_PREY"
 CONFIG_PATH = "./Config/neat.conf"
+HYPERNEAT_CONFIG_PATH = "./Config/hypr.conf"
 STEPS = 250
 BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 
@@ -32,11 +33,12 @@ PRED_EAT_ENERGY_GAIN = 50       # Energy gained by predator when eating prey
 PRED_FAIL_ENERGY_COST = 3       # Energy lost by predator when failing to catch prey
 
 PREY_START_ENERGY = 100         # Starting energy for prey
-PREY_MOVE_COST = 0.18           # Energy lost by prey when moving
-PREY_FAIL_ENERGY_COST = 0.5     # Energy lost by prey when failing to escape predator
+PREY_MOVE_COST = 0.35           # Energy lost by prey when moving
+# Energy lost by prey when failing to escape predator
+PREY_FAIL_ENERGY_COST = 0.55
 PREY_EAT_ENERGY_GAIN = 15       # Energy gained by prey when eating food
 # Rate at which prey loose speed as they get more hungry (less energy) Set to 0 to disable
-PREY_DECAY_MOVE_RATE = 0.1
+PREY_DECAY_MOVE_RATE = 0.15
 # Parameters for Neat/non-neat agents
 
 # If true some agents will be NEAT agents and some will be non-NEAT agents

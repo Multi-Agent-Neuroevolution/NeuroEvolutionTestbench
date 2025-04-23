@@ -21,20 +21,29 @@ class Hyper_model(self):
         self.model_type = model_type
         self.model_config = model_config
         self.hypermodels = None  # List of hyperNEAT models
-        self.hypergenomes = None  # List of hyperNEAT genomes
         pass
 
-    def create_model(self):
+    def create_models(self, configPath):
         """
         Creates the HyperNEAT model.
         """
-        self.hypergenomes = neat.Population(self.hyperConfig)
+        self.hyperConfig = neat.Config(
+            neat.DefaultGenome,
+            neat.DefaultReproduction,
+            neat.DefaultSpeciesSet,
+            neat.DefaultStagnation,
+            configPath
+        )
+        self.hypermodels = neat.Population(self.hyperConfig)
+
         pass
 
-    def hypermutate(self):
+    def generate_hyperneat_offspring(survivors,
+                                     num_offspring,
+                                     bounds,
+                                     substrate_schema):
         """
-        Mutates the hyper-parameters of the agent's model.
-        Returns a dictionary of the mutated hyper-parameters.
+        Generates offspring from the hyperNEAT model.
         """
         pass
 
