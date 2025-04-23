@@ -45,10 +45,10 @@ class Hyper_model(self):
         """
         Generates offspring from the hyperNEAT model.
         """
-        pass
+    pass
 
     def breed(self):
         """
         Breeds/trains the hyperNEAT model.
         """
-        pass
+    pass

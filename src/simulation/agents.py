@@ -163,7 +163,7 @@ class Agent(Shape):
             # [dx, dy] + [is_pred, is_prey, is_food] + [in_bite, present=1]
             inputs.extend([dx, dy] + type_vec + [in_bite, 1.0])
 
-        # 4) Pad empty slots with sentinel + zeros + present=0
+        # 4) Pad empty slots with
         num_missing = max_closest - len(closest)
         for _ in range(num_missing):
             inputs.extend([
