@@ -55,8 +55,10 @@
 
 ## Sprint 12 Start: March 26
 (Sprint 12 duration: Apr 8 – Apr 24)
+- Worked on the final system test plan document, added a few different tests and also test a few of them to make sure that they would work. Found something that didnt and we got that solved. 
 - Didnt have enough time to implement the graphs due to other school constraints like work but I was able to implement live tracking of the agent variables through the CLI. This allowed for ease of use/understanding because the agents population count was tracked in real time next to the simulation with the neat and hyperneat agents. 
-
-
+- Worked on the poster a little bit to fix up some things that Dr. Akbas said to fix
+- Did the in person presentation on Apr 24. 
+- Finished the 15 minute presentation with the group, did the design considerations slides
 
 
