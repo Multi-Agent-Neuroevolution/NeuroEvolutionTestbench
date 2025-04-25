@@ -115,3 +115,44 @@ The team met in person today, where I was able to discuss the big changes I've m
 ![Snippet of code that was fixed](./LogPictures/Adrian/Adrian_02202025_preyissue.png)
 
 Besides that, after looking over the changes, I got approval from my team to merge the changes I've made into the main "feature-hyperneat" branch, so everyone can work from the new, reworked code.
+
+### Date: February 25th, 2025
+The team met in person today. I was able to finish merging my code changes into our main feature branch. The reason for this prolonged process was that there were various merge conflicts, to no one's surprise; the changes I made, while preferable over the current state of the code, were big rewrites in some cases.
+
+### Date: March 17th, 2025
+The team met today for the first time post-Spring Break. We touched base on what remains to be completed, in order to plan out how the rest of the semester will proceed.
+
+### Date: April 1st, 2025
+The team met today in class. Jackson S. was able to successfully finish adding the multi-model functionality of the simulator, allowing for agents to be created with and without NEAT.
+
+### Date: April 3rd, 2025
+The team met today in class. Jackson S. was able to create a viewer for neural network topologies of the agents in our simulations, allowing us to see exactly how each agent's brain was evolving. We found some interesting results, which I believe is due to our prey implementation (they technically do not lose energy, which is a holdout of our prior simulation testing). Thus, we discussed how to change this implementation, and one of the biggest changes suggested was to make sure prey can actually pass away naturally.
+
+### Date: April 8th, 2025
+The team met today in class. Jackson B. spoke with me about the GUI code, and asked if we had Python code already for dict conversions. The reason for this is that the GUI code we had before had object visualization hard-coded to ensure that the code worked. So, to make things simpler, we could convert the data we're saving from the Python simulation into a format similar to what was used in the Rust code.
+
+### Date: April 9th, 2025
+I was able to push and merge my changes regarding the addition of the dict conversion function to the Obstacle class (and relevant subclasses). This'll help with passing obstacle information to the Rust GUI code properly, similar to Jackson B.'s dict conversion function for the Agent class.
+
+### Date: April 10th, 2025
+The team met today. Colton was able to update the progress bar code that Jackson S. had created. We were able to add active prey and predator population tracking to said code, allowing for the ability to check population sizes in real-time with the terminal, while issues with the GUI code continued to be ironed out. That way, we would still be able to see how well the Python simulation code was working, without being held back by the lack of GUI.
+
+Jackson S. and I also talked about the implementation of hyperNEAT into the agent creation process. When the multi-model support was initially added, we made a flag that determined whether an agent was to be created with NEAT or not. While this was functional, it meant no other models could technically be added besides two at a time. So, after some deliberation, I suggested we simply rework the flag variable from a simple boolean value to int values, with the idea being that it function somewhat like a switch statement. 
+
+### Date: April 15th, 2025
+The team met today. Jackson S. continued to work on the multi-model support, picking up where we left off on the multi-model support update. He and I discussed an issue that we had, where every model was effectively using the same configuration file, possibly affecting our results. Jackson S. ended up rewriting part of the code so that there would be separate Config variables for each model, although I believe there is a better way to implement this config creation using dicts.
+
+### Date: April 17th, 2025
+The team met today. I let the team know about the changes I pushed regarding the server.py file to my cleanup branch. This includes a rewrite of how the multiple config file generation is handled, which I've attached below. I moved the relevant code into a new function, then made it so the function can receive an unlimited amount of config names, which then determines how many config files are created, using the names passed to save each config file in a dict.
+
+![alt text](./LogPictures/Adrian/Adrian_04172025.png)
+
+### Date: April 22th, 2025
+After a lot of testing and debugging, the Rust GUI is finally in a functional state. With the fixed configuration of the JSON files that hold the information of agents, environment obstacles, etc. over the past few weeks, what had remained was the proper reading of said files into the Rust code, which as mentioned prior was having issues with the data stream. Fortunately, thanks to Jackson B.'s efforts, these issues were ironed out, and the GUI now properly shows every agent, piece of food, and object within the environment in real-time.
+
+The team took today to update our poster with figures taken from the GUI. I also pushed a WIP change to the mutate function that's part of the Simulation class, as part of my code cleanup efforts.
+
+### Date: April 24th, 2025
+Today marks the last day of the semester, and with it, our project. I completed peer evaluations for all of my team members, and we completed our poster session and final product presentation.
+
+This marks the end of this engineering notebook.
