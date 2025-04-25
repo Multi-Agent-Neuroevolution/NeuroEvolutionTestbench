@@ -111,3 +111,51 @@ Kai Sniadach Dev Log
         Worked through some functions in agent.py to try and remove redundancies and set up some methods to make hyperNEAT easier to implement.
     ### 02/20/2025
         Started to set up tasks for next sprint in order to get HyperNEAT working. Talked with Jackson Baker and Salyards about what steps we need to take.
+
+## Sprint 10
+    02/25 - 03/06
+
+    ### 02/25/2025
+        Started breaking down the requirements for the SRS document. Coordinated with the team to delegate who would be filling out which sections and made sure everyone was clear on expectations and deadlines.
+
+    ### 02/27/2025
+        Focused on initial integration work for HyperNEAT. Looked over relevant documentation and prior NEAT implementation to figure out how best to incorporate the additional complexity HyperNEAT introduces (indirect encoding, CPPN structure, etc.).
+
+    ### 03/04/2025
+        Worked on the abstract for submission to AIAA.
+
+    ### 03/06/2025
+        Sent the abstract to Professor Akbas for revision.
+
+## Sprint 11
+    03/18 - 04/03
+
+    ### 03/18/2025
+        Started on the sprint goals, getting out of the spring break so just trying to get everyone back on track with work and transitioning smoothly back into working on the project.
+    
+    ### 03/21/2025
+        Reviewed our current agent architecture with Jackson S. to ensure it could support multiple agent types at once. Sat down with Salyards to plan this out and start prototyping.
+
+    ### 03/25/2025
+        Worked on getting multiple different agent types working in a simulation environment at once (for example NEAT and non-neat)
+
+## Sprint 12
+    04/08 - 04/24
+
+    ### 04/08/2025
+        Kicked off the sprint by initializing the final set of goals for the semester and an outline for revisions to the STP (software test plan). Worked with the team to ensure all edge cases for multiple agent types were included in our testing scenarios.
+
+    ### 04/10/2025
+        Focused on implementing core elements of HyperNEAT in the backend. 
+
+    ### 04/15/2025
+        Helped with the structure and design of our final poster. Went through previous logs and documentation to pull together highlights of our technical contributions and project milestones. Talked to Professor Akbas about possible revisions.
+
+    ### 04/17/2025
+        Worked on the final presentation, revising based on the previous final presentation slides, updating with the added content worked on this semester. SRS helped with this.
+
+    ### 04/22/2025
+        Picked up the poster from printing after making final revisions.
+
+    ### 04/24/2025
+        Poster presentation day, finished the peer evaluations and finished recording the presentation.
