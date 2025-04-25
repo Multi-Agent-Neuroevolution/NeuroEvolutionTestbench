@@ -69,6 +69,9 @@ The team met virtually over Discord, with the intent of completing our video pre
 ### Date: December 5th, 2024
 The team met in person today at the poster presentation session. We stayed in the Lehman building atrium for the duration of the event; I spoke with a few group members of other projects, as well to others about our own project. I also helped with the completion of the test plan document, which was due tonight.
 
+### Date: January 21st, 2025
+The team met today in person. I have been having dependency issues and thus have been unable to run the project in order to ensure changes that I make to the project codebase work properly. Unfortunately, this has hampered my productivity, so I've been focused on getting these issues fixed as soon as possible. Besides that, the team has been making good progress on HyperNEAT implementation.
+
 ### Date: January 23rd, 2025
 The team met today during class time. I finally fixed my dependency issues, although the manner I did so was unconventional. Because of this, I recommended--and subsequently took it upon myself--to clean the project file structure. When the extra branches we had on GitHub were cleaned up, the merges must have resulted in some wonky directory, such as there being a "simulation" folder nested within a parent "Simulation" folder for no real reason.
 
@@ -84,3 +87,71 @@ The team met in person today, with a major breakthrough: basic NEAT configuratio
 The team met in person today. We were able to finally see the agents working autonomously in a basic simulation, where the statistics were recorded that showed the average fitness values of both predator and prey populations fluctuating over time. We touched on steps to complete the SRS document, as it is due at the start of this next week.
 
 Since our main Python file used for creating and running the simulation was starting to become overly large, I worked on reformatting the file to cut down on this issue. This mainly consisted of creating a new, dedicated Python file for logging purposes (besides the basic sim.log).
+
+### Date: February 4th, 2025
+The team met in person today. Since the final revision of the SRS document is due tonight, much of the discussion we had was focused on making sure we finished our new section of the document to do with global impacts. I helped complete parts of the group-assigned topics in order to get the ball rolling, then revised many of the requirements, new and old, in order to make sure that they were written in a proper manner.
+
+### Date: February 6th, 2025
+The team met in person today. Being the first meeting post-SRS submission, we touched back on base to get a feel of how everyone's been progressing in their respective tasks.
+
+### Date: February 11th, 2025
+The team met in person today. Working on code maintenance, I figured a good place to start would be to identify which files are being unused. Two files that I chose to delete were move_test.py and movement.py. These were the original pieces of movement code created last semester, which we've ended up expanding on and implementing in a better manner in other files, such as environment.py. move_test.py was also test code, and not meant to be a final product, so removing them from the project was for the best. I also made some formatting adjustments in environment.py while seeing where the movement code was implemented, in order to improve code readability. In doing so, I also noticed some pieces of code that I figure can be reworked later.
+
+### Date: February 13th, 2025
+The team met in person today. I continued working on code maintenance. Progress today involved the mutation functionality for the agents, which occurs after each epoch. The function mutate() is found in environment.py, and included a nested function breed_and_mutate(). In order to cut down on the length of the file, I opted to move the nested function into its own proper utilities file, named evolution_utils.py. I then adjusted the code of said function to be less redundant, by moving the initial if-else statement into the for loop. It is functionally the same, but cuts back on repeated code.
+
+I also noticed that there were a few variables being used for creating the simulation that were effectively being treated as constants. In order to keep track of these constants, I created a Python module specifically for holding every constant (constants.py), which can then be imported into files where necessary.
+
+![Snippet showing how constants.py looks](./LogPictures/Adrian/Adrian_02132025_constants.png)
+
+### Date: February 19th, 2025
+Today marked a turning point in my progress towards creating a better, more maintainable project codebase. Ever since we added predator and prey agent creation functionality, the code for that was delegated to a file, predator_prey.py. Two classes, Predator() and Prey(), are subclasses based on the Agent() class found in agents.py. In order to cut down on "file spam," I worked on moving these subclasses to agents.py. That way, it would also be easier to know where to look for these subclasses; it makes sense that you would find subclasses under their parent classes (though I should note that obviously this is on).
+
+I also reworked how obstacles are created in the simulation environment. Previously, obstacles would be created with the Obstacle() class, which would include an attribute indicating the type of obstacle being created. Different types of obstacles were thus created and differentiated just by strings, such as "food." I decided to rework this into new subclasses, like Food(), which allow for the subclass to be called with various attributes automatically filled (only needing to pass a position value), rather than having to manually do so in the code every time someone wants to add a section that pertains to food spawning.
+
+### Date: February 20th, 2025
+The team met in person today, where I was able to discuss the big changes I've made to the codebase with respect to how obstacles are created in the simulation environment and where different subclasses are stored. Jackson S. and I both went over my changes, so he would be able to understand what exactly has changed and where functions may have been moved to. During this, we were able to fix a bug that popped up while I was reworking the code, where no prey agents would actually be created during the first epoch ran. As it turns out, this was due to the _initialize_agents() function never utilizing the Prey() class; I had accidentally written Predator() twice when moving this functionality to environment.py.
+
+![Snippet of code that was fixed](./LogPictures/Adrian/Adrian_02202025_preyissue.png)
+
+Besides that, after looking over the changes, I got approval from my team to merge the changes I've made into the main "feature-hyperneat" branch, so everyone can work from the new, reworked code.
+
+### Date: February 25th, 2025
+The team met in person today. I was able to finish merging my code changes into our main feature branch. The reason for this prolonged process was that there were various merge conflicts, to no one's surprise; the changes I made, while preferable over the current state of the code, were big rewrites in some cases.
+
+### Date: March 6th, 2025
+
+### Date: March 17th, 2025
+
+### Date: April 1st, 2025
+The team met today in class. Jackson S. was able to successfully finish adding the multi-model functionality of the simulator, allowing for agents to be created with and without NEAT.
+
+### Date: April 3rd, 2025
+The team met today in class. Jackson S. was able to create a viewer for neural network topologies of the agents in our simulations, allowing us to see exactly how each agent's brain was evolving. We found some interesting results, which I believe is due to our prey implementation (they technically do not lose energy, which is a holdout of our prior simulation testing). Thus, we discussed how to change this implementation, and one of the biggest changes suggested was to make sure prey can actually pass away naturally.
+
+### Date: April 8th, 2025
+The team met today in class. Jackson B. spoke with me about the GUI code, and asked if we had Python code already for dict conversions. The reason for this is that the GUI code 
+
+### Date: April 9th, 2025
+I was able to push and merge my changes regarding the addition of the dict conversion function to the Obstacle class (and relevant subclasses). This'll help with passing obstacle information to the Rust GUI code properly, similar to Jackson B.'s dict conversion function for the Agent class.
+
+### Date: April 10th, 2025
+The team met today. Colton was able to update the progress bar code that Jackson S. had created. We were able to add active prey and predator population tracking to said code, allowing for the ability to check population sizes in real-time with the terminal, while issues with the GUI code continued to be ironed out. That way, we would still be able to see how well the Python simulation code was working, without being held back by the lack of GUI.
+
+Jackson S. and I also talked about the implementation of hyperNEAT into the agent creation process. When the multi-model support was initially added, we made a flag that determined whether an agent was to be created with NEAT or not. While this was functional, it meant no other models could technically be added besides two at a time. So, after some deliberation, I suggested we simply rework the flag variable from a simple boolean value to int values, with the idea being that it function somewhat like a switch statement. 
+
+### Date: April 15th, 2025
+The team met today. Jackson S. continued to work on the multi-model support, picking up where we left off on the multi-model support update. He and I discussed an issue that we had, where every model was effectively using the same configuration file, possibly affecting our results. Jackson S. ended up rewriting part of the code so that there would be separate Config variables for each model, although I believe there is a better way to implement this config creation using dicts.
+
+### Date: April 17th, 2025
+The team met today. I let the team know about the changes I pushed regarding the server.py file to my cleanup branch.
+
+### Date: April 22th, 2025
+After a lot of testing and debugging, the Rust GUI is finally in a functional state. With the fixed configuration of the JSON files that hold the information of agents, environment obstacles, etc. over the past few weeks, what had remained was the proper reading of said files into the Rust code, which as mentioned prior was having issues with the data stream. Fortunately, thanks to Jackson B.'s efforts, these issues were ironed out, and the GUI now properly shows every agent, piece of food, and object within the environment in real-time.
+
+The team took today to update our poster with figures taken from the GUI. I also pushed a WIP change to the mutate function that's part of the Simulation class, as part of my code cleanup efforts.
+
+### Date: April 24th, 2025
+Today marks the last day of the semester, and with it, our project. I completed peer evaluations for all of my team members, and we completed our poster session and final product presentation.
+
+This marks the end of this engineering notebook.
