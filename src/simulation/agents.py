@@ -244,13 +244,13 @@ class Agent(Shape):
     # This method adjusts the agent position if it goes out of bounds
     def check_bounds(self, bounds):
         if self.pos[0] < bounds[0]:
-            self.pos[0] = bounds[0] + 1
-        if self.pos[0] > bounds[1]:
             self.pos[0] = bounds[1] - 1
+        if self.pos[0] > bounds[1]:
+            self.pos[0] = bounds[0] + 1
         if self.pos[1] < bounds[2]:
-            self.pos[1] = bounds[2] + 1
-        if self.pos[1] > bounds[3]:
             self.pos[1] = bounds[3] - 1
+        if self.pos[1] > bounds[3]:
+            self.pos[1] = bounds[2] + 1
 
 
 class Predator(Agent):
@@ -296,10 +296,11 @@ class Predator(Agent):
         hunt_reward = self.prey_eaten * 5.0
         energy_reward = self.energy * 0.005
         survival_reward = self.age * 0.01
-        self.fitness = hunt_reward + energy_reward + survival_reward
+        nearby_predators = sum(1 for obj in self.state.interactables
+                               if isinstance(obj, Prey) and obj.alive)
+        proximity_bonus = nearby_predators * 0.5
+        self.fitness = hunt_reward + energy_reward + survival_reward + proximity_bonus
         # Apply diminishing returns for very successful predators
-        if self.fitness > 50:
-            self.fitness = 50 + (self.fitness - 50) * 0.5
 
     def _eat(self):
         """Handles the eating action of the predator agent, finding the closest prey object if applicable."""
@@ -352,17 +353,15 @@ class Prey(Agent):
     def _update_fitness(self):
         """Updates the fitness of the prey agent."""
         # TODO: Add these values to the constants file
-        # Base survival reward
-        survival_reward = 0.01
         distance_from_spawn = np.linalg.norm(self.pos - self.spawn)
-        distance_reward = min(distance_from_spawn * 0.001,
-                              0.1)  # Cap the distance reward
-        age_reward = min(self.age * 0.001, 0.5)  # Cap the age reward
+        distance_reward = min(distance_from_spawn * 0.01,
+                              1)  # Cap the distance reward
+        age_reward = min(self.age * 0.1, 1)  # Cap the age reward
         # Predator avoidance reward
         nearby_predators = sum(1 for obj in self.state.interactables
                                if isinstance(obj, Predator) and obj.alive)
         predator_pen = nearby_predators * 0.05
-        increment = survival_reward + distance_reward + age_reward - predator_pen
+        increment = distance_reward + age_reward - predator_pen
         # Apply a sigmoidesque cap to prevent exponential growth
         self.fitness += increment / (1 + self.fitness/1000)
 

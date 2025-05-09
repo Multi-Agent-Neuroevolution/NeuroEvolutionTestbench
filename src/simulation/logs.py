@@ -155,13 +155,22 @@ def pass_predator_log(agents):
     return num_predators_stand, num_predators_neat, num_predators_hyper
 
 
-def avg_agent_fitness(predators, preys, no_neat_predators, no_neat_preys):
+def avg_agent_fitness(agents):
     """Saves the average fitness of the predator and prey populations to a CSV file.
 
     Args:
         predators (list): A list of all predators in the simulation.
         preys (list): A list of all preys in the simulation.
     """
+    predators = [agent for agent in agents if isinstance(
+        agent, Predator) and agent.type == 1]
+    preys = [agent for agent in agents if isinstance(
+        agent, Prey) and agent.type == 1]
+    no_neat_predators = [agent for agent in agents if isinstance(
+        agent, Predator) and agent.type == 0]
+    no_neat_preys = [agent for agent in agents if isinstance(
+        agent, Prey) and agent.type == 0]
+
     avg_pred_fitness = np.mean([predator.fitness for predator in predators])
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
     avg_pred_fitness_no_neat = np.mean(

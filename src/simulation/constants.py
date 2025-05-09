@@ -11,7 +11,7 @@ BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 RATIO = 0.75
 PRED_PERCENT = 1 - RATIO
 FOOD_AMOUNT = 100  # Amount of food in the environment for prey to eat
-PREY_SPAWN_BOUNDS = [-150, 150, 150, 50]
+PREY_SPAWN_BOUNDS = [-100, 100, 100, 25]
 PRED_SPAWN_BOUNDS = [150, -150, -150, -50]
 # Causes the predator and prey spawn bounds to be swapped at the halfway point of the simulation
 SWAP_BOUNDS = True
@@ -33,10 +33,10 @@ PRED_EAT_ENERGY_GAIN = 50       # Energy gained by predator when eating prey
 PRED_FAIL_ENERGY_COST = 3       # Energy lost by predator when failing to catch prey
 
 PREY_START_ENERGY = 100         # Starting energy for prey
-PREY_MOVE_COST = 0.35           # Energy lost by prey when moving
+PREY_MOVE_COST = 0.5          # Energy lost by prey when moving
 # Energy lost by prey when failing to escape predator
 PREY_FAIL_ENERGY_COST = 0.55
-PREY_EAT_ENERGY_GAIN = 15       # Energy gained by prey when eating food
+PREY_EAT_ENERGY_GAIN = 40      # Energy gained by prey when eating food
 # Rate at which prey loose speed as they get more hungry (less energy) Set to 0 to disable
 PREY_DECAY_MOVE_RATE = 0.15
 # Parameters for Neat/non-neat agents

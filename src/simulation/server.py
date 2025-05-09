@@ -262,7 +262,7 @@ def main():
             else:
                 pred_bounds = pred_spawn
                 prey_bounds = prey_spawn
-
+            logs.avg_agent_fitness(env.agents)
             evolve_all(
                 configList,
                 env,
