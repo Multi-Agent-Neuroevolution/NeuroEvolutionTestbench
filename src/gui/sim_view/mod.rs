@@ -63,15 +63,97 @@ impl Simulation {
     }
 
     pub fn draw(&self, renderer: &Renderer, bounds: Rectangle) -> Vec<canvas::Geometry> {
+        // 1) Compute world‐space min/max (same as before)…
+        let mut min_x = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+
+        for agent in &self.agents {
+            min_x = min_x.min(agent.x);
+            max_x = max_x.max(agent.x);
+            min_y = min_y.min(agent.y);
+            max_y = max_y.max(agent.y);
+        }
+
+        for shape in &self.shapes {
+            match shape {
+                Shape::Circle { x, y, radius, .. } => {
+                    min_x = min_x.min(x - radius);
+                    max_x = max_x.max(x + radius);
+                    min_y = min_y.min(y - radius);
+                    max_y = max_y.max(y + radius);
+                }
+                Shape::Rectangle {
+                    x,
+                    y,
+                    width,
+                    height,
+                    ..
+                } => {
+                    min_x = min_x.min(*x);
+                    max_x = max_x.max(x + width);
+                    min_y = min_y.min(*y);
+                    max_y = max_y.max(y + height);
+                }
+                Shape::Triangle {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x3,
+                    y3,
+                    ..
+                } => {
+                    for &(xx, yy) in &[(*x1, *y1), (*x2, *y2), (*x3, *y3)] {
+                        min_x = min_x.min(xx);
+                        max_x = max_x.max(xx);
+                        min_y = min_y.min(yy);
+                        max_y = max_y.max(yy);
+                    }
+                }
+                Shape::Line { x1, y1, x2, y2, .. } => {
+                    min_x = min_x.min(*x1).min(*x2);
+                    max_x = max_x.max(*x1).max(*x2);
+                    min_y = min_y.min(*y1).min(*y2);
+                    max_y = max_y.max(*y1).max(*y2);
+                }
+            }
+        }
+
+        let world_w = (max_x - min_x).max(1.0);
+        let world_h = (max_y - min_y).max(1.0);
+
+        // 2) Use fields, not methods:
+        let sx = bounds.width / world_w;
+        let sy = bounds.height / world_h;
+        let scale = sx.min(sy);
+
+        let extra_x = (bounds.width - world_w * scale) / 2.0;
+        let extra_y = (bounds.height - world_h * scale) / 2.0;
+
+        let world_to_canvas = |wx: f32, wy: f32| {
+            let cx = (wx - min_x) * scale + extra_x;
+            let cy = (wy - min_y) * scale + extra_y;
+            Point::new(cx, cy)
+        };
+
+        // 3) Draw
         let mut geometries = Vec::new();
-        for agent in self.agents.iter() {
-            let circle = canvas::Path::circle(Point::new(agent.x + 200.0, agent.y + 200.0), 1.0);
-            let color = get_color(agent.color.to_string());
-            let mut frame = canvas::Frame::new(renderer, bounds.size());
-            frame.fill(&circle, color);
+
+        // draw agents with a fixed radius
+        for agent in &self.agents {
+            let center = world_to_canvas(agent.x, agent.y);
+            let r = 1.0 * scale; // or whatever base radius you want
+            let circle = Path::circle(center, r);
+            let mut frame = Frame::new(renderer, Size::new(bounds.width, bounds.height));
+            frame.fill(&circle, get_color(agent.color.clone()));
             geometries.push(frame.into_geometry());
         }
-        for shape in self.shapes.iter() {
+
+        // draw shapes (same as before, but use fields and scale)
+        for shape in &self.shapes {
+            let mut frame = Frame::new(renderer, Size::new(bounds.width, bounds.height));
             match shape {
                 Shape::Circle {
                     x,
@@ -79,12 +161,9 @@ impl Simulation {
                     radius,
                     color,
                 } => {
-                    let circle = canvas::Path::circle(Point::new(*x + 200.0, *y + 200.0), *radius);
-
-                    let color = get_color(color.to_string());
-                    let mut frame = canvas::Frame::new(renderer, bounds.size());
-                    frame.fill(&circle, color);
-                    geometries.push(frame.into_geometry());
+                    let c = world_to_canvas(*x, *y);
+                    let circle = Path::circle(c, radius * scale);
+                    frame.fill(&circle, get_color(color.clone()));
                 }
                 Shape::Rectangle {
                     x,
@@ -93,14 +172,9 @@ impl Simulation {
                     height,
                     color,
                 } => {
-                    let rectangle = canvas::Path::rectangle(
-                        Point::new(*x + 200.0, *y + 200.0),
-                        Size::new(*height, *width),
-                    );
-                    let color = get_color(color.to_string());
-                    let mut frame = canvas::Frame::new(renderer, bounds.size());
-                    frame.fill(&rectangle, color);
-                    geometries.push(frame.into_geometry());
+                    let origin = world_to_canvas(*x, *y);
+                    let rect = Path::rectangle(origin, Size::new(width * scale, height * scale));
+                    frame.fill(&rect, get_color(color.clone()));
                 }
                 Shape::Triangle {
                     x1,
@@ -111,16 +185,13 @@ impl Simulation {
                     y3,
                     color,
                 } => {
-                    let triangle = canvas::Path::new(|p| {
-                        p.move_to(Point::new(*x1 + 200.0, *y1 + 200.0));
-                        p.line_to(Point::new(*x2 + 200.0, *y2 + 200.0));
-                        p.line_to(Point::new(*x3 + 200.0, *y3 + 200.0));
+                    let tri = Path::new(|p| {
+                        p.move_to(world_to_canvas(*x1, *y1));
+                        p.line_to(world_to_canvas(*x2, *y2));
+                        p.line_to(world_to_canvas(*x3, *y3));
                         p.close();
                     });
-                    let color = get_color(color.to_string());
-                    let mut frame = canvas::Frame::new(renderer, bounds.size());
-                    frame.fill(&triangle, color);
-                    geometries.push(frame.into_geometry());
+                    frame.fill(&tri, get_color(color.clone()));
                 }
                 Shape::Line {
                     x1,
@@ -129,22 +200,18 @@ impl Simulation {
                     y2,
                     color,
                 } => {
-                    let line = canvas::Path::line(
-                        Point::new(*x1 + 200.0, *y1 + 200.0),
-                        Point::new(*x2, *y2),
-                    );
-                    let color = get_color(color.to_string());
-                    let mut frame = canvas::Frame::new(renderer, bounds.size());
-                    frame.fill(&line, color);
+                    let line = Path::line(world_to_canvas(*x1, *y1), world_to_canvas(*x2, *y2));
                     frame.stroke(
-                        //Makes the line visible
                         &line,
-                        canvas::Stroke::default().with_color(color).with_width(1.0),
+                        canvas::Stroke::default()
+                            .with_color(get_color(color.clone()))
+                            .with_width(1.0),
                     );
-                    geometries.push(frame.into_geometry());
                 }
             }
+            geometries.push(frame.into_geometry());
         }
+
         geometries
     }
 }

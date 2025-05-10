@@ -25,7 +25,6 @@ use std::thread::sleep;
 use std::time::Duration;
 use tonic::transport::Channel;
 
-
 #[derive(Default)]
 struct View {
     speed: i32,
@@ -157,14 +156,12 @@ impl View {
             Message::SimStart => {
                 let cloneConn = match self.connection.as_mut() {
                     Some(conn) => conn.clone(),
-                    None => match self.rt.as_mut(){
-                        Some(rt)=>{
-                            rt.block_on(getConnection()).unwrap()
-                        },
-                        None=>{
+                    None => match self.rt.as_mut() {
+                        Some(rt) => rt.block_on(getConnection()).unwrap(),
+                        None => {
                             self.rt = Some(Runtime::new().unwrap());
                             self.rt.as_mut().unwrap().block_on(getConnection()).unwrap()
-                        },
+                        }
                     },
                 };
                 //let cloneConn = self.connection.as_mut().unwrap().clone();

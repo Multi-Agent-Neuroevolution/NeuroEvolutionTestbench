@@ -187,30 +187,41 @@ class Agent(Shape):
         return self.pos - obj.pos
 
     def get_collisions(self):
+        """
+        Populate self.state.collisions with any collidable objects
+        intersecting this agent’s circle (self.pos, self.radius).
+        Returns True if any were found.
+        """
         self.state.collisions.clear()
+
         for obj in self.state.objs:
-            if not obj.collidable:
+            if not obj.collidable or obj is self:
                 continue
+
             if obj.shape == "Circle":
-                # Check for circle collision
-                dist = np.linalg.norm(self.pos - obj.pos)
-                if dist < (self.radius + obj.radius):
+                # standard center‐to‐center test
+                d = np.linalg.norm(self.pos - obj.pos)
+                if d < (self.radius + obj.radius):
                     self.state.collisions.append(obj)
+
             elif obj.shape == "Rectangle":
-                # Check for rectangle collision
-                nearest_x = np.clip(self.pos[0], obj.pos[0] - obj.width / 2,
-                                    obj.pos[0] + obj.width / 2)
-                nearest_y = np.clip(self.pos[1], obj.pos[1] - obj.height / 2,
-                                    obj.pos[1] + obj.height / 2)
+                # rectangle defined from top‐left (obj.pos)
+                left = obj.pos[0]
+                top = obj.pos[1]
+                right = left + obj.width
+                bottom = top + obj.height
 
-                dist = np.linalg.norm(
-                    self.pos - np.array([nearest_x, nearest_y]))
-                if dist < self.radius:
+                # find closest point on rect to agent center
+                nearest_x = np.clip(self.pos[0], left, right)
+                nearest_y = np.clip(self.pos[1], top,  bottom)
+
+                # distance² from agent center to that point
+                dx = self.pos[0] - nearest_x
+                dy = self.pos[1] - nearest_y
+                if dx*dx + dy*dy < self.radius * self.radius:
                     self.state.collisions.append(obj)
 
-        if len(self.state.collisions) > 0:
-            return True
-        return False
+        return bool(self.state.collisions)
 
     def solve_collision(self):
         for collision in self.state.collisions[:]:
@@ -223,23 +234,32 @@ class Agent(Shape):
                     # Move agent to nearest valid position outside the circle
                     self.pos = collision.pos + direction * \
                         (collision.radius + self.radius)
-
             elif collision.shape == "Rectangle":
-                # Get the nearest valid position outside the rectangle
-                nearest_x = np.clip(self.pos[0], collision.pos[0] - collision.width /
-                                    2 - self.radius, collision.pos[0] + collision.width / 2 + self.radius)
-                nearest_y = np.clip(self.pos[1], collision.pos[1] - collision.height /
-                                    2 - self.radius, collision.pos[1] + collision.height / 2 + self.radius)
+                left = collision.pos[0]
+                right = collision.pos[0] + collision.width
+                top = collision.pos[1]
+                bottom = collision.pos[1] + collision.height
 
-                # Compute vector from the nearest point to the agent
-                direction = self.pos - np.array([nearest_x, nearest_y])
-                norm = np.linalg.norm(direction)
+                # Find the closest point on the expanded rect
+                expanded_left = left - self.radius
+                expanded_right = right + self.radius
+                expanded_top = top - self.radius
+                expanded_bottom = bottom + self.radius
 
-                if norm > 0:
-                    direction /= norm  # Normalize
-                    # Move agent just outside the obstacle
-                    self.pos = np.array(
-                        [nearest_x, nearest_y]) + direction * self.radius
+                # Compute penetration in each axis
+                dx = min(self.pos[0] - expanded_left,
+                         expanded_right - self.pos[0])
+                dy = min(self.pos[1] - expanded_top,
+                         expanded_bottom - self.pos[1])
+
+                if dx < dy:
+                    # push out in x
+                    self.pos[0] = expanded_left if self.pos[0] < (
+                        left + right)/2 else expanded_right
+                else:
+                    # push out in y
+                    self.pos[1] = expanded_top if self.pos[1] < (
+                        top + bottom)/2 else expanded_bottom
 
     # This method adjusts the agent position if it goes out of bounds
     def check_bounds(self, bounds):
@@ -293,14 +313,10 @@ class Predator(Agent):
         """Updates the fitness of the predator agent based on the number of prey eaten and current energy."""
         # Eating prey is the primary goal
         # TODO: Add these values to the constants file
-        hunt_reward = self.prey_eaten * 5.0
-        energy_reward = self.energy * 0.005
+        hunt_reward = self.prey_eaten * 15.0
+        energy_reward = self.energy * 0.5
         survival_reward = self.age * 0.01
-        nearby_predators = sum(1 for obj in self.state.interactables
-                               if isinstance(obj, Prey) and obj.alive)
-        proximity_bonus = nearby_predators * 0.5
-        self.fitness = hunt_reward + energy_reward + survival_reward + proximity_bonus
-        # Apply diminishing returns for very successful predators
+        self.fitness = hunt_reward + energy_reward + survival_reward
 
     def _eat(self):
         """Handles the eating action of the predator agent, finding the closest prey object if applicable."""
@@ -357,13 +373,8 @@ class Prey(Agent):
         distance_reward = min(distance_from_spawn * 0.01,
                               1)  # Cap the distance reward
         age_reward = min(self.age * 0.1, 1)  # Cap the age reward
-        # Predator avoidance reward
-        nearby_predators = sum(1 for obj in self.state.interactables
-                               if isinstance(obj, Predator) and obj.alive)
-        predator_pen = nearby_predators * 0.05
-        increment = distance_reward + age_reward - predator_pen
-        # Apply a sigmoidesque cap to prevent exponential growth
-        self.fitness += increment / (1 + self.fitness/1000)
+        energy_reward = self.energy * 0.5
+        self.fitness = distance_reward + age_reward + energy_reward
 
     def _eat(self):
         """Handles the eating action of the prey agent, finding the closest food object if applicable."""

@@ -13,6 +13,7 @@ import logs
 import copy
 import math
 import constants
+import json
 from messenger import messageChannel
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SpatialGrid:
     """
-    Uniform grid for spatial partitioning of objects.
+    Uniform grid for spatial partitioning of objects, accounting for object extents.
 
     Attributes:
         bounds (tuple): (min_x, max_x, min_y, max_y) of the world.
@@ -33,7 +34,6 @@ class SpatialGrid:
     def __init__(self, bounds, cell_size=10):
         self.bounds = bounds
         self.cell_size = cell_size
-        # Use ceil to cover entire bounding box
         self.width = math.ceil((bounds[1] - bounds[0]) / cell_size)
         self.height = math.ceil((bounds[3] - bounds[2]) / cell_size)
         self.grid = defaultdict(list)
@@ -44,17 +44,47 @@ class SpatialGrid:
         """
         x = int((pos[0] - self.bounds[0]) / self.cell_size)
         y = int((pos[1] - self.bounds[2]) / self.cell_size)
-        # Clamp to [0, width-1] and [0, height-1]
         x = max(0, min(self.width - 1, x))
         y = max(0, min(self.height - 1, y))
         return x, y
 
     def insert(self, obj):
         """
-        Insert an object into the grid based on its current position.
+        Insert an object into all grid cells that its bounding box overlaps.
+        Rectangles: defined by top-left corner (pos), extents width & height.
+        Circles: defined by center pos & radius.
         """
-        cell = self.get_cell_coords(obj.pos)
-        self.grid[cell].append(obj)
+        # Determine bounding box
+        if hasattr(obj, 'width') and hasattr(obj, 'height'):
+            min_x = obj.pos[0]
+            max_x = obj.pos[0] + obj.width
+            min_y = obj.pos[1]
+            max_y = obj.pos[1] + obj.height
+        elif hasattr(obj, 'radius'):
+            min_x = obj.pos[0] - obj.radius
+            max_x = obj.pos[0] + obj.radius
+            min_y = obj.pos[1] - obj.radius
+            max_y = obj.pos[1] + obj.radius
+        else:
+            min_x = max_x = obj.pos[0]
+            min_y = max_y = obj.pos[1]
+
+        # Convert bounding coords to cell indices
+        cell_x_min = int((min_x - self.bounds[0]) / self.cell_size)
+        cell_x_max = int((max_x - self.bounds[0]) / self.cell_size)
+        cell_y_min = int((min_y - self.bounds[2]) / self.cell_size)
+        cell_y_max = int((max_y - self.bounds[2]) / self.cell_size)
+
+        # Clamp cell ranges
+        cell_x_min = max(0, min(self.width - 1, cell_x_min))
+        cell_x_max = max(0, min(self.width - 1, cell_x_max))
+        cell_y_min = max(0, min(self.height - 1, cell_y_min))
+        cell_y_max = max(0, min(self.height - 1, cell_y_max))
+
+        # Insert into overlapped cells
+        for cx in range(cell_x_min, cell_x_max + 1):
+            for cy in range(cell_y_min, cell_y_max + 1):
+                self.grid[(cx, cy)].append(obj)
 
     def rebuild(self, objects):
         """
@@ -66,31 +96,18 @@ class SpatialGrid:
             self.insert(obj)
 
     def get_nearby_objects(self, pos, radius):
-        """
-        Return a list of objects within `radius` of `pos`, sorted by distance.
-        """
         cell_x, cell_y = self.get_cell_coords(pos)
-        radius_squared = radius * radius
-        # Number of cells to search in each direction
         radius_cells = int(radius / self.cell_size) + 1
 
-        nearby = []  # will hold (obj, squared_distance)
-        for off_x in range(-radius_cells, radius_cells + 1):
-            for off_y in range(-radius_cells, radius_cells + 1):
-                cx = cell_x + off_x
-                cy = cell_y + off_y
-                # Skip out-of-range cells
+        seen = set()
+        for dx in range(-radius_cells, radius_cells + 1):
+            for dy in range(-radius_cells, radius_cells + 1):
+                cx, cy = cell_x + dx, cell_y + dy
                 if not (0 <= cx < self.width and 0 <= cy < self.height):
                     continue
-                for obj in self.grid.get((cx, cy), []):
-                    delta_x = obj.pos[0] - pos[0]
-                    delta_y = obj.pos[1] - pos[1]
-                    dist_sq = delta_x * delta_x + delta_y * delta_y
-                    if dist_sq < radius_squared:
-                        nearby.append((obj, dist_sq))
-        # Sort by distance ascending
-        nearby.sort(key=lambda item: item[1])
-        return [obj for obj, _ in nearby]
+                for obj in self.grid[(cx, cy)]:
+                    seen.add(obj)
+        return list(seen)
 
 
 class Environment:
@@ -172,7 +189,18 @@ class Environment:
             ])
             obstacles.append(Food(pos))
 
-        # Temporary, but initialize wall at the center
+        # look for a file in ./Objects/objects.json then parse it and add the objects to the obstacles list
+        try:
+            with open('./Objects/objects.json', 'r') as f:
+                data = json.load(f)
+                for obj in data:
+                    if obj['type'] == 'Rectangle':
+                        pos = np.array([obj['x'], obj['y']])
+                        width = obj['width']
+                        height = obj['height']
+                        obstacles.append(Wall(pos, width, height))
+        except FileNotFoundError:
+            print("No objects.json file found, using default obstacles.")
         self.add_obstacles(obstacles)
 
     # This definition handles adding agents to the environment
@@ -260,6 +288,15 @@ class Environment:
 
             agent.fitness = 0
             agent.state = State()
+        # Reset food
+        self.obstacles = [o for o in self.obstacles if not (
+            isinstance(o, Food))]
+        for _ in range(constants.FOOD_AMOUNT):
+            pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
+                           np.random.uniform(self.bounds[2], self.bounds[3])])
+            food = Food(pos)
+            if len(self.obstacles) + 1 < 5000:
+                self.obstacles.append(food)
         print("Environment reset")
 
     def run(self):
