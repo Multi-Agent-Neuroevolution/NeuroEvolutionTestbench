@@ -36,7 +36,11 @@ class Agent(Shape):
         self.fitness = 0
         self.state = State()
         self.metrics = Metrics()
-        self.brain = neat.nn.RecurrentNetwork.create(neat_genome, neat_config)
+        if neat_genome is not None or neat_config is not None:
+            self.brain = neat.nn.RecurrentNetwork.create(
+                neat_genome, neat_config)
+        else:
+            self.brain = None
         self.inputs = []
         self.sight = sight
         self.type = type

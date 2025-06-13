@@ -137,6 +137,10 @@ def build_configs(config_path):
         neat.DefaultStagnation,
         config_path
     )
+    cppn_config = {
+        'hidden_dims': [32, 32],  # two hidden layers of 32 neurons
+        'mutate_std': 0.05        # std deviation for Gaussian weight mutations
+    }
 
     predStdConfig.genome_config.__dict__['conn_add_prob'] = 0
     predStdConfig.genome_config.__dict__['conn_delete_prob'] = 0
@@ -154,5 +158,6 @@ def build_configs(config_path):
         'predHyprConfig': predHyprConfig,
         'preyStdConfig': preyStdConfig,
         'preyNeatConfig': preyNeatConfig,
-        'preyHyprConfig': preyHyprConfig
+        'preyHyprConfig': preyHyprConfig,
+        'cppn_config': cppn_config
     }

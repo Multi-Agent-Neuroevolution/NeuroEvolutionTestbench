@@ -13,6 +13,17 @@ import json
 import pickle
 import os
 
+session_id = ""
+
+
+def generate_session_id():
+    """Generates a session ID based on the current date and time,
+    stores it in the module global, and returns it."""
+    global session_id
+    from datetime import datetime
+    session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return session_id
+
 
 def genome_to_dict(genome):
     """Converts a genome to a dictionary, used in tandem with the save_genomes_json method.
@@ -62,7 +73,7 @@ def save_initial_genomes_json(agents):
         agents (list): A list of all agents in the simulation.
     """
     genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
-    with open('./Data/initial_genomes.json', 'w') as file:
+    with open('./Data/'+session_id+'initial_genomes.json', 'w') as file:
         json.dump(genomes, file, indent=4)
 
 
@@ -73,12 +84,12 @@ def pickle_genomes(agents):
         agents (list): A list of all agents in the simulation.
     """
     # Genomes from predators
-    with open('./Data/pred_genomes.pkl', 'wb') as f:
+    with open('./Data/'+session_id+'pred_genomes.pkl', 'wb') as f:
         pickle.dump(
             [agent.neat_genome for agent in agents if isinstance(agent, Predator)], f)
 
     # Genomes from preys
-    with open('./Data/prey_genomes.pkl', 'wb') as f:
+    with open('./Data/'+session_id+'prey_genomes.pkl', 'wb') as f:
         pickle.dump(
             [agent.neat_genome for agent in agents if isinstance(agent, Prey)], f)
 
@@ -108,7 +119,7 @@ def log_avg_network_size(agents):
     # Log the average network size, both in console and to text file
     print(f"Average number of nodes: {avg_nodes}")
     print(f"Average number of connections: {avg_connections}")
-    with open('./Data/network_size_log.txt', 'a') as file:
+    with open('./Data/'+session_id+'network_size_log.txt', 'a') as file:
         file.write(
             f"Avg nodes: {avg_nodes}, Avg connections: {avg_connections}\n")
 
@@ -125,7 +136,7 @@ def log_alive_agents(agents):
     num_preys = len(
         [agent for agent in agents if isinstance(agent, Prey) and agent.alive])
 
-    with open('./Data/alive_agents_log.txt', 'a') as file:
+    with open('./Data/'+session_id+'alive_agents_log.txt', 'a') as file:
         file.write(
             f"Predators alive: {num_predators}, Preys alive: {num_preys}\n"
         )
@@ -162,6 +173,9 @@ def avg_agent_fitness(agents):
         predators (list): A list of all predators in the simulation.
         preys (list): A list of all preys in the simulation.
     """
+    with open('./Data/fitness.csv', 'a') as f:
+        f.write(
+            f"avg_pred_fitness,avg_prey_fitness, avg_pred_fitness_no_neat, avg_prey_fitness_no_neat, avg_pred_fitness_hyper, avg_prey_fitness_hyper\n")
     predators = [agent for agent in agents if isinstance(
         agent, Predator) and agent.type == 1]
     preys = [agent for agent in agents if isinstance(
@@ -170,6 +184,10 @@ def avg_agent_fitness(agents):
         agent, Predator) and agent.type == 0]
     no_neat_preys = [agent for agent in agents if isinstance(
         agent, Prey) and agent.type == 0]
+    hyper_predators = [agent for agent in agents if isinstance(
+        agent, Predator) and agent.type == 2]
+    hyper_preys = [agent for agent in agents if isinstance(
+        agent, Prey) and agent.type == 2]
 
     avg_pred_fitness = np.mean([predator.fitness for predator in predators])
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
@@ -177,10 +195,14 @@ def avg_agent_fitness(agents):
         [predator.fitness for predator in no_neat_predators])
     avg_prey_fitness_no_neat = np.mean(
         [prey.fitness for prey in no_neat_preys])
+    avg_pred_fitness_hyper = np.mean(
+        [predator.fitness for predator in hyper_predators])
+    avg_prey_fitness_hyper = np.mean(
+        [prey.fitness for prey in hyper_preys])
 
     with open('./Data/fitness.csv', 'a') as f:
         f.write(
-            f"{avg_pred_fitness},{avg_prey_fitness}, {avg_pred_fitness_no_neat}, {avg_prey_fitness_no_neat}\n")
+            f"{avg_pred_fitness},{avg_prey_fitness}, {avg_pred_fitness_no_neat}, {avg_prey_fitness_no_neat}, {avg_pred_fitness_hyper} , {avg_prey_fitness_hyper}\n")
 
 
 def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
@@ -202,6 +224,6 @@ def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
     pred_deviation_no_neat = np.std(pred_fitness_no_neat)
     prey_deviation_no_neat = np.std(prey_fitness_no_neat)
 
-    with open('./Data/fitness_deviation.csv', 'a') as f:
+    with open('./Data/'+session_id+'fitness_deviation.csv', 'a') as f:
         f.write(
             f"{pred_deviation},{prey_deviation}, {pred_deviation_no_neat}, {prey_deviation_no_neat}\n")

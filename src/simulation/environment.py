@@ -14,6 +14,7 @@ import copy
 import math
 import constants
 import json
+from hyperneat import generate_hyperneat_offspring, create_schema_from_inputs_outputs
 from messenger import messageChannel
 
 logger = logging.getLogger(__name__)
@@ -126,23 +127,25 @@ class Environment:
         self.max_workers = 8
 
     # TO DO: Try recoding this to better accomodate different simulation type (ie. not pred-prey)
-    def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount, prey_pop_no_neat=0, pred_pop_no_neat=0):
+    def initialize_environment(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, food_amount, prey_pop_no_neat, pred_pop_no_neat, pred_pop_hyper=0, prey_pop_hyper=0):
         self._initialize_agents(
-            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=pred_pop_no_neat, prey_no_neat_pop=prey_pop_no_neat)
+            config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=pred_pop_no_neat, prey_no_neat_pop=prey_pop_no_neat, pred_hyper_pop=pred_pop_hyper, prey_hyper_pop=prey_pop_hyper)
         self._initialize_obstacles(food_amount)
 
-    def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop=0, prey_no_neat_pop=0):
+    def _initialize_agents(self, config, population, pred_pop, prey_pop, pred_spawn_bounds, prey_spawn_bounds, pred_no_neat_pop, prey_no_neat_pop, pred_hyper_pop=0, prey_hyper_pop=0):
         agents = []
+        current_index = 0
         # Initialize predators
-        for i in range(pred_pop):
+        for i in range(1, pred_pop):
 
             pos = np.array([
                 np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
             ])
-            genome = copy.deepcopy(population.population[i + 1])
+            genome = copy.deepcopy(population.population[i])
             agents.append(
                 Predator(id=i, pos=pos, neat_genome=genome, neat_config=config["predNeatConfig"], type=1))
+            current_index += 1
 
         # Initialize prey
         for i in range(prey_pop):
@@ -151,9 +154,10 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
-            genome = copy.deepcopy(population.population[i + pred_pop])
+            genome = copy.deepcopy(population.population[i + current_index])
             agents.append(Prey(id=(i + pred_pop), pos=pos,
                           neat_genome=genome, neat_config=config["preyNeatConfig"], type=1))
+            current_index += 1
         # Initialize pred_no_neat
         for i in range(pred_no_neat_pop):
 
@@ -161,10 +165,10 @@ class Environment:
                 np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
                 np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
             ])
-            genome = copy.deepcopy(population.population[i + 1])
+            genome = copy.deepcopy(population.population[i + current_index])
             agents.append(
                 Predator(id=(i + pred_pop), pos=pos, neat_genome=genome, neat_config=config["predStdConfig"], type=0))
-
+            current_index += 1
         # Initialize prey_no_neat
         for i in range(prey_no_neat_pop):
 
@@ -172,11 +176,52 @@ class Environment:
                 np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
                 np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
             ])
-            genome = copy.deepcopy(population.population[i + pred_pop])
+            genome = copy.deepcopy(population.population[i + current_index])
             agents.append(Prey(id=(i + prey_pop), pos=pos,
                           neat_genome=genome, neat_config=config["preyStdConfig"], type=0))
+            current_index += 1
+        # Initialize predators_hyper
+        for i in range(pred_hyper_pop):
+            pos = np.array([
+                np.random.uniform(pred_spawn_bounds[0], pred_spawn_bounds[1]),
+                np.random.uniform(pred_spawn_bounds[2], pred_spawn_bounds[3])
+            ])
+            # we no longer deep-copy from population; instead generate via HyperNEAT
+            # (remove: genome = copy.deepcopy(population.population[i + current_index]))
+            # spawn one HyperNEAT predator
+            predators_hyper = generate_hyperneat_offspring(
+                config["cppn_config"],
+                1,
+                pred_spawn_bounds,
+                create_schema_from_inputs_outputs(),
+                subclass="predator"
+            )
+            # generate_hyperneat_offspring returns a list of length 1
+            agent = predators_hyper[0]
+            agent.id = i + pred_pop + prey_pop + \
+                pred_no_neat_pop  # keep your existing ID scheme
+            agents.append(agent)
+            current_index += 1
 
-        self.add_agents(agents)
+        # Initialize prey_hyper
+        for i in range(prey_hyper_pop):
+            pos = np.array([
+                np.random.uniform(prey_spawn_bounds[0], prey_spawn_bounds[1]),
+                np.random.uniform(prey_spawn_bounds[2], prey_spawn_bounds[3])
+            ])
+            # spawn one HyperNEAT prey
+            preys_hyper = generate_hyperneat_offspring(
+                config["cppn_config"],
+                1,
+                prey_spawn_bounds,
+                create_schema_from_inputs_outputs(),
+                subclass="prey"
+            )
+            agent = preys_hyper[0]
+            agent.id = i + prey_pop + pred_pop + pred_no_neat_pop
+            agents.append(agent)
+            current_index += 1
+            self.add_agents(agents)
 
     def _initialize_obstacles(self, food_amount):
         obstacles = []
@@ -253,7 +298,7 @@ class Environment:
         # This segment handles the spawning of food
         if np.random.rand() < self.food_spawn_rate:
             pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
-                           np.random.uniform(self.bounds[2], self.bounds[3])])
+                            np.random.uniform(self.bounds[2], self.bounds[3])])
             food = Food(pos)
             if len(self.obstacles) + 1 < 5000:
                 self.obstacles.append(food)
@@ -293,7 +338,7 @@ class Environment:
             isinstance(o, Food))]
         for _ in range(constants.FOOD_AMOUNT):
             pos = np.array([np.random.uniform(self.bounds[0], self.bounds[1]),
-                           np.random.uniform(self.bounds[2], self.bounds[3])])
+                            np.random.uniform(self.bounds[2], self.bounds[3])])
             food = Food(pos)
             if len(self.obstacles) + 1 < 5000:
                 self.obstacles.append(food)

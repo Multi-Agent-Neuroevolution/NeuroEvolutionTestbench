@@ -13,6 +13,7 @@ import logs
 from environment import Environment
 from agents import Predator, Prey
 from evolution_utils import breed_and_mutate
+from hyperneat import generate_hyperneat_offspring, create_schema_from_inputs_outputs
 # from .generated import comms_pb2, comms_pb2_grpc
 from messenger import messageChannel
 import comms_pb2
@@ -44,7 +45,7 @@ def serve():
     server.wait_for_termination()
 
 
-def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, multi_model=False, model_split=0.5):
+def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, neat_agents=True, non_neat=False, hyper_neat=False, neat_percent=1.0, hyper_neat_percent=0.0, non_neat_percent=0.0):
     """Creates the simulation environment and initializes the NEAT population.
 
     Args:
@@ -83,17 +84,27 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     print("END:\tCreated configs")
 
     # Generates all relevant agent populations
-    print("START:\tCreating NEAT population...")
+    print("START:\tCreating population...")
+    # Default population, all agents start with this config and resulting genome
     population = neat.Population(configDict["defConfig"])
     pred_pop = int(len(population.population.items())*pred_percent)
     prey_pop = len(population.population.items()) - pred_pop
-    if multi_model:
-        pred_pop_no_neat = int(pred_pop * model_split)
-        prey_pop_no_neat = int(prey_pop * model_split)
-    else:
-        pred_pop_no_neat = prey_pop_no_neat = 0
-    pred_pop = pred_pop - pred_pop_no_neat
-    prey_pop = prey_pop - prey_pop_no_neat
+
+    if not neat and not non_neat and not hyper_neat:
+        print("Must specify at least one of NEAT, non-NEAT, or HyperNEAT to be True.")
+        exit(1)
+    if neat_agents:
+        # Create NEAT predators and prey
+        pred_pop_neat = int(pred_pop * neat_percent)
+        prey_pop_neat = int(prey_pop * neat_percent)
+    if non_neat:
+        # Create non-NEAT predators and prey
+        pred_pop_no_neat = int(pred_pop * non_neat_percent)
+        prey_pop_no_neat = int(prey_pop * non_neat_percent)
+    if hyper_neat:
+        # Create HyperNEAT predators and prey
+        pred_pop_hyper = int(pred_pop * hyper_neat_percent)
+        prey_pop_hyper = int(prey_pop * hyper_neat_percent)
     print("END:\tCreated NEAT population")
     print(f"INFO:\tPredator population: {pred_pop}")
     print(f"INFO:\tPrey population: {prey_pop}")
@@ -106,10 +117,12 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     env.initialize_environment(
         config=configDict,
         population=population,
-        pred_pop=pred_pop,
-        prey_pop=prey_pop,
+        pred_pop=pred_pop_neat,
+        prey_pop=prey_pop_neat,
         prey_pop_no_neat=prey_pop_no_neat,
         pred_pop_no_neat=pred_pop_no_neat,
+        pred_pop_hyper=pred_pop_hyper,
+        prey_pop_hyper=prey_pop_hyper,
         pred_spawn_bounds=pred_spawn_bounds,
         prey_spawn_bounds=prey_spawn_bounds,
         food_amount=food_amount
@@ -123,7 +136,7 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     logger.info(
         f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
-    return env, population, configDict, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat
+    return env, population, configDict, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hyper, prey_pop_hyper
 
 
 def evolve_all(
@@ -182,16 +195,14 @@ def evolve_all(
                 torunament_size=tournament_size,
                 subclass=subclass
             )
-        else:
-            # HyperNEAT stub: clone/mutate elites
-            # offspring = generate_hyperneat_offspring(
-            #     hyperneat_cfg=cfg,
-            #     num_offspring=num_offspring,
-            #     bounds=bounds,
-            #     substrate_schema=HYPERNEAT_SUBSTRATE_SCHEMA
-            # )
-            pass
-        # Combine
+        elif flag == 2:
+            offspring = generate_hyperneat_offspring(
+                configList["cppn_config"],
+                num_offspring,
+                bounds,
+                substrate_schema=create_schema_from_inputs_outputs(),
+                subclass=subclass
+            )
         new_group = elites + offspring
         # Sanity fill if mismatch
         while len(new_group) < size:
@@ -217,7 +228,7 @@ def main():
 
     serverThread = threading.Thread(target=serve, daemon=True)
     serverThread.start()
-
+    logs.session_id = logs.generate_session_id()
     try:
         # scale bounds
         bounds = [
@@ -229,7 +240,7 @@ def main():
 
         # Creates simulation environment
         print("START:\tCreating simulation environment...")
-        env, population, configList, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat = create_simulation(
+        env, population, configList, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hypr, prey_pop_hypr = create_simulation(
             simulation_type=constants.SIMULATION_TYPE,
             config_path=constants.CONFIG_PATH,
             steps=constants.STEPS,
@@ -239,19 +250,23 @@ def main():
             prey_spawn_bounds=prey_spawn,
             pred_spawn_bounds=pred_spawn,
             food_respawn_rate=constants.FOOD_RESPAWN_RATE,
-            multi_model=constants.MULTI_MODEL,
-            model_split=constants.MODEL_SPLIT
+            neat_agents=constants.NEAT,
+            non_neat=constants.NON_NEAT,
+            hyper_neat=constants.HYPERNEAT,
+            neat_percent=constants.NEAT_PERCENT,
+            hyper_neat_percent=constants.HYPERNEAT_PERCENT,
+            non_neat_percent=constants.NON_NEAT_PERCENT
         )
         print("END:\tSimulation environment created")
 
         # Create log for the average network size
-        logs.log_avg_network_size(env.agents)
+        # logs.log_avg_network_size(env.agents)
 
         # Run simulation, looping according to the number of epochs specified
         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
         crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
         torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
-        logs.save_initial_genomes_json(env.agents)
+        # logs.save_initial_genomes_json(env.agents)
 
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
@@ -270,8 +285,8 @@ def main():
                 prey_pop,            # # of neat prey
                 pred_pop_no_neat,    # # of non‑neat predators
                 prey_pop_no_neat,    # # of non‑neat prey
-                0,                   # # of hyper‑neat predators
-                0,                   # # of hyper‑neat prey
+                pred_pop_hypr,                   # # of hyper‑neat predators
+                prey_pop_hypr,                   # # of hyper‑neat prey
                 pred_bounds,         # spawn bounds for predators this epoch
                 prey_bounds          # spawn bounds for prey this epoch
             )
