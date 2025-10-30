@@ -3,7 +3,7 @@
 These methods are used to log data about the simulation, such as:
 - the average network size of the agents
 - the average fitness of the predator and prey populations
-- and the final agent genomes. 
+- and the final agent genomes.
 
 The methods are called to log data at different stages of the simulation.
 """
@@ -55,10 +55,12 @@ def save_genomes_json(agents, out_dir='./Data'):
             cls = 'agent'
         # combine with the agent's type
         key = f"{cls}_{agent.type}"
-        genomes_by_cls_type.setdefault(key, []).append(
-            genome_to_dict(agent.neat_genome)
-        )
-
+        try:
+            genome = genome_to_dict(agent.neat_genome)
+            genomes_by_cls_type.setdefault(key, []).append(genome)
+        except Exception as e:
+            # Optionally log the error or agent info here
+            continue
     # write one JSON per class‐type
     for key, genomes in genomes_by_cls_type.items():
         filename = os.path.join(out_dir, f"final_genomes_{key}.json")
@@ -72,17 +74,23 @@ def save_initial_genomes_json(agents):
     Args:
         agents (list): A list of all agents in the simulation.
     """
-    genomes = [genome_to_dict(agent.neat_genome) for agent in agents]
-    with open('./Data/'+session_id+'initial_genomes.json', 'w') as file:
-        json.dump(genomes, file, indent=4)
+    genomes = []
+    for agent in agents:
+        try:
+            genomes.append(genome_to_dict(agent.neat_genome))
+        except Exception as e:
+            # Optionally log the error or agent info here
+            continue
+        with open('./Data/'+session_id+'initial_genomes.json', 'w') as file:
+            json.dump(genomes, file, indent=4)
 
 
 def pickle_genomes(agents):
     """Saves the final agent genomes to a pickle file.
 
-    Args:
-        agents (list): A list of all agents in the simulation.
-    """
+Args:
+    agents (list): A list of all agents in the simulation.
+"""
     # Genomes from predators
     with open('./Data/'+session_id+'pred_genomes.pkl', 'wb') as f:
         pickle.dump(
@@ -106,13 +114,17 @@ def log_avg_network_size(agents):
 
     # Loop through all agents and sum their network sizes
     for agent in agents:
-        genome = agent.neat_genome
-        num_nodes = len(genome.nodes)
-        num_connections = len(genome.connections)
-        total_nodes += num_nodes
-        total_connections += num_connections
+        try:
+            genome = agent.neat_genome
+            num_nodes = len(genome.nodes)
+            num_connections = len(genome.connections)
+            total_nodes += num_nodes
+            total_connections += num_connections
+        except Exception as e:
+            # Optionally log the error or agent info here
+            continue
 
-    # Calculate average size
+        # Calculate average size
     avg_nodes = total_nodes / total_agents if total_agents > 0 else 0
     avg_connections = total_connections / total_agents if total_agents > 0 else 0
 
@@ -189,7 +201,8 @@ def avg_agent_fitness(agents):
     hyper_preys = [agent for agent in agents if isinstance(
         agent, Prey) and agent.type == 2]
 
-    avg_pred_fitness = np.mean([predator.fitness for predator in predators])
+    avg_pred_fitness = np.mean(
+        [predator.fitness for predator in predators])
     avg_prey_fitness = np.mean([prey.fitness for prey in preys])
     avg_pred_fitness_no_neat = np.mean(
         [predator.fitness for predator in no_neat_predators])
@@ -208,11 +221,12 @@ def avg_agent_fitness(agents):
 def log_fitness_deviation(predators, preys, no_neat_predators, no_neat_preys):
     """Saves the fitness deviation of the predator and prey populations to a CSV file.
 
-    Args:
-        predators (list): A list of all predators in the simulation.
-        preys (list): A list of all preys in the simulation.
-    """
-    pred_fitness = np.array([predator.fitness for predator in predators])
+Args:
+    predators (list): A list of all predators in the simulation.
+    preys (list): A list of all preys in the simulation.
+"""
+    pred_fitness = np.array(
+        [predator.fitness for predator in predators])
     prey_fitness = np.array([prey.fitness for prey in preys])
     pred_fitness_no_neat = np.array(
         [predator.fitness for predator in no_neat_predators])

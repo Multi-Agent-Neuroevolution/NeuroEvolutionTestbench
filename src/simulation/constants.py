@@ -3,7 +3,7 @@
 SIMULATION_TYPE = "PRED_PREY"
 CONFIG_PATH = "./Config/neat.conf"
 HYPERNEAT_CONFIG_PATH = "./Config/hypr.conf"
-STEPS = 250
+STEPS = 350
 BOUNDS = [-200, 200, -200, 200]  # Bounds for the environment
 
 # Parameters for agents
@@ -45,9 +45,9 @@ NEAT = True  # If true, NEAT will be used for some agents
 NON_NEAT = True  # If true some agents will be NEAT agents and some will be non-NEAT agents
 HYPERNEAT = True  # If true, HyperNEAT will be used for some NEAT agents
 # Percaentage of agents out of the total that will be NEAT agents, HyperNEAT agents, and non-NEAT agents. These values should sum to 1.0.
-NEAT_PERCENT = 0.3
-HYPERNEAT_PERCENT = 0.3
-NON_NEAT_PERCENT = 0.4
+NEAT_PERCENT = 0.33
+HYPERNEAT_PERCENT = 0.33
+NON_NEAT_PERCENT = 0.33
 
 
 # Breed and Mutate parameters
@@ -59,4 +59,4 @@ HYPERNEAT_SUBSTRATE_SCHEMA = {
     'outputs': [(-0.5, 0.0), (0.5, 0.0)]
 }
 # Parameter for number of times simulation will run
-EPOCHS = 850
+EPOCHS = 250

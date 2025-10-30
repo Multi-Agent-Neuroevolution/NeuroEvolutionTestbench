@@ -1,0 +1,6 @@
+name: neatsimproj
+channels:
+  - defaults
+dependencies:
+  - python==3.12.11
+prefix: /opt/homebrew/Caskroom/miniconda/base/envs/neatsimproj

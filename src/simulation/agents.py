@@ -52,7 +52,20 @@ class Agent(Shape):
             obj.interact(self)
 
     def to_dict(self):
-        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "white"}
+        return {
+            "id": int(self.id),
+            "x": float(self.pos[0]),
+            "y": float(self.pos[1]),
+            "color": "white",
+            "agent_type": self.agent_type,
+            "energy": float(self.energy),
+            "fitness": float(self.fitness),
+            "age": int(self.age),
+            "alive": bool(self.alive),
+            "move_speed": float(self.move_speed),
+            "sight": float(self.sight),
+            "type": int(self.type)
+        }
 
     def update_action(self):
         """Updates the action of the agent based on the neural network output."""
@@ -295,7 +308,21 @@ class Predator(Agent):
         self.ENERGY_COST = constants.PRED_MOVE_COST
 
     def to_dict(self):
-        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "yellow"}
+        return {
+            "id": int(self.id),
+            "x": float(self.pos[0]),
+            "y": float(self.pos[1]),
+            "color": "yellow",
+            "agent_type": self.agent_type,
+            "energy": float(self.energy),
+            "fitness": float(self.fitness),
+            "age": int(self.age),
+            "alive": bool(self.alive),
+            "move_speed": float(self.move_speed),
+            "sight": float(self.sight),
+            "type": int(self.type),
+            "prey_eaten": int(self.prey_eaten)
+        }
 
     def _handle_action(self, action_choice):
         """Handles the action of the predator agent based on the action choice.
@@ -359,7 +386,20 @@ class Prey(Agent):
         self.spawn = pos
 
     def to_dict(self):
-        return {"id": self.id, "x": self.pos[0], "y": self.pos[1], "color": "green"}
+        return {
+            "id": int(self.id),
+            "x": float(self.pos[0]),
+            "y": float(self.pos[1]),
+            "color": "green",
+            "agent_type": self.agent_type,
+            "energy": float(self.energy),
+            "fitness": float(self.fitness),
+            "age": int(self.age),
+            "alive": bool(self.alive),
+            "move_speed": float(self.move_speed),
+            "sight": float(self.sight),
+            "type": int(self.type)
+        }
 
     def _handle_action(self, action_choice):
         """Handles the action of the prey agent based on the action choice."""

@@ -6,6 +6,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+import configparser
 
 
 class GenomeViewer:
@@ -81,6 +82,11 @@ class GenomeViewer:
             nav_frame, text="Go", command=self.jump_to)
         self.jump_button.pack(side=tk.LEFT, padx=5)
 
+        # Max fitness button
+        self.max_button = ttk.Button(
+            nav_frame, text="Max Fitness", command=self.goto_max_fitness)
+        self.max_button.pack(side=tk.LEFT, padx=10)
+
         # Status info
         info_frame = ttk.Frame(controls_frame)
         info_frame.pack(side=tk.RIGHT)
@@ -136,58 +142,85 @@ class GenomeViewer:
         # Display the first genome
         self.display_current_genome()
 
-    def classify_nodes(self, genome):
-        """Classify nodes into input, output, bias, and hidden nodes based on connectivity"""
-        nodes = {int(k): v for k, v in genome['nodes'].items()}
-        connections = genome['connections']
+    def _load_configs(self):
+        """Load IO/hidden counts from Config/neat.conf and Config/hypr.conf if present."""
+        results = []
+        for name in ("neat.conf", "hypr.conf"):
+            path = os.path.join(os.getcwd(), "Config", name)
+            if not os.path.exists(path):
+                continue
+            try:
+                cp = configparser.ConfigParser()
+                cp.optionxform = str
+                cp.read(path)
+                nin = cp.getint('DefaultGenome', 'num_inputs', fallback=None)
+                nout = cp.getint('DefaultGenome', 'num_outputs', fallback=None)
+                nhid = cp.getint('DefaultGenome', 'num_hidden', fallback=0)
+                if nin and nout:
+                    results.append({
+                        'path': path,
+                        'num_inputs': nin,
+                        'num_outputs': nout,
+                        'num_hidden': nhid,
+                    })
+            except Exception:
+                continue
+        return results
 
-        # Extract nodes from connections
-        input_candidates = set()
-        output_candidates = set()
-        for conn_key, conn_data in connections.items():
-            # Parse connection key
-            if isinstance(conn_data['key'], list):
-                in_node, out_node = conn_data['key']
-            else:
-                # Parse from string if needed
-                conn_parts = conn_key.strip('()').split(', ')
-                if len(conn_parts) == 2:
-                    in_node = int(conn_parts[0])
-                    out_node = int(conn_parts[1])
-                else:
-                    continue
+    def _choose_config_for_genome(self, genome, configs):
+        """Pick a config by matching number of negative id inputs observed in connections."""
+        neg_ids = set()
+        conns = genome.get('connections', {})
+        for ck, cd in conns.items():
+            u = v = None
+            if isinstance(cd, dict) and isinstance(cd.get('key'), list) and len(cd['key']) == 2:
+                u, v = cd['key']
+            elif isinstance(ck, str):
+                parts = ck.strip('()').split(',')
+                if len(parts) == 2:
+                    try:
+                        u = int(parts[0].strip())
+                        v = int(parts[1].strip())
+                    except Exception:
+                        pass
+            if isinstance(u, int) and u < 0:
+                neg_ids.add(u)
+            if isinstance(v, int) and v < 0:
+                neg_ids.add(v)
+        if not configs:
+            return None
+        if not neg_ids:
+            # fallback to first config
+            return configs[0]
+        neg_count = len(neg_ids)
+        return min(configs, key=lambda c: abs(c['num_inputs'] - neg_count))
 
-            # Collect inputs (sources) and outputs (targets)
-            input_candidates.add(in_node)
-            output_candidates.add(out_node)
+    def classify_nodes(self, G, config):
+        """Classify nodes into input, output, and hidden using NEAT/neat-python conventions."""
+        all_node_ids = [n for n in G.nodes() if isinstance(n, int)]
+        input_nodes = sorted([n for n in all_node_ids if n < 0])
+        non_input_ids = sorted([n for n in all_node_ids if n >= 0])
 
-        # Input nodes are typically sources that aren't targets
-        # (except bias node which is special)
-        input_nodes = [
-            node for node in input_candidates if node not in output_candidates or node == -1]
+        output_nodes = []
+        if config and config.get('num_outputs') is not None:
+            num_outputs = config['num_outputs']
+            output_nodes = [n for n in non_input_ids if n < num_outputs]
+        else:
+            # Fallback if no config: guess that outputs have no enabled outgoing edges
+            H = nx.DiGraph()
+            H.add_nodes_from(G.nodes())
+            H.add_edges_from([(u, v) for u, v, d in G.edges(
+                data=True) if d.get('enabled', True) and u != v])
+            output_nodes = sorted(
+                [n for n in non_input_ids if H.out_degree(n) == 0])
+            # If still no outputs, guess the first few non-negative IDs are outputs
+            if not output_nodes and non_input_ids:
+                output_nodes = non_input_ids[:min(5, len(non_input_ids))]
 
-        # Output nodes are typically targets that aren't sources
-        output_nodes = [
-            node for node in output_candidates if node not in input_candidates]
-
-        # If that doesn't work well, we use the alternate approach based on IDs
-        if not output_nodes:
-            # Determine nodes by IDs - NEAT usually uses small IDs (0-10) for input/output
-            input_nodes = [node_id for node_id in nodes.keys()
-                           if 0 <= node_id < 10]
-            output_nodes = [node_id for node_id in nodes.keys()
-                            if 10 <= node_id < 20]
-
-        # Bias node is always -1 in NEAT
-        bias_nodes = [node_id for node_id in nodes.keys() if node_id < 0]
-
-        # Hidden nodes are everything else
-        hidden_nodes = [node_id for node_id in nodes.keys()
-                        if node_id not in input_nodes
-                        and node_id not in output_nodes
-                        and node_id not in bias_nodes]
-
-        return bias_nodes, input_nodes, output_nodes, hidden_nodes
+        hidden_nodes = sorted(
+            [n for n in non_input_ids if n not in output_nodes])
+        # No explicit bias node type
+        return [], input_nodes, output_nodes, hidden_nodes
 
     def display_current_genome(self):
         """Display the current genome"""
@@ -202,230 +235,200 @@ class GenomeViewer:
         self.genome_key_var.set(str(genome['key']))
         self.genome_fitness_var.set(
             f"{genome['fitness']:.2f}" if genome['fitness'] is not None else "None")
-        self.node_count_var.set(str(len(genome['nodes'])))
-        self.conn_count_var.set(str(len(genome['connections'])))
+        self.node_count_var.set(str(len(genome.get('nodes', {}))))
+        self.conn_count_var.set(str(len(genome.get('connections', {}))))
 
         # Clear the figure
         self.figure.clear()
         ax = self.figure.add_subplot(111)
 
-        # Create graph
+        # Create graph from connections FIRST, so nodes that only appear in edges are included
         G = nx.DiGraph()
 
-        # Extract nodes
-        nodes = {int(node_id): node_data for node_id,
-                 node_data in genome['nodes'].items()}
-        for node_id, node_data in nodes.items():
-            # Initialize node attributes
-            G.add_node(node_id, bias=node_data.get('bias', 0.0),
-                       activation=node_data.get('activation', 'unknown'),
-                       aggregation=node_data.get('aggregation', 'unknown'))
+        # 1. Add all nodes from the genome's 'nodes' dictionary
+        node_attrs = {int(nid): nd for nid,
+                      nd in genome.get('nodes', {}).items()}
+        for nid, data in node_attrs.items():
+            G.add_node(nid, **data)
 
-        # Extract connections
-        for conn_key, conn_data in genome['connections'].items():
-            # Check how the connection key is stored
-            if isinstance(conn_data['key'], list):
-                in_node, out_node = conn_data['key']
-            else:
-                # Parse from string if needed
-                conn_parts = conn_key.strip('()').split(', ')
-                if len(conn_parts) == 2:
-                    in_node = int(conn_parts[0])
-                    out_node = int(conn_parts[1])
-                else:
+        # 2. Add all nodes that might only appear in connections (inputs)
+        connections = genome.get('connections', {})
+        for conn_key, conn_data in connections.items():
+            u, v = None, None
+            if isinstance(conn_data, dict) and 'key' in conn_data and len(conn_data['key']) == 2:
+                u, v = conn_data['key']
+            elif isinstance(conn_key, str):
+                try:
+                    u, v = map(int, conn_key.strip('()').split(','))
+                except ValueError:
                     continue
 
-            # Add edge
-            G.add_edge(in_node, out_node,
-                       weight=conn_data.get('weight', 0.0),
+            if u is not None and not G.has_node(u):
+                G.add_node(u)
+            if v is not None and not G.has_node(v):
+                G.add_node(v)
+
+        # 3. Add edges from connections
+        for conn_key, conn_data in connections.items():
+            u, v = None, None
+            if isinstance(conn_data, dict) and 'key' in conn_data and len(conn_data['key']) == 2:
+                u, v = conn_data['key']
+            elif isinstance(conn_key, str):
+                try:
+                    u, v = map(int, conn_key.strip('()').split(','))
+                except ValueError:
+                    continue
+
+            if u is None or v is None or u == v:
+                continue
+
+            G.add_edge(u, v, weight=conn_data.get('weight', 0.0),
                        enabled=conn_data.get('enabled', True))
 
-        # Classify nodes into types
-        bias_nodes, input_nodes, output_nodes, hidden_nodes = self.classify_nodes(
-            genome)
+        # Get config for classification
+        configs = getattr(self, '_configs_cache', None)
+        if configs is None:
+            self._configs_cache = self._load_configs()
+            configs = self._configs_cache
+        chosen_config = self._choose_config_for_genome(genome, configs)
 
-        # Assign colors to nodes by type
+        # Classify nodes
+        _, input_nodes, output_nodes, hidden_nodes = self.classify_nodes(
+            G, chosen_config)
+
+        # Assign colors and types
         for node in G.nodes():
-            if node in bias_nodes:
-                G.nodes[node]['color'] = 'purple'
-                G.nodes[node]['type'] = 'bias'
-            elif node in input_nodes:
-                G.nodes[node]['color'] = 'skyblue'
+            if node in input_nodes:
                 G.nodes[node]['type'] = 'input'
+                G.nodes[node]['color'] = 'skyblue'
             elif node in output_nodes:
-                G.nodes[node]['color'] = 'lightgreen'
                 G.nodes[node]['type'] = 'output'
-            else:
-                G.nodes[node]['color'] = 'orange'
+                G.nodes[node]['color'] = 'lightgreen'
+            elif node in hidden_nodes:
                 G.nodes[node]['type'] = 'hidden'
-
-        # Determine node positioning using a layered approach
-        pos = {}
-
-        # Create layers
-        layers = []
-
-        # Layer 0: Bias node
-        layers.append(bias_nodes)
-
-        # Layer 1: Input nodes
-        layers.append(input_nodes)
-
-        # Determine intermediate hidden layers by traversing the graph
-        remaining_hidden = set(hidden_nodes)
-        current_layer = set(input_nodes + bias_nodes)
-        while remaining_hidden:
-            next_layer = set()
-            for node in remaining_hidden:
-                # Check if all predecessors are already in previous layers
-                predecessors = set(G.predecessors(node))
-                if predecessors and all(pred in set().union(*layers) for pred in predecessors):
-                    next_layer.add(node)
-
-            # If can't find any more nodes for the next layer but still have remaining hidden nodes
-            if not next_layer and remaining_hidden:
-                # Just add nodes with minimal incoming edges
-                node_scores = {n: sum(1 for _ in G.predecessors(n))
-                               for n in remaining_hidden}
-                min_score = min(node_scores.values()) if node_scores else 0
-                next_layer = {n for n, s in node_scores.items()
-                              if s == min_score}
-
-            if next_layer:
-                layers.append(list(next_layer))
-                remaining_hidden -= next_layer
-                current_layer = next_layer
+                G.nodes[node]['color'] = 'orange'
             else:
-                # If we can't determine any more layers, put all remaining in the last layer
-                if remaining_hidden:
-                    layers.append(list(remaining_hidden))
-                    remaining_hidden = set()
+                G.nodes[node]['type'] = 'unknown'
+                G.nodes[node]['color'] = 'grey'
 
-        # Last layer: Output nodes
-        layers.append(output_nodes)
+        # Simple layered positioning
+        pos = {}
+        layer_map = {
+            'input': sorted(input_nodes),
+            'hidden': sorted(hidden_nodes),
+            'output': sorted(output_nodes)
+        }
 
-        # Position nodes by layer
+        # Filter out empty layers and define order
+        layer_order = ['input', 'hidden', 'output']
+        layers = [layer_map[name] for name in layer_order if layer_map[name]]
+
         num_layers = len(layers)
         for layer_idx, layer_nodes in enumerate(layers):
-            x_pos = layer_idx / max(1, num_layers - 1)  # Normalize to [0, 1]
-            num_nodes = len(layer_nodes)
+            x_pos = 0.5
+            if num_layers > 1:
+                x_pos = layer_idx / (num_layers - 1)
 
-            for i, node_id in enumerate(sorted(layer_nodes)):
-                # Evenly distribute nodes vertically in each layer
-                if num_nodes > 1:
-                    y_pos = 1.0 - i / (num_nodes - 1)
-                else:
-                    y_pos = 0.5
+            count = len(layer_nodes)
+            for i, nid in enumerate(layer_nodes):
+                y_pos = 0.5
+                if count > 1:
+                    y_pos = 1.0 - (i / (count - 1))
+                pos[nid] = (x_pos, y_pos)
 
-                pos[node_id] = (x_pos, y_pos)
+        # Handle unclassified nodes if any
+        unclassified = [n for n in G.nodes() if n not in pos]
+        for i, nid in enumerate(unclassified):
+            pos[nid] = (0.5, -0.1 * (i + 1))  # Place below
 
-        # Adjust positions to separate bias node from inputs
-        for node_id in bias_nodes:
-            if node_id in pos:
-                x, y = pos[node_id]
-                pos[node_id] = (x, 0.1)  # Place bias at the bottom
-
-        # Make sure all nodes have positions
-        for node in G.nodes():
-            if node not in pos:
-                # Assign a fallback position for any node without a position
-                pos[node] = (0.5, 0.5)
-
-        # Draw the nodes
+        # Drawing logic...
         node_colors = [G.nodes[n].get('color', 'red') for n in G.nodes]
-        node_types = [G.nodes[n].get('type', 'unknown') for n in G.nodes]
-
-        # Create node labels with activation info
         node_labels = {}
         for n in G.nodes:
             node_type = G.nodes[n].get('type', '')
-            if node_type == 'bias':
-                node_labels[n] = f"Bias\n({n})"
-            elif node_type == 'input':
-                node_labels[n] = f"In\n({n})"
-            elif node_type == 'output':
-                node_labels[n] = f"Out\n({n})"
-            else:
-                node_labels[n] = f"H{n}"
+            label_text = str(n)
+            if node_type:
+                label_text = f"{node_type[0].upper()}{n}"
 
-            # Add activation function if available
-            activation = G.nodes[n].get('activation', '')
+            activation = G.nodes[n].get('activation')
             if activation and activation != 'unknown':
-                node_labels[n] += f"\n{activation}"
+                label_text += f"\n{activation[:4]}"
+            node_labels[n] = label_text
 
-        # Draw nodes
         nx.draw_networkx_nodes(
-            G, pos, ax=ax, node_size=300, node_color=node_colors)
-
-        # Draw the node labels
+            G, pos, ax=ax, node_size=500, node_color=node_colors)
         nx.draw_networkx_labels(G, pos, ax=ax, labels=node_labels, font_size=8)
 
-        # Draw the edges with width proportional to weight
         for u, v, data in G.edges(data=True):
+            if u == v:
+                continue
+            style = 'solid' if data.get('enabled', True) else 'dotted'
+            color = 'gray'
+            width = 0.5
             if data.get('enabled', True):
-                # Calculate edge width based on weight
                 weight = data.get('weight', 0.0)
-                width = 1 + abs(weight) * 1.25
+                color = 'green' if weight > 0 else 'red'
+                width = 1 + abs(weight)
 
-                # Choose edge color based on weight sign
-                edge_color = 'green' if weight > 0 else 'red'
+            nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[(
+                u, v)], width=width, edge_color=color, style=style, arrowsize=15)
+            if data.get('enabled', True):
+                nx.draw_networkx_edge_labels(G, pos, ax=ax, edge_labels={
+                                             (u, v): f"{data['weight']:.2f}"}, font_size=7)
 
-                # Draw the edge
-                nx.draw_networkx_edges(
-                    G, pos, ax=ax,
-                    edgelist=[(u, v)],
-                    width=width,
-                    edge_color=edge_color,
-                    arrowsize=10
-                )
+        # Dynamic legend
+        legend_handles = []
+        node_types_present = {G.nodes[n].get('type') for n in G.nodes}
 
-                # Add weight labels to edges
-                edge_labels = {(u, v): f"{weight:.2f}"}
-                nx.draw_networkx_edge_labels(
-                    G, pos, ax=ax,
-                    edge_labels=edge_labels,
-                    font_size=7
-                )
-            else:
-                # Draw disabled edges as dotted gray lines
-                nx.draw_networkx_edges(
-                    G, pos, ax=ax,
-                    edgelist=[(u, v)],
-                    width=0.5,
-                    edge_color='gray',
-                    style='dotted',
-                    arrowsize=5
-                )
+        type_colors = {'input': 'skyblue', 'output': 'lightgreen',
+                       'hidden': 'orange', 'unknown': 'grey'}
+        for ntype in sorted(type_colors.keys()):
+            if ntype in node_types_present:
+                legend_handles.append(plt.Line2D(
+                    [0], [0], marker='o', color='w', label=f'{ntype.capitalize()} Node', markersize=10, markerfacecolor=type_colors[ntype]))
 
-        # Add a legend
-        ax.plot([], [], 'o', color='purple', label='Bias Node')
-        ax.plot([], [], 'o', color='skyblue', label='Input Nodes')
-        ax.plot([], [], 'o', color='lightgreen', label='Output Nodes')
-        ax.plot([], [], 'o', color='orange', label='Hidden Nodes')
-        ax.plot([], [], '-', color='green', label='Positive Connection')
-        ax.plot([], [], '-', color='red', label='Negative Connection')
-        ax.plot([], [], ':', color='gray', label='Disabled Connection')
-        legend = ax.legend(
-            loc='upper right',
-            # 0.98 means 98% across x and y of the axes
-            bbox_to_anchor=(0.98, 0.98),
-            borderaxespad=0.1,              # small padding from the axes
-            fontsize=8
-        )
+        enabled_edges = [(u, v, d) for u, v, d in G.edges(
+            data=True) if d.get('enabled', True) and u != v]
+        has_pos = any(d.get('weight', 0.0) > 0 for _, _, d in enabled_edges)
+        has_neg = any(d.get('weight', 0.0) < 0 for _, _, d in enabled_edges)
+        has_disabled = any(not d.get('enabled', True)
+                           for _, _, d in G.edges(data=True) if d)
 
-        # Add title with genome info
-        # build a fitness string only if not None
-        if genome['fitness'] is not None:
-            fitness_str = f"{genome['fitness']:.2f}"
-        else:
-            fitness_str = "None"
-        ax.set_title(f"Genome {genome['key']} - Fitness: {fitness_str}")
+        if has_pos:
+            legend_handles.append(plt.Line2D(
+                [0], [0], color='green', lw=2, label='Positive Weight'))
+        if has_neg:
+            legend_handles.append(plt.Line2D(
+                [0], [0], color='red', lw=2, label='Negative Weight'))
+        if has_disabled:
+            legend_handles.append(plt.Line2D(
+                [0], [0], color='gray', lw=1, ls=':', label='Disabled'))
 
-        # Remove axis
+        if legend_handles:
+            ax.legend(handles=legend_handles, loc='best')
+
+        ax.set_title(
+            f"Genome {genome['key']} - Fitness: {self.genome_fitness_var.get()}")
         ax.set_axis_off()
-
-        # Update the canvas
         self.canvas.draw()
+
+    def goto_max_fitness(self):
+        """Jump to the genome with the highest non-None fitness."""
+        best_idx = None
+        best_fit = None
+        for i, g in enumerate(self.genomes):
+            fit = g.get('fitness', None)
+            if fit is None:
+                continue
+            if best_fit is None or fit > best_fit:
+                best_fit = fit
+                best_idx = i
+        if best_idx is None:
+            messagebox.showinfo(
+                "Max Fitness", "No genomes with fitness available.")
+            return
+        self.current_index = best_idx
+        self.display_current_genome()
 
     def show_next(self):
         """Show the next genome"""

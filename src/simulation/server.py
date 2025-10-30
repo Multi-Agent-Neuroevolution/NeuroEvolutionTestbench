@@ -25,6 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 class CommunicationService(comms_pb2_grpc.CommunicationServicer):
+    def __init__(self):
+        self.current_env = None
+
+    def set_environment(self, env):
+        """Set the current environment to access agents"""
+        self.current_env = env
+
     def FetchEnvironmentStream(self, request, context):
         for data in iter(messageChannel.get, None):
             json_str = json.dumps(data)
@@ -34,15 +41,149 @@ class CommunicationService(comms_pb2_grpc.CommunicationServicer):
                 message="Data sent successfully"
             )
 
+    def FetchNeuralNet(self, request, context):
+        """Fetch neural network data for a specific agent"""
+        agent_id = request.id
+        try:
+            if self.current_env is None:
+                return comms_pb2.JSONData(
+                    json_data="{}",
+                    success=False,
+                    message="No environment available"
+                )
 
-def serve():
+            # Find agent by ID
+            agent = None
+            for a in self.current_env.agents:
+                if a.id == agent_id:
+                    agent = a
+                    break
+
+            if agent is None:
+                return comms_pb2.JSONData(
+                    json_data="{}",
+                    success=False,
+                    message=f"Agent with ID {agent_id} not found"
+                )
+
+            # Extract neural network structure
+            if agent.brain is None:
+                return comms_pb2.JSONData(
+                    json_data="{}",
+                    success=False,
+                    message="Agent has no neural network"
+                )
+
+            # Get network structure from NEAT genome
+            network_data = self._extract_network_structure(agent)
+
+            return comms_pb2.JSONData(
+                json_data=json.dumps(network_data),
+                success=True,
+                message="Neural network data retrieved successfully"
+            )
+
+        except Exception as e:
+            return comms_pb2.JSONData(
+                json_data="{}",
+                success=False,
+                message=f"Error fetching neural network: {str(e)}"
+            )
+
+    def _extract_network_structure(self, agent):
+        """Extract neural network structure from NEAT agent"""
+        try:
+            genome = agent.neat_genome
+            config = agent.neat_config
+
+            # Get nodes and connections from genome
+            nodes = {}
+            for node_id, node in genome.nodes.items():
+                nodes[str(node_id)] = {
+                    "id": int(node_id),
+                    "bias": float(node.bias),
+                    "activation": str(node.activation),
+                    "type": self._get_node_type(node_id, config)
+                }
+
+            connections = []
+            for conn_key, conn in genome.connections.items():
+                if conn.enabled:
+                    connections.append({
+                        "from": int(conn_key[0]),
+                        "to": int(conn_key[1]),
+                        "weight": float(conn.weight),
+                        "enabled": bool(conn.enabled)
+                    })
+
+            # Organize into layers
+            layers = self._organize_into_layers(nodes, connections, config)
+
+            return {
+                "agent_id": int(agent.id),
+                "nodes": nodes,
+                "connections": connections,
+                "layers": layers,
+                "fitness": float(agent.fitness),
+                "age": int(agent.age)
+            }
+
+        except Exception as e:
+            logger.error(f"Error extracting network structure: {str(e)}")
+            return {}
+
+    def _get_node_type(self, node_id, config):
+        """Determine node type based on NEAT conventions"""
+        if node_id < 0:
+            return "input"
+        elif node_id < config.genome_config.num_outputs:
+            return "output"
+        else:
+            return "hidden"
+
+    def _organize_into_layers(self, nodes, connections, config):
+        """Organize nodes into layers for visualization"""
+        layers = {
+            "input": [],
+            "hidden": [],
+            "output": []
+        }
+
+        for node_id, node_data in nodes.items():
+            node_type = node_data["type"]
+            layers[node_type].append({
+                "id": int(node_id),
+                "value": node_data.get("bias", 0.0),
+                "weights": self._get_outgoing_weights(int(node_id), connections)
+            })
+
+        return [
+            {"nodes": layers["input"]},
+            {"nodes": layers["hidden"]},
+            {"nodes": layers["output"]}
+        ]
+
+    def _get_outgoing_weights(self, node_id, connections):
+        """Get all outgoing connection weights for a node"""
+        weights = []
+        for conn in connections:
+            if conn["from"] == node_id:
+                weights.append(conn["weight"])
+        return weights
+
+
+def serve(env=None):
+    communication_service = CommunicationService()
+    if env:
+        communication_service.set_environment(env)
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     comms_pb2_grpc.add_CommunicationServicer_to_server(
-        CommunicationService(), server)
+        communication_service, server)
     server.add_insecure_port('[::1]:50051')
     server.start()
     print("Server started on port 50051")
-    server.wait_for_termination()
+    return server, communication_service
 
 
 def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, neat_agents=True, non_neat=False, hyper_neat=False, neat_percent=1.0, hyper_neat_percent=0.0, non_neat_percent=0.0):
@@ -225,10 +366,10 @@ def evolve_all(
 
 
 def main():
+    # Initialize environment first (needed later)
+    env = None
+    communication_service = None
 
-    serverThread = threading.Thread(target=serve, daemon=True)
-    serverThread.start()
-    logs.session_id = logs.generate_session_id()
     try:
         # scale bounds
         bounds = [
@@ -259,17 +400,29 @@ def main():
         )
         print("END:\tSimulation environment created")
 
+        # Start server with environment access
+        server, communication_service = serve(env)
+        serverThread = threading.Thread(
+            target=server.wait_for_termination, daemon=True)
+        serverThread.start()
+
+        logs.session_id = logs.generate_session_id()
+
         # Create log for the average network size
         # logs.log_avg_network_size(env.agents)
-
         # Run simulation, looping according to the number of epochs specified
         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
         crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
         torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
-        # logs.save_initial_genomes_json(env.agents)
+        logs.save_initial_genomes_json(env.agents)
 
         for i in range(constants.EPOCHS):
             start_time = time.time()  # Start timing the epoch
+
+            # Update communication service with current environment
+            if communication_service:
+                communication_service.set_environment(env)
+
             env.run()
             if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
                 pred_bounds = prey_spawn
