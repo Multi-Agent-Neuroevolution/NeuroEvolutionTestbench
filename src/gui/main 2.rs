@@ -39,29 +39,11 @@ struct View {
     isRunning: bool,
     selected_agent_id: Option<usize>,
 }
-#[derive(Clone)]
+#[derive(Default, Clone)]
 struct SimulationView {
+    //This is going to be deprecated or deleteds
     color: Color,
     simulation: Simulation,
-    selected_agent_id: Option<usize>,
-    zoom_level: f32,
-    pan_offset: Point,
-    is_panning: bool,
-    last_mouse_pos: Option<Point>,
-}
-
-impl Default for SimulationView {
-    fn default() -> Self {
-        Self {
-            color: Color::default(),
-            simulation: Simulation::default(),
-            selected_agent_id: None,
-            zoom_level: 1.0,
-            pan_offset: Point::ORIGIN,
-            is_panning: false,
-            last_mouse_pos: None,
-        }
-    }
 }
 #[derive(Default, Clone, Copy)]
 struct AgentView {
@@ -75,6 +57,10 @@ struct NNView {
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
+    IncrementPressed,
+    IncrementPressedx10,
+    DecrementPressed,
+    DecrementPressedx10,
     Tick,
     SimStart,
     BestAgent,
@@ -82,18 +68,6 @@ enum Message {
     AgentSelected(usize),
     NextAgent,
     PrevAgent,
-    ZoomIn,
-    ZoomOut,
-    SimViewEvent(SimViewEvent),
-}
-
-#[derive(Debug, Clone, Copy)]
-enum SimViewEvent {
-    None,
-    Zoom { delta: f32, cursor_pos: Point },
-    PanStart { position: Point },
-    PanMove { position: Point },
-    PanEnd,
 }
 
 #[derive(Deserialize, Clone, Default)]
@@ -153,17 +127,13 @@ impl View {
             .selected_agent_id
             .and_then(|id| self.simulation_data.agents.iter().find(|a| a.id == id));
 
-        //SimulationView - make it wider (70% of width)
-        let sim_view = self
-            .sim_view
-            .draw()
-            .height(Length::Fill)
-            .width(Length::FillPortion(7));
+        //SimulationView
+        let sim_view = self.sim_view.draw().height(Length::Fill);
         //AgentView
         let agent_view = self.agent_view.view(selected_agent);
         //NNViews
         let nn_view = self.nn_view.draw();
-        let agent_nn_col = column!(agent_view, nn_view).width(Length::FillPortion(3));
+        let agent_nn_col = column!(agent_view, nn_view);
 
         let content = row!(sim_view, agent_nn_col);
 
@@ -173,53 +143,38 @@ impl View {
     fn controls(&self) -> Row<Message> {
         //Top Controls
         let top_controls = row![
-            button("Prev Agent").on_press(Message::PrevAgent),
-            button("Next Agent").on_press(Message::NextAgent),
-            button("Best Agent").on_press(Message::BestAgent),
-            button("Zoom In (+)").on_press(Message::ZoomIn),
-            button("Zoom Out (-)").on_press(Message::ZoomOut),
-            text(format!("Zoom: {:.1}x", self.sim_view.zoom_level)),
-            button("Connect to simulation").on_press(Message::SimStart)
+            button("File"),
+            button("Edit"),
+            button("View"),
+            button("<<").on_press(Message::DecrementPressedx10),
+            button("<").on_press(Message::DecrementPressed),
+            text(format!("x{}", self.speed)),
+            button(">").on_press(Message::IncrementPressed),
+            button(">>").on_press(Message::IncrementPressedx10)
         ]
         .spacing(10);
         top_controls
     }
     fn update(&mut self, message: Message) {
         match message {
+            Message::IncrementPressed => self.speed += 1,
+            //prevent speed from going negative
+            Message::DecrementPressed => self.speed = self.speed.saturating_sub(1),
+            Message::IncrementPressedx10 => self.speed += 10,
+            Message::DecrementPressedx10 => self.speed = self.speed.saturating_sub(10),
             Message::Tick => {
                 self.get_simulation_data();
             }
             Message::SimStart => {
-                let cloneConn = match self.connection.as_ref().cloned() {
-                    Some(conn) => conn,
-                    None => {
-                        // Ensure we have a runtime
-                        if self.rt.is_none() {
-                            match Runtime::new() {
-                                Ok(new_rt) => self.rt = Some(new_rt),
-                                Err(e) => {
-                                    println!("Failed to create Tokio runtime: {}", e);
-                                    self.isRunning = false;
-                                    return;
-                                }
-                            }
+                let cloneConn = match self.connection.as_mut() {
+                    Some(conn) => conn.clone(),
+                    None => match self.rt.as_mut() {
+                        Some(rt) => rt.block_on(getConnection()).unwrap(),
+                        None => {
+                            self.rt = Some(Runtime::new().unwrap());
+                            self.rt.as_mut().unwrap().block_on(getConnection()).unwrap()
                         }
-                        // Try to establish connection and handle errors (e.g. connection refused / TCP errors)
-                        let rt = self.rt.as_mut().unwrap();
-                        match rt.block_on(getConnection()) {
-                            Ok(conn) => {
-                                // store a clone for future use and return a clone for immediate use
-                                self.connection = Some(conn.clone());
-                                conn
-                            }
-                            Err(e) => {
-                                println!("Failed to connect to simulation: {}", e);
-                                // Don't panic; mark not running and exit early
-                                self.isRunning = false;
-                                return;
-                            }
-                        }
-                    }
+                    },
                 };
                 //let cloneConn = self.connection.as_mut().unwrap().clone();
                 let cloneSend = match self.sender.as_mut() {
@@ -250,7 +205,6 @@ impl View {
                     let next_index = (current_index + 1) % self.simulation_data.agents.len();
                     let next_agent_id = self.simulation_data.agents[next_index].id;
                     self.selected_agent_id = Some(next_agent_id);
-                    self.sim_view.selected_agent_id = Some(next_agent_id);
                     self.fetch_neural_network(next_agent_id);
                 }
             }
@@ -267,7 +221,6 @@ impl View {
                     };
                     let prev_agent_id = self.simulation_data.agents[prev_index].id;
                     self.selected_agent_id = Some(prev_agent_id);
-                    self.sim_view.selected_agent_id = Some(prev_agent_id);
                     self.fetch_neural_network(prev_agent_id);
                 }
             }
@@ -280,59 +233,10 @@ impl View {
                             .unwrap()
                     }) {
                         self.selected_agent_id = Some(best_agent.id);
-                        self.sim_view.selected_agent_id = Some(best_agent.id);
                         self.fetch_neural_network(best_agent.id);
                     }
                 }
             }
-            Message::ZoomIn => {
-                self.sim_view.zoom_level *= 1.2;
-                self.sim_view.zoom_level = self.sim_view.zoom_level.min(10.0);
-            }
-            Message::ZoomOut => {
-                self.sim_view.zoom_level /= 1.2;
-                self.sim_view.zoom_level = self.sim_view.zoom_level.max(0.1);
-            }
-            Message::SimViewEvent(event) => match event {
-                SimViewEvent::Zoom { delta, cursor_pos } => {
-                    let old_zoom = self.sim_view.zoom_level;
-
-                    // Update zoom level
-                    if delta > 0.0 {
-                        self.sim_view.zoom_level *= 1.1;
-                    } else {
-                        self.sim_view.zoom_level /= 1.1;
-                    }
-                    self.sim_view.zoom_level = self.sim_view.zoom_level.clamp(0.1, 10.0);
-
-                    // Adjust pan to zoom toward cursor
-                    let zoom_factor = self.sim_view.zoom_level / old_zoom;
-                    self.sim_view.pan_offset.x =
-                        cursor_pos.x + (self.sim_view.pan_offset.x - cursor_pos.x) * zoom_factor;
-                    self.sim_view.pan_offset.y =
-                        cursor_pos.y + (self.sim_view.pan_offset.y - cursor_pos.y) * zoom_factor;
-                }
-                SimViewEvent::PanStart { position } => {
-                    self.sim_view.is_panning = true;
-                    self.sim_view.last_mouse_pos = Some(position);
-                }
-                SimViewEvent::PanMove { position } => {
-                    if self.sim_view.is_panning {
-                        if let Some(last_pos) = self.sim_view.last_mouse_pos {
-                            let delta_x = position.x - last_pos.x;
-                            let delta_y = position.y - last_pos.y;
-                            self.sim_view.pan_offset.x += delta_x;
-                            self.sim_view.pan_offset.y += delta_y;
-                        }
-                        self.sim_view.last_mouse_pos = Some(position);
-                    }
-                }
-                SimViewEvent::PanEnd => {
-                    self.sim_view.is_panning = false;
-                    self.sim_view.last_mouse_pos = None;
-                }
-                SimViewEvent::None => {}
-            },
         }
         if self.speed < 1 {
             self.speed = 1;
@@ -360,13 +264,21 @@ impl View {
     }
 
     fn fetch_neural_network(&mut self, agent_id: usize) {
-        if let (Some(conn_clone), Some(rt_ref)) =
-            (self.connection.as_ref().cloned(), self.rt.as_ref())
-        {
-            let mut conn = conn_clone;
-            let neural_data = rt_ref.block_on(WebClient::getNeuralNet(&mut conn, agent_id as i32));
-            let layers = NeuralNet::parseJson(&neural_data.json_data);
-            self.nn_view.update_network(&layers);
+        if let Some(connection) = &mut self.connection {
+            if let Some(rt) = &mut self.rt {
+                let mut conn_clone = connection.clone();
+                rt.spawn(async move {
+                    match WebClient::getNeuralNet(&mut conn_clone, agent_id as i32).await {
+                        neural_data => {
+                            // TODO: Parse neural data and update nn_view
+                            println!(
+                                "Received neural network data for agent {}: {:?}",
+                                agent_id, neural_data
+                            );
+                        }
+                    }
+                });
+            }
         }
     }
     fn update_simulation_data(&mut self, simulation_data: SimulationData) {
@@ -385,7 +297,7 @@ impl View {
     }
     fn subscription(&self) -> Subscription<Message> {
         if self.isRunning {
-            time::every(Duration::from_millis(16)).map(|_| Message::Tick)
+            time::every(Duration::from_millis(1)).map(|_| Message::Tick)
         } else {
             Subscription::none()
         }
@@ -425,8 +337,25 @@ impl AgentView {
             column![text("No agent selected")].spacing(5).padding(10)
         };
 
-        let container = column![agent_info];
+        let container = column![self.controls(), agent_info];
         container
+    }
+    fn controls(&self) -> Row<Message> {
+        let controls = row![
+            button("Prev Agent")
+                .width(Length::FillPortion(1))
+                .on_press(Message::PrevAgent),
+            button("Next Agent")
+                .width(Length::FillPortion(1))
+                .on_press(Message::NextAgent),
+            button("Best Agent")
+                .width(Length::FillPortion(1))
+                .on_press(Message::BestAgent),
+            button("Connect to simulation")
+                .width(Length::FillPortion(1))
+                .on_press(Message::SimStart)
+        ];
+        controls
     }
 }
 
@@ -452,11 +381,6 @@ impl SimulationView {
         Self {
             color: Color::from_rgb(1.0, 0.0, 0.0),
             simulation: Simulation::new(),
-            selected_agent_id: None,
-            zoom_level: 1.0,
-            pan_offset: Point::ORIGIN,
-            is_panning: false,
-            last_mouse_pos: None,
         }
     }
     pub fn update_sim(&mut self, shapes: &Vec<Shape>, agents: &Vec<Agent>) {
@@ -470,69 +394,10 @@ impl SimulationView {
     }
 }
 
-impl canvas::Program<Message> for SimulationView {
+impl<Message> canvas::Program<Message> for SimulationView {
     //This will be in charge of drawing the simulation
     //The actual simulation will be handled somewhere else.
     type State = ();
-
-    fn update(
-        &self,
-        _state: &mut Self::State,
-        event: canvas::Event,
-        _bounds: Rectangle,
-        cursor: mouse::Cursor,
-    ) -> (canvas::event::Status, Option<Message>) {
-        match event {
-            canvas::Event::Mouse(mouse_event) => match mouse_event {
-                mouse::Event::WheelScrolled { delta } => {
-                    if let Some(cursor_pos) = cursor.position() {
-                        let delta_y = match delta {
-                            mouse::ScrollDelta::Lines { y, .. } => y,
-                            mouse::ScrollDelta::Pixels { y, .. } => y,
-                        };
-
-                        if delta_y != 0.0 {
-                            return (
-                                canvas::event::Status::Captured,
-                                Some(Message::SimViewEvent(SimViewEvent::Zoom {
-                                    delta: delta_y,
-                                    cursor_pos,
-                                })),
-                            );
-                        }
-                    }
-                    (canvas::event::Status::Ignored, None)
-                }
-                mouse::Event::ButtonPressed(mouse::Button::Left) => {
-                    if let Some(position) = cursor.position() {
-                        (
-                            canvas::event::Status::Captured,
-                            Some(Message::SimViewEvent(SimViewEvent::PanStart { position })),
-                        )
-                    } else {
-                        (canvas::event::Status::Ignored, None)
-                    }
-                }
-                mouse::Event::ButtonReleased(mouse::Button::Left) => (
-                    canvas::event::Status::Captured,
-                    Some(Message::SimViewEvent(SimViewEvent::PanEnd)),
-                ),
-                mouse::Event::CursorMoved { .. } => {
-                    if let Some(position) = cursor.position() {
-                        (
-                            canvas::event::Status::Captured,
-                            Some(Message::SimViewEvent(SimViewEvent::PanMove { position })),
-                        )
-                    } else {
-                        (canvas::event::Status::Ignored, None)
-                    }
-                }
-                _ => (canvas::event::Status::Ignored, None),
-            },
-            _ => (canvas::event::Status::Ignored, None),
-        }
-    }
-
     fn draw(
         &self,
         _state: &(),
@@ -541,13 +406,7 @@ impl canvas::Program<Message> for SimulationView {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        self.simulation.draw(
-            renderer,
-            bounds,
-            self.selected_agent_id.as_ref(),
-            self.zoom_level,
-            self.pan_offset,
-        )
+        self.simulation.draw(renderer, bounds)
     }
 }
 

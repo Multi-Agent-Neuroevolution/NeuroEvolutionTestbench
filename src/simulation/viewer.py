@@ -14,19 +14,9 @@ class GenomeViewer:
         self.root = root
         self.root.title("NEAT Genome Viewer")
         self.root.geometry("1000x800")
-
         # Prompt user to select a genome file
-        filepath = filedialog.askopenfilename(
-            title="Select genome file",
-            initialdir=os.path.join(os.getcwd(), "Data"),
-            filetypes=[("JSON files", "*.json")]
-        )
-        if not filepath:
-            messagebox.showerror("Error", "No file selected")
-            self.root.destroy()
-            return
+        filepath = self.load_new_file()
 
-        # Load genomes
         try:
             with open(filepath, 'r') as file:
                 self.genomes = json.load(file)
@@ -86,6 +76,10 @@ class GenomeViewer:
         self.max_button = ttk.Button(
             nav_frame, text="Max Fitness", command=self.goto_max_fitness)
         self.max_button.pack(side=tk.LEFT, padx=10)
+
+        self.fileButton = ttk.Button(
+            nav_frame, text="Load File", command=self.load_new_file)
+        self.fileButton.pack(side=tk.LEFT, padx=5)
 
         # Status info
         info_frame = ttk.Frame(controls_frame)
@@ -166,6 +160,18 @@ class GenomeViewer:
             except Exception:
                 continue
         return results
+
+    def load_new_file(self):
+        # Prompt user to select a genome file
+        filepath = filedialog.askopenfilename(
+            title="Select genome file",
+            initialdir=os.path.join(os.getcwd(), "Data"),
+            filetypes=[("JSON files", "*.json")]
+        )
+        if not filepath:
+            messagebox.showerror("Error", "No file selected")
+            return
+        return filepath
 
     def _choose_config_for_genome(self, genome, configs):
         """Pick a config by matching number of negative id inputs observed in connections."""

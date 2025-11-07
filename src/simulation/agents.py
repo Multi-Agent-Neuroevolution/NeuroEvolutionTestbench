@@ -95,7 +95,7 @@ class Agent(Shape):
             case 3:  # Agent moves right
                 self.pos[0] += self.move_speed
             case _:  # Default case (no movement)
-                self.pos = self.pos
+                pass  # No need to reassign self.pos = self.pos
 
     def _handle_action(self, action_choice):
         """Handles the action of the agent based on the action choice. Overwritten in subclass."""
@@ -146,12 +146,16 @@ class Agent(Shape):
         self.get_interactables(self.interactionRange)
         # 1) Gather all objects in sight
         sight = self.sight
+        sight_inv = 1.0 / sight  # Pre-compute reciprocal for multiplication
         # state.objs was populated from the spatial grid already
         candidates = []
+        # O(1) lookup instead of O(n)
+        interactables_set = set(self.state.interactables)
+
         for obj in self.state.objs:
-            # normalized relative position
-            dx = (obj.pos[0] - self.pos[0]) / sight
-            dy = (obj.pos[1] - self.pos[1]) / sight
+            # normalized relative position (use multiplication instead of division)
+            dx = (obj.pos[0] - self.pos[0]) * sight_inv
+            dy = (obj.pos[1] - self.pos[1]) * sight_inv
 
             # one‑hot type
             if isinstance(obj, Predator):
@@ -163,8 +167,8 @@ class Agent(Shape):
             else:
                 continue  # skip any other shapes
 
-            # bite‑range flag
-            in_bite = 1.0 if obj in self.state.interactables else 0.0
+            # bite‑range flag (use set for O(1) lookup)
+            in_bite = 1.0 if obj in interactables_set else 0.0
 
             # distance squared for sorting
             dist_sq = dx*dx + dy*dy
@@ -280,14 +284,19 @@ class Agent(Shape):
 
     # This method adjusts the agent position if it goes out of bounds
     def check_bounds(self, bounds):
-        if self.pos[0] < bounds[0]:
-            self.pos[0] = bounds[1] - 1
-        if self.pos[0] > bounds[1]:
-            self.pos[0] = bounds[0] + 1
-        if self.pos[1] < bounds[2]:
-            self.pos[1] = bounds[3] - 1
-        if self.pos[1] > bounds[3]:
-            self.pos[1] = bounds[2] + 1
+        if constants.HARD_BOUNDS:
+            # Keep agent within bounds
+            self.pos[0] = max(bounds[0], min(self.pos[0], bounds[1]))
+            self.pos[1] = max(bounds[2], min(self.pos[1], bounds[3]))
+        else:
+            min_x, max_x, min_y, max_y = bounds
+            # Toroidal wrap
+            width = max_x - min_x
+            height = max_y - min_y
+            if width > 0:
+                self.pos[0] = ((self.pos[0] - min_x) % width) + min_x
+            if height > 0:
+                self.pos[1] = ((self.pos[1] - min_y) % height) + min_y
 
 
 class Predator(Agent):
@@ -312,7 +321,7 @@ class Predator(Agent):
             "id": int(self.id),
             "x": float(self.pos[0]),
             "y": float(self.pos[1]),
-            "color": "yellow",
+            "color": constants.PREDATOR_COLOR,
             "agent_type": self.agent_type,
             "energy": float(self.energy),
             "fitness": float(self.fitness),
@@ -346,8 +355,14 @@ class Predator(Agent):
         # TODO: Add these values to the constants file
         hunt_reward = self.prey_eaten * 15.0
         energy_reward = self.energy * 0.5
-        survival_reward = self.age * 0.01
-        self.fitness = hunt_reward + energy_reward + survival_reward
+        # Normalize move_speed so at max energy no speed is lost and at 0 energy max speed loss is 99%
+        max_e = constants.PRED_START_ENERGY
+        energy_norm = 0.0 if max_e <= 0 else max(
+            0.0, min(self.energy / max_e, 1.0))
+        remaining_frac = 0.01 + 0.99 * energy_norm
+        age_reward = min(self.age * 0.1, 50)  # Cap the age reward
+        self.move_speed = constants.PRED_SPEED * remaining_frac
+        self.fitness = hunt_reward + energy_reward + age_reward
 
     def _eat(self):
         """Handles the eating action of the predator agent, finding the closest prey object if applicable."""
@@ -366,7 +381,6 @@ class Predator(Agent):
             self.energy += constants.PRED_EAT_ENERGY_GAIN
             logger.info(
                 f"Predator {self.id} chooses to eat Prey {closest_prey.id} successfully.")
-            # TO DO: Share with predators around it
 
 
 class Prey(Agent):
@@ -390,7 +404,7 @@ class Prey(Agent):
             "id": int(self.id),
             "x": float(self.pos[0]),
             "y": float(self.pos[1]),
-            "color": "green",
+            "color": constants.PREY_COLOR,
             "agent_type": self.agent_type,
             "energy": float(self.energy),
             "fitness": float(self.fitness),
@@ -415,8 +429,13 @@ class Prey(Agent):
         # TODO: Add these values to the constants file
         distance_from_spawn = np.linalg.norm(self.pos - self.spawn)
         distance_reward = min(distance_from_spawn * 0.01,
-                              1)  # Cap the distance reward
-        age_reward = min(self.age * 0.1, 1)  # Cap the age reward
+                              50)  # Cap the distance reward
+        max_e = constants.PREY_START_ENERGY
+        energy_norm = 0.0 if max_e <= 0 else max(
+            0.0, min(self.energy / max_e, 1.0))
+        remaining_frac = 0.01 + 0.99 * energy_norm
+        self.move_speed = constants.PREY_SPEED * remaining_frac
+        age_reward = min(self.age * 0.1, 50)  # Cap the age reward
         energy_reward = self.energy * 0.5
         self.fitness = distance_reward + age_reward + energy_reward
 
@@ -428,8 +447,8 @@ class Prey(Agent):
         closest_food = self._find_closest_target(_food_filter)
 
         if closest_food is None:
-            # logger.info(
-            #     f"Prey {self.id} chooses to eat, but fails to find food.")
+            logger.info(
+                f"Prey {self.id} chooses to eat, but fails to find food.")
             self.energy -= constants.PREY_FAIL_ENERGY_COST
         else:
             closest_food.living = False

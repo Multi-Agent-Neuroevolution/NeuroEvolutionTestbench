@@ -1,0 +1,42 @@
+[
+  {
+    "type": "Rectangle",
+    "x": 199.5,
+    "y": -244.5,
+    "width": 36.0,
+    "height": 342.75,
+    "color": "yellow"
+  },
+  {
+    "type": "Rectangle",
+    "x": -279.0,
+    "y": -257.25,
+    "width": 15.0,
+    "height": 445.5,
+    "color": "yellow"
+  },
+  {
+    "type": "Rectangle",
+    "x": -263.25,
+    "y": -24.75,
+    "width": 215.25,
+    "height": 27.0,
+    "color": "yellow"
+  },
+  {
+    "type": "Rectangle",
+    "x": 0.75,
+    "y": -18.75,
+    "width": 153.75,
+    "height": 17.25,
+    "color": "yellow"
+  },
+  {
+    "type": "Rectangle",
+    "x": 165.75,
+    "y": -75.0,
+    "width": 15.0,
+    "height": 16.5,
+    "color": "yellow"
+  }
+]

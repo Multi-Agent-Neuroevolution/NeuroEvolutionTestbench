@@ -46,19 +46,15 @@ def save_genomes_json(agents, out_dir='./Data'):
     genomes_by_cls_type = {}
 
     for agent in agents:
-        # determine the class prefix
-        if isinstance(agent, Predator):
-            cls = 'pred'
-        elif isinstance(agent, Prey):
-            cls = 'prey'
-        else:
-            cls = 'agent'
+        # Use a lookup dictionary instead of if-elif chains for better performance
+        cls = 'pred' if isinstance(agent, Predator) else (
+            'prey' if isinstance(agent, Prey) else 'agent')
         # combine with the agent's type
         key = f"{cls}_{agent.type}"
         try:
             genome = genome_to_dict(agent.neat_genome)
             genomes_by_cls_type.setdefault(key, []).append(genome)
-        except Exception as e:
+        except Exception:
             # Optionally log the error or agent info here
             continue
     # write one JSON per class‐type

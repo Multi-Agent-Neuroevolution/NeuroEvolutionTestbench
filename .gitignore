@@ -7,4 +7,4 @@ Data/*
 /src/simulation/__pycache__/
 Logs/*
 /sim.log
-/rust-gui/
+/rust-gui/ 

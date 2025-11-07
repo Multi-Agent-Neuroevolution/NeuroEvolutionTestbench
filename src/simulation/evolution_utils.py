@@ -3,31 +3,30 @@ import random
 import neat
 import copy
 from agents import Predator, Prey
+import logging
+logger = logging.getLogger(__name__)
 
 # This function handles selecting parents to breed, then mutating the resultant child's genome
 
 
 def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crossover_rate=0.7, torunament_size=3, subclass=None):
     new_agents = []
-    used_ids = set()  # HashSet to ensure unique IDs
+    used_ids = set()  # Hashing for  unique IDs
 
-    if multi_model:
-        type = 0
-    else:
-        type = 1
+    type = 0 if multi_model else 1
+    extinction = False
 
     def generate_unique_id():
+        # Determine ID range once outside the loop
+        if subclass == "predator":
+            id_range = (50001, 100000) if type == 0 else (0, 50000)
+        elif subclass == "prey":
+            id_range = (150001, 200000) if type == 0 else (100001, 150000)
+        else:
+            return random.randint(0, 1000000)  # Fallback
+
         while True:
-            if subclass == "predator":
-                if type == 0:
-                    child_id = random.randint(50001, 100000)
-                else:
-                    child_id = random.randint(0, 50000)
-            if subclass == "prey":
-                if type == 0:
-                    child_id = random.randint(150001, 200000)
-                else:
-                    child_id = random.randint(100001, 150000)
+            child_id = random.randint(id_range[0], id_range[1])
             if child_id not in used_ids:
                 used_ids.add(child_id)
                 return child_id
@@ -40,6 +39,7 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
 
         if not parents:
             # EXTINCTION: Create and mutate a new genome from scratch
+            extinction = True
             child_genome.configure_new(config.genome_config)
             child_genome.mutate(config.genome_config)
 
@@ -87,7 +87,12 @@ def breed_and_mutate(config, parents, num_offspring, bounds, multi_model, crosso
                              neat_genome=child_genome, neat_config=config if multi_model else config, type=type)
 
         new_agents.append(new_agent)
-
+        if extinction:
+            print(
+                f"EXTINCTION EVENT: Agents of type {subclass} have gone extinct. If frequent, this will harm training progress. Change Configs?")
+            logger.info(
+                f"EXTINCTION EVENT: Agents of type {subclass} have gone extinct. If frequent, this will harm training progress. Change Configs?")
+            extinction = False
     return new_agents
 
 

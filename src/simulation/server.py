@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import random
 import neat
 import multiprocessing
@@ -186,7 +187,7 @@ def serve(env=None):
     return server, communication_service
 
 
-def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, neat_agents=True, non_neat=False, hyper_neat=False, neat_percent=1.0, hyper_neat_percent=0.0, non_neat_percent=0.0):
+def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000, bounds=[-200, 200, -200, 200], pred_percent=0.25, food_amount=10, prey_spawn_bounds=[50, 150, 50, 150], pred_spawn_bounds=[-150, -50, -150, -50], food_respawn_rate=0.1, neat_agents=True, non_neat=False, hyper_neat=False, neat_percent=0.0, hyper_neat_percent=0.0, non_neat_percent=0.0):
     """Creates the simulation environment and initializes the NEAT population.
 
     Args:
@@ -231,26 +232,40 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     pred_pop = int(len(population.population.items())*pred_percent)
     prey_pop = len(population.population.items()) - pred_pop
 
-    if not neat and not non_neat and not hyper_neat:
+    if not neat_agents and not non_neat and not hyper_neat:
         print("Must specify at least one of NEAT, non-NEAT, or HyperNEAT to be True.")
         exit(1)
+
+    # Initialize all populations to 0
+    pred_pop_neat = 0
+    prey_pop_neat = 0
+    pred_pop_no_neat = 0
+    prey_pop_no_neat = 0
+    pred_pop_hyper = 0
+    prey_pop_hyper = 0
+
     if neat_agents:
         # Create NEAT predators and prey
-        pred_pop_neat = int(pred_pop * neat_percent)
-        prey_pop_neat = int(prey_pop * neat_percent)
+        pred_pop_neat = math.floor(pred_pop * neat_percent)
+        prey_pop_neat = math.floor(prey_pop * neat_percent)
     if non_neat:
         # Create non-NEAT predators and prey
-        pred_pop_no_neat = int(pred_pop * non_neat_percent)
-        prey_pop_no_neat = int(prey_pop * non_neat_percent)
+        pred_pop_no_neat = math.floor(pred_pop * non_neat_percent)
+        prey_pop_no_neat = math.floor(prey_pop * non_neat_percent)
     if hyper_neat:
         # Create HyperNEAT predators and prey
-        pred_pop_hyper = int(pred_pop * hyper_neat_percent)
-        prey_pop_hyper = int(prey_pop * hyper_neat_percent)
+        pred_pop_hyper = math.floor(pred_pop * hyper_neat_percent)
+        prey_pop_hyper = math.floor(prey_pop * hyper_neat_percent)
+
     print("END:\tCreated NEAT population")
     print(f"INFO:\tPredator population: {pred_pop}")
     print(f"INFO:\tPrey population: {prey_pop}")
-    print(f"INFO:\tPredator population no neat: {pred_pop_no_neat}")
-    print(f"INFO:\tPrey population no neat: {prey_pop_no_neat}")
+    print(f"INFO:\tPredator NEAT population: {pred_pop_neat}")
+    print(f"INFO:\tPredator STD population: {pred_pop_no_neat}")
+    print(f"INFO:\tPredator HyperNEAT population: {pred_pop_hyper}")
+    print(f"INFO:\tPrey NEAT population: {prey_pop_neat}")
+    print(f"INFO:\tPrey STD population: {prey_pop_no_neat}")
+    print(f"INFO:\tPrey HyperNEAT population: {prey_pop_hyper}")
 
     # Initializes the environment, whether the simulation will be run with multiple models or not
     print("START:\tInitializing environment...")
@@ -258,8 +273,8 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     env.initialize_environment(
         config=configDict,
         population=population,
-        pred_pop=pred_pop_neat,
-        prey_pop=prey_pop_neat,
+        pred_pop_neat=pred_pop_neat,
+        prey_pop_neat=prey_pop_neat,
         prey_pop_no_neat=prey_pop_no_neat,
         pred_pop_no_neat=pred_pop_no_neat,
         pred_pop_hyper=pred_pop_hyper,
@@ -277,12 +292,12 @@ def create_simulation(simulation_type="PRED_PREY", config_path=None, steps=1000,
     logger.info(
         f"Using {env.max_workers} Logical CPU cores for parallel processing")
 
-    return env, population, configDict, len(population.population.items()), pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hyper, prey_pop_hyper
+    return env, population, configDict, len(population.population.items()), pred_pop_neat, prey_pop_neat, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hyper, prey_pop_hyper
 
 
 def evolve_all(
     configList, env,
-    pred_pop, prey_pop,
+    pred_pop_neat, prey_pop_neat,
     pred_pop_no_neat, prey_pop_no_neat,
     pred_pop_hyper, prey_pop_hyper,
     pred_spawn_bounds, prey_spawn_bounds,
@@ -296,10 +311,10 @@ def evolve_all(
     all_new_agents = []
     # Define groups: (Class, type_flag, cfg, pop_size, bounds, subclass)
     groups = [
-        (Predator, 1, configList["predNeatConfig"], pred_pop,
+        (Predator, 1, configList["predNeatConfig"], pred_pop_neat,
          pred_spawn_bounds, "predator"),
         (Prey,     1, configList["preyNeatConfig"],
-         prey_pop,      prey_spawn_bounds, "prey"),
+         prey_pop_neat, prey_spawn_bounds, "prey"),
         (Predator, 0, configList["predStdConfig"], pred_pop_no_neat,
          pred_spawn_bounds, "predator"),
         (Prey,     0, configList["preyStdConfig"], prey_pop_no_neat,
@@ -310,7 +325,7 @@ def evolve_all(
         (Prey,     2, configList["preyHyprConfig"],
             prey_pop_hyper, prey_spawn_bounds, "prey"),
     ]
-    for AgentCls, flag, cfg, size, bounds, subclass in groups:
+    for AgentCls, flag, cfg, popSize, bounds, subclass in groups:
         # Gather survivors
         survivors = [a for a in env.agents if isinstance(
             a, AgentCls) and a.type == flag]
@@ -319,10 +334,10 @@ def evolve_all(
             if agent.neat_genome:
                 agent.neat_genome.fitness = agent.fitness
         # Select elites
-        num_elites = max(1, int(size * eliteism))
+        num_elites = max(1, int(popSize * eliteism))
         elites = sorted(survivors, key=lambda a: a.fitness,
                         reverse=True)[:num_elites]
-        num_offspring = size - len(elites)
+        num_offspring = popSize - len(elites)
         # Breed offspring using existing helper
         offspring = []
         if flag in (0, 1):
@@ -345,8 +360,11 @@ def evolve_all(
                 subclass=subclass
             )
         new_group = elites + offspring
+        if len(new_group) < popSize:
+            print(
+                f"WARNING: Generated fewer agents ({len(new_group)}) than expected ({popSize}) for {AgentCls.__name__} type {flag}")
         # Sanity fill if mismatch
-        while len(new_group) < size:
+        while len(new_group) < popSize:
             # fallback random new genome
             genome = neat.DefaultGenome(random.randint(0, 1_000_000))
             genome.configure_new(cfg.genome_config)
@@ -356,17 +374,23 @@ def evolve_all(
             new_group.append(AgentCls(id=genome.key, pos=pos,
                              neat_genome=genome, neat_config=cfg, type=flag))
         assert len(
-            new_group) == size, f"Group {AgentCls.__name__} flag={flag} expected {size}, got {len(new_group)}"
+            new_group) == popSize, f"Group {AgentCls.__name__} flag={flag} expected {popSize}, got {len(new_group)}"
         all_new_agents.extend(new_group)
     # Replace all agents
     env.add_agents(all_new_agents)
 
 
 # Main function, configures simulation then runs through epochs
-
-
 def main():
     # Initialize environment first (needed later)
+    # check to see if the constants file has any strange numbers
+    for name, value in vars(constants).items():
+        if isinstance(value, (int, float)) and value <= 0:
+            logger.warning(
+                f"Constant {name} has a non-positive value: {value} that may cause strange behavior")
+        if isinstance(value, float) and value > 999:
+            logger.warning(
+                f"Constant {name} has a large value: {value} that may cause strange behavior")
     env = None
     communication_service = None
 
@@ -381,7 +405,7 @@ def main():
 
         # Creates simulation environment
         print("START:\tCreating simulation environment...")
-        env, population, configList, populationSize, pred_pop, prey_pop, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hypr, prey_pop_hypr = create_simulation(
+        env, population, configList, populationSize, pred_pop_neat, prey_pop_neat, pred_pop_no_neat, prey_pop_no_neat, pred_pop_hyper, prey_pop_hyper = create_simulation(
             simulation_type=constants.SIMULATION_TYPE,
             config_path=constants.CONFIG_PATH,
             steps=constants.STEPS,
@@ -413,10 +437,29 @@ def main():
         # Run simulation, looping according to the number of epochs specified
         eliteism = constants.CUT_OFF  # Percentage of agents that will be used for breeding
         crossover_rate = constants.CROSS_OVER_RATE  # Crossover rate for breeding
-        torunament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
-        logs.save_initial_genomes_json(env.agents)
+        tournament_size = constants.TOURNAMENT_SIZE  # Tournament size for selection
+        if constants.SAVE_INIT_NETWORKS:
+            print("INFO:   Saving initial genomes... this will take a while")
+            logs.save_initial_genomes_json(env.agents)
+        # print total agents added of each type
 
         for i in range(constants.EPOCHS):
+            agents = env.agents
+            num_predators_stand = len(
+                [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 0])
+            num_predators_neat = len(
+                [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 1])
+            num_predators_hyper = len(
+                [agent for agent in agents if isinstance(agent, Predator) and agent.alive and agent.type == 2])
+            num_preys_stand = len(
+                [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 0])
+            num_preys_neat = len(
+                [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 1])
+            num_preys_hyper = len(
+                [agent for agent in agents if isinstance(agent, Prey) and agent.alive and agent.type == 2])
+
+            print(f"INFO:    Initialized Epoch with {num_predators_stand} standard predators, {num_predators_neat} NEAT predators, {num_predators_hyper} HyperNEAT predators, {num_preys_stand} standard preys, {num_preys_neat} NEAT preys, and {num_preys_hyper} HyperNEAT preys.")
+
             start_time = time.time()  # Start timing the epoch
 
             # Update communication service with current environment
@@ -424,7 +467,7 @@ def main():
                 communication_service.set_environment(env)
 
             env.run()
-            if i > constants.EPOCHS / 2 and constants.SWAP_BOUNDS:
+            if (i > constants.EPOCHS / 2) and constants.SWAP_BOUNDS:
                 pred_bounds = prey_spawn
                 prey_bounds = pred_spawn
             else:
@@ -434,12 +477,12 @@ def main():
             evolve_all(
                 configList,
                 env,
-                pred_pop,            # # of neat predators
-                prey_pop,            # # of neat prey
-                pred_pop_no_neat,    # # of non‑neat predators
-                prey_pop_no_neat,    # # of non‑neat prey
-                pred_pop_hypr,                   # # of hyper‑neat predators
-                prey_pop_hypr,                   # # of hyper‑neat prey
+                pred_pop_neat,       # number of neat predators
+                prey_pop_neat,       # number of neat prey
+                pred_pop_no_neat,    # number of non‑neat predators
+                prey_pop_no_neat,    # number of non‑neat prey
+                pred_pop_hyper,      # number of hyper‑neat predators
+                prey_pop_hyper,      # number of hyper‑neat prey
                 pred_bounds,         # spawn bounds for predators this epoch
                 prey_bounds          # spawn bounds for prey this epoch
             )

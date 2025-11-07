@@ -62,7 +62,14 @@ impl Simulation {
         self.agents = vec.to_vec();
     }
 
-    pub fn draw(&self, renderer: &Renderer, bounds: Rectangle) -> Vec<canvas::Geometry> {
+    pub fn draw(
+        &self,
+        renderer: &Renderer,
+        bounds: Rectangle,
+        selectedAgent: Option<&usize>,
+        zoom_level: f32,
+        pan_offset: Point,
+    ) -> Vec<canvas::Geometry> {
         // 1) Compute world‐space min/max (same as before)…
         let mut min_x = f32::INFINITY;
         let mut max_x = f32::NEG_INFINITY;
@@ -124,17 +131,19 @@ impl Simulation {
         let world_w = (max_x - min_x).max(1.0);
         let world_h = (max_y - min_y).max(1.0);
 
-        // 2) Use fields, not methods:
-        let sx = bounds.width / world_w;
-        let sy = bounds.height / world_h;
+        let zoomed_world_w = world_w / zoom_level;
+        let zoomed_world_h = world_h / zoom_level;
+
+        let sx = bounds.width / zoomed_world_w;
+        let sy = bounds.height / zoomed_world_h;
         let scale = sx.min(sy);
 
-        let extra_x = (bounds.width - world_w * scale) / 2.0;
-        let extra_y = (bounds.height - world_h * scale) / 2.0;
+        let extra_x = (bounds.width - zoomed_world_w * scale) / 2.0;
+        let extra_y = (bounds.height - zoomed_world_h * scale) / 2.0;
 
         let world_to_canvas = |wx: f32, wy: f32| {
-            let cx = (wx - min_x) * scale + extra_x;
-            let cy = (wy - min_y) * scale + extra_y;
+            let cx = (wx - min_x) * scale + extra_x + pan_offset.x;
+            let cy = (wy - min_y) * scale + extra_y + pan_offset.y;
             Point::new(cx, cy)
         };
 
@@ -147,11 +156,21 @@ impl Simulation {
             let r = 1.0 * scale; // or whatever base radius you want
             let circle = Path::circle(center, r);
             let mut frame = Frame::new(renderer, Size::new(bounds.width, bounds.height));
+
             frame.fill(&circle, get_color(agent.color.clone()));
+            if let Some(selected) = selectedAgent {
+                if selected == &agent.id {
+                    frame.stroke(
+                        &circle,
+                        canvas::Stroke::default()
+                            .with_color(Color::from_rgb(1.0, 1.0, 0.0))
+                            .with_width(2.0),
+                    );
+                }
+            }
             geometries.push(frame.into_geometry());
         }
 
-        // draw shapes (same as before, but use fields and scale)
         for shape in &self.shapes {
             let mut frame = Frame::new(renderer, Size::new(bounds.width, bounds.height));
             match shape {
@@ -225,7 +244,10 @@ fn get_color(str: String) -> Color {
         "black" => Color::from_rgb(0.0, 0.0, 0.0),
         "white" => Color::from_rgb(1.0, 1.0, 1.0),
         "purple" => Color::from_rgb(0.5, 0.0, 0.5),
-        "yellow" => Color::from_rgb(0.0, 1.0, 1.0),
+        "yellow" => Color::from_rgb(1.0, 1.0, 0.0),
+        "orange" => Color::from_rgb(1.0, 0.65, 0.0),
+        "pink" => Color::from_rgb(1.0, 0.75, 0.8),
+        "cyan" => Color::from_rgb(0.0, 1.0, 1.0),
         _ => Color::from_rgb(0.0, 0.0, 0.0),
     }
 }

@@ -10,6 +10,9 @@ impl NeuralNet {
     pub fn new(id: u32, layers: Vec<Layer>) -> Self {
         Self { id, layers }
     }
+    pub fn parseJson(data: &str) -> Vec<Layer> {
+        serde_json::from_str(data).unwrap_or_else(|_| vec![])
+    }
 
     pub fn draw(&self, bounds: Rectangle, renderer: &Renderer) -> Vec<canvas::Geometry> {
         let mut neural_net_geometry = Vec::new();
